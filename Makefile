@@ -5,12 +5,13 @@ CFLAGS = $(DEBUG) -Wall -Werror
 
 LIBS = general.h move.h
 COMMON = state_type.o $(LIBS)
-OBJS = main.o letter_bag_type.o rail_type.o state_type.o letter_frequency.o input.o rule_checker.o scorer.o tile_drawer.o trie.o
+LIBOBJS = letter_bag_type.o rail_type.o state_type.o letter_frequency.o input.o rule_checker.o scorer.o tile_drawer.o trie.o
+OBJS = main.o $(LIBOBJS)
 EXE = scrabble
 DRIVER = driver
-DRIVEROBJS = driver.o trie.o
+DRIVEROBJS = driver.o $(LIBOBJS)
 
-all: $(EXE) $(DRIVER)
+all: $(EXE)
 
 $(EXE): $(OBJS) $(LIBS)
 	$(CC) $(CFLAGS) -o $(EXE) $(OBJS)
@@ -40,4 +41,4 @@ driver.o: driver.c
 	$(CC) $(CFLAGS) -c driver.c
 .PHONY: clean
 clean:
-	rm -rf $(OBJS) $(EXE)
+	rm -rf $(OBJS) $(EXE) $(DRIVEROBJS) $(DRIVER)

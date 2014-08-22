@@ -30,7 +30,7 @@ struct state_t {
   struct letter_bag_t * letter_bag;
   //  rail_t rails[MAX_PLAYERS];
   rail_t * rails;
-  int moves_played;7
+  int moves_played;
 };
 
 extern int state_create(struct state_t * state, int players);

@@ -12,26 +12,32 @@ struct trie_t {
 };
 
 void to_uppercase(char * str);
-void trie_helper_insert(struct trie_t * trie, char * word, int pos);
+int trie_helper_insert(struct trie_t * trie, char * word, int pos);
+int trie_helper_search(struct trie_t * trie, char * word, int pos);
 
 TRIE_T trie_create(void) {
-  struct trie_t * trie = malloc(sizeof(*trie));
+  //  struct trie_t * trie = malloc(sizeof(*trie));
+  struct trie_t * trie = calloc(1, sizeof(*trie));
   if (!trie) {
     return 0;
   }
-  memset(&(trie->links[0]), 0, sizeof(struct trie_t *) * LINKS);
+  //  memset(&(trie->links[0]), 0, sizeof(struct trie_t *) * LINKS);
   return trie;
 }
 
 int trie_insert(TRIE_T trie, char * word) {
+  if (!trie) return FAILURE;
   to_uppercase(word);
-
   trie_helper_insert(trie, word, 0);
   return SUCCESS;
 }
 
 int trie_search(TRIE_T trie, char * word) {
-  return SUCCESS;
+  if (!trie) return FAILURE;
+  if (!word) return FAILURE;
+  if (strlen(word) == 0) return FAILURE;
+  to_uppercase(word);
+  return trie_helper_search(trie, word, 0);
 }
 
 int trie_destroy(TRIE_T trie) {
@@ -57,10 +63,12 @@ void to_uppercase(char * str) {
 
 int trie_helper_insert(struct trie_t * trie, char * word, int pos) {
   char c;
-  if (!word[pos]) { break; }
+  if (!word[pos]) { return SUCCESS; }
   c = word[pos];
   if (!trie->links[char_to_index(c)]) {
-    trie->links[char_to_index(c)] = malloc(sizeof(struct trie_t));
+    //    trie->links[char_to_index(c)] = malloc(sizeof(struct trie_t));
+    trie->links[char_to_index(c)] = calloc(1, sizeof(struct trie_t));
+    //    memset(&(trie->links[char_to_index(c)][0]), 0, sizeof(struct trie_t *) * LINKS);
     if (!trie->links[char_to_index(c)]) {
       return FAILURE;
     }
@@ -68,3 +76,9 @@ int trie_helper_insert(struct trie_t * trie, char * word, int pos) {
   return trie_helper_insert(trie->links[char_to_index(c)], word, pos + 1);
 }
 
+int trie_helper_search(struct trie_t * trie, char * word, int pos) {
+  if (!word[pos] || word[pos] == '\0' ) { return SUCCESS; }
+  else if (word[pos] < 'A' || word[pos] > 'Z') { return FAILURE; }
+  else if (!trie->links[char_to_index(word[pos])]) {  return FAILURE; }
+  else { return trie_helper_search(trie->links[char_to_index(word[pos])], word, pos + 1); }
+}
