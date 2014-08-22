@@ -4,9 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define IS_WORD 2
-#define NOT_WORD -2
-
 static TRIE_T trie = 0;
 
 static int initialized = FALSE;
@@ -34,15 +31,25 @@ int rule_checker_create(char * filename) {
   }
 }
 
+// TODO
+// Check that the move played is connected to some other piece of the board
 int rule_checker_check_state(struct state_t * state, struct move_t * move) {
   int i = 0;
+  int j = 0;
   int num_moves = move->n;
   int row;
   int col;
   tile_t tile;
+  int in_word = 0;
+  char word[BOARD_SIZE + 1];
+  int pos = 0;
+  int retVal = SUCCESS;
+
+  // Apparently the first player does NOT have to play on the middle tile at the
+  // beginning of the game
 
   // Check if the have tile and the square isn't already occupied
-  for (; i < num_moves; ++i) {
+  for (i = 0; i < num_moves; ++i) {
     row = move->placements[i].row;
     col = move->placements[i].col;
     tile = move->placements[i].tile;
@@ -55,8 +62,82 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
       return FAILURE;
     }
   }
+
+  // place tiles just for the checking
+  for (i = 0; i < num_moves; ++i) {
+    state->board[ROW_TO_BOARD(move->placements[i].row)][COL_TO_BOARD(move->placements[i].col)] = CHAR_TO_TILE(move->placements[i].tile);
+  }
+
+  for (i = 0; i < BOARD_SIZE; ++i) {
+    for (j = 0; j < BOARD_SIZE; ++j) {
+      if (in_word) {
+	if (state->board[i][j] >= EMPTY) {
+	  if (pos > 1) {
+	    word[pos] = '\0';
+	    if (trie_search(trie, word) != SUCCESS) {
+	      retVal = FAILURE;
+	      goto failure;
+	    }
+	  }
+	  in_word = 0;
+	  pos = 0;
+	} else {
+	  // TODO
+	  // deal with blanks
+	  printf("Adding character: %c, position = %d\n", TO_CHAR(state->board[i][j]), pos);
+	  word[pos++] = TO_CHAR(state->board[i][j]);
+	}
+      } else { // not checking word
+	if (state->board[i][j] != EMPTY) {
+	  pos = 0;
+	  printf("Adding character: %c, position = %d\n", TO_CHAR(state->board[i][j]), pos);
+	  word[pos++] = TO_CHAR(state->board[i][j]);
+	  in_word = 1;
+	}
+      }
+    }
+    pos = 0;
+  }
+
+  for (j = 0; j < BOARD_SIZE; ++j) {
+    for (i = 0; i < BOARD_SIZE; ++i) {
+      if (in_word) {
+	if (state->board[i][j] >= EMPTY) {
+	  if (pos > 1) {
+	    word[pos] = '\0';
+	    if (trie_search(trie, word) != SUCCESS) {
+	      retVal = FAILURE;
+	      goto failure;
+	    }
+	  }
+	  in_word = 0;
+	  pos = 0;
+	} else {
+	  // TODO
+	  // deal with blanks
+	  printf("Adding character: %c, position = %d\n", TO_CHAR(state->board[i][j]), pos);
+	  word[pos++] = TO_CHAR(state->board[i][j]);
+	}
+      } else { // not checking word
+	if (state->board[i][j] != EMPTY) {
+	  pos = 0;
+	  printf("Adding character: %c, position = %d\n", TO_CHAR(state->board[i][j]), pos);
+	  word[pos++] = TO_CHAR(state->board[i][j]);
+	  in_word = 1;
+	}
+      }
+    }
+    pos = 0;
+  }
+
+
+ failure:
+  // remove the tiles
+  for (i = 0; i < num_moves; ++i) {
+    state->board[ROW_TO_BOARD(move->placements[i].row)][COL_TO_BOARD(move->placements[i].col)] = EMPTY;
+  }
   
-  return SUCCESS;
+  return retVal;
 }
 
 int rule_checker_destroy() {

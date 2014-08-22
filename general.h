@@ -22,6 +22,7 @@
 #define PRT_EOL printf("\n")
 #define PRT_TAB printf("\t")
 #define TILE_TO_CHAR(letter) (((letter) == BLANK) ? '*' : (((letter) > BLANK) ? ' ' : 'A' + (letter)))
+#define TO_CHAR(letter) ('A' + (letter))
 #define CHAR_TO_TILE(c) (((c) == '*') ? BLANK : ((c) - 'A'))
 #define ROW_TO_BOARD(row) (BOARD_SIZE - (row))
 #define COL_TO_BOARD(col) ((col) - 1)

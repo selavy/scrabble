@@ -135,6 +135,7 @@ void state_debug_print_all(struct state_t * state) {
 }
 
 void state_print(struct state_t * state) {
+  state_print_winner(state);
   print_board(state->board, state->special_letters);
   printf("Player #%d to move\n", state->turn);
   rail_print(state->rails[state->turn]);
@@ -237,10 +238,10 @@ int state_game_over(struct state_t * state) {
 void state_print_winner(struct state_t * state) {
   int i = 0;
   int num_players = state->num_players;
-  printf("PLAYER\t\tSCORE");
-  printf("-------------------------------");
+  printf("PLAYER\t\tSCORE\n");
+  printf("-------------------------------\n");
   for (; i < num_players; ++i) {
-    printf("%d\t\t%lu\n", i, state->scores[i]);
+    printf("%d\t\t%5lu\n", i + 1, state->scores[i]);
   }
 }
 
