@@ -153,13 +153,13 @@ int state_place_tile(struct state_t * state, tile_t tile, int row, int col) {
 void print_board(board_t board, board_t special_letters) {
   int i = 0;
   int j = 0;
-    printf("\t _____ _____ _____ _____ _____ _____ _____ _____ _____ _____ _____ _____ _____ _____ _____\n");
+    printf("\t___ _____ _____ _____ _____ _____ _____ _____ _____ _____ _____ _____ _____ _____ _____ _____\n");
   for (; i < BOARD_SIZE; ++i) {
 
-    printf("\t|     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |");
+    printf("\t   |     |     |     |     |     |     |     |     |     |     |     |     |     |     |     |");
     PRT_EOL;
     PRT_TAB;
-    printf("|");
+    printf("%2d |", BOARD_SIZE - i);
     for (j = 0; j < BOARD_SIZE; ++j) {
       if (board[i][j] == EMPTY) {
 	if (special_letters[i][j] == DOUBLE_LETTER) {
@@ -179,8 +179,14 @@ void print_board(board_t board, board_t special_letters) {
 	printf("  %c  |", TILE_TO_CHAR(board[i][j]));
       }
     }
-    printf("\n\t|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|\n");
+    printf("\n\t___|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|_____|\n");
   }
+
+  printf("\n\t   |");
+  for (j = 1; j <= BOARD_SIZE; ++j) {
+    printf(" %2d  |", j);
+  }
+  printf("\n");
 }
 
 void print_turn(turn_t turn) {
@@ -215,10 +221,11 @@ int distribute_tiles(struct state_t * state) {
 
   for(rail = 0; rail < num_players; ++rail ) {
     for (letter = 0; letter < TILES_ON_RAIL; ++letter) {
-      do {
-	tile = letter_bag_draw_letter(state->letter_bag);
-	if (tile == ERROR) return FAILURE;
-      } while(rail_add_tile(state->rails[rail], tile) == FAILURE);
+      //      do {
+      tile = letter_bag_draw_letter(state->letter_bag);
+      if (tile == ERROR) { return FAILURE; }
+      //      } while(rail_add_tile(state->rails[rail], tile) == FAILURE);
+      if (rail_add_tile(state->rails[rail], tile) == FAILURE) { return FAILURE; }
     }
   }
   return SUCCESS;

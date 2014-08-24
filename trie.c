@@ -2,6 +2,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
+// DEBUG
+#include <stdio.h>
+// END DEBUG
 #include "general.h"
 #define LETTERS_IN_ALPHABET 26
 #define LINKS LETTERS_IN_ALPHABET
@@ -56,8 +59,10 @@ void to_uppercase(char * str) {
   int i = 0;
   int c;
   for(; str[i] != '\0'; ++i) {
-    c = str[i];
-    str[i] = toupper(c);
+    if (str[i] != '*') {
+      c = str[i];
+      str[i] = toupper(c);
+    }
   }
 }
 
@@ -78,7 +83,17 @@ int trie_helper_insert(struct trie_t * trie, char * word, int pos) {
 
 int trie_helper_search(struct trie_t * trie, char * word, int pos) {
   if (!word[pos] || word[pos] == '\0' ) { return SUCCESS; }
-  else if (word[pos] < 'A' || word[pos] > 'Z') { return FAILURE; }
+  else if (word[pos] == BLANK) {
+    int i = 0;
+    for (; i < 26; ++i) {
+      if (trie_helper_search(trie->links[i], word, pos + 1) == SUCCESS) {
+	printf("Blank matched with letter: %c\n", i + 'A');
+	return SUCCESS;
+      }
+    }
+    return FAILURE;
+  }
+  else if (word[pos] < 'A' || word[pos] > 'Z') { printf("can't play: %d\n", (int)word[pos]); return FAILURE; }
   else if (!trie->links[char_to_index(word[pos])]) {  return FAILURE; }
   else { return trie_helper_search(trie->links[char_to_index(word[pos])], word, pos + 1); }
 }

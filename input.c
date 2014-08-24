@@ -116,8 +116,8 @@ int get_input(struct move_t * move) {
       } else if (len > 6 && strncmp(input, "quit\n", 6) == 0) {
 	free(input);
 	return QUIT;
-      } else if (sscanf(input, "%d %d %c\n", &row, &col, &letter) == 3) {
-	if (letter >= 'a') {
+      } else if (sscanf(input, "%d %d %c\n", &col, &row, &letter) == 3) {
+	if (letter != '*' && letter >= 'a') {
 	  letter -= 'a' - 'A';
 	}
 	move->placements[i].row = row;

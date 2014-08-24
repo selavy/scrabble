@@ -22,6 +22,26 @@ int main(int argc, char **argv) {
 
   ////////////////   SET UP GAME  //////////////////
 
+  tile_t atile;
+  atile = 'A';
+  MAKE_BLANK(atile);
+  if (IS_BLANK(atile)) {
+    printf("blank\n");
+  } else {
+    printf("not blank\n");
+  }
+  printf("letter in atile = %c\n", GET_LETTER(atile));
+
+  atile = 'B';
+  if (IS_BLANK(atile)) {
+    printf("blank\n");
+  } else {
+    printf("not blank\n");
+  }
+  printf("letter in atile = %c\n", GET_LETTER(atile));
+
+  exit(0);
+
   // Open dictionary
   if (argc > 1) {
     gettimeofday(&start, NULL);

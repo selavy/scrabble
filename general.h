@@ -18,6 +18,10 @@
 #define ERROR -2
 #define TRUE 1
 #define FALSE 0
+#define BLANK_BIT (1 << 7)
+#define IS_BLANK(x) (((x) & BLANK_BIT) > 0)
+#define MAKE_BLANK(x) do { (x) |= BLANK_BIT; } while(0)
+#define GET_LETTER(x) (x & ~BLANK_BIT)
 
 #define PRT_EOL printf("\n")
 #define PRT_TAB printf("\t")

@@ -44,6 +44,7 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
   char word[BOARD_SIZE + 1];
   int pos = 0;
   int retVal = SUCCESS;
+  char c;
 
   // Apparently the first player does NOT have to play on the middle tile at the
   // beginning of the game
@@ -84,14 +85,22 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
 	} else {
 	  // TODO
 	  // deal with blanks
-	  printf("Adding character: %c, position = %d\n", TO_CHAR(state->board[i][j]), pos);
-	  word[pos++] = TO_CHAR(state->board[i][j]);
+	  c = state->board[i][j];
+	  if (c != BLANK) {
+	    c = TO_CHAR(c);
+	  }
+	  printf("Adding character: %c, position = %d\n", c, pos);
+	  word[pos++] = c;
 	}
       } else { // not checking word
 	if (state->board[i][j] != EMPTY) {
 	  pos = 0;
-	  printf("Adding character: %c, position = %d\n", TO_CHAR(state->board[i][j]), pos);
-	  word[pos++] = TO_CHAR(state->board[i][j]);
+	  c = state->board[i][j];
+	  if (c != BLANK) {
+	    c = TO_CHAR(c);
+	  }
+	  printf("Adding character: %c, position = %d\n", c, pos);
+	  word[pos++] = c;
 	  in_word = 1;
 	}
       }
@@ -115,14 +124,22 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
 	} else {
 	  // TODO
 	  // deal with blanks
-	  printf("Adding character: %c, position = %d\n", TO_CHAR(state->board[i][j]), pos);
-	  word[pos++] = TO_CHAR(state->board[i][j]);
+	  c = state->board[i][j];
+	  if (c != BLANK) {
+	    c = TO_CHAR(c);
+	  }
+	  printf("Adding character: %c, position = %d\n", c, pos);
+	  word[pos++] = c;
 	}
       } else { // not checking word
 	if (state->board[i][j] != EMPTY) {
 	  pos = 0;
-	  printf("Adding character: %c, position = %d\n", TO_CHAR(state->board[i][j]), pos);
-	  word[pos++] = TO_CHAR(state->board[i][j]);
+	  c = state->board[i][j];
+	  if (c != BLANK) {
+	    c = TO_CHAR(c);
+	  }
+	  printf("Adding character: %c, position = %d\n", c, pos);
+	  word[pos++] = c;
 	  in_word = 1;
 	}
       }
