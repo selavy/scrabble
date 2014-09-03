@@ -82,16 +82,21 @@ int trie_helper_insert(struct trie_t * trie, char * word, int pos) {
 }
 
 int trie_helper_search(struct trie_t * trie, char * word, int pos) {
+  tile_t blank_letter;
   if (!word[pos] || word[pos] == '\0' ) { return SUCCESS; }
   else if (IS_BLANK(word[pos])) {
-    int i = 0;
-    for (; i < 26; ++i) {
-      if (trie_helper_search(trie->links[i], word, pos + 1) == SUCCESS) {
-	printf("Blank matched with letter: %c\n", i + 'A');
-	return SUCCESS;
-      }
-    }
-    return FAILURE;
+    //    int i = 0;
+    //    for (; i < 26; ++i) {
+    //      if (trie_helper_search(trie->links[i], word, pos + 1) == SUCCESS) {
+    //	printf("Blank matched with letter: %c\n", i + 'A');
+    //	return SUCCESS;
+    //      }
+    //    }
+    //    return FAILURE;
+    blank_letter = GET_LETTER(word[pos]);
+    printf("DEBUG: blank letter = %d\n", blank_letter);
+    if (!trie->links[blank_letter]) { return FAILURE; }
+    else { return trie_helper_search(trie->links[blank_letter], word, pos + 1); }
   }
   else if (word[pos] < 'A' || word[pos] > 'Z') { printf("can't play: %d\n", (int)word[pos]); return FAILURE; }
   else if (!trie->links[char_to_index(word[pos])]) {  return FAILURE; }

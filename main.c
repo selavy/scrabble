@@ -7,7 +7,6 @@
 #include "rule_checker.h"
 #include "tile_drawer.h"
 
-//void quit();
 void print_error_and_quit(char * error);
 
 int main(int argc, char **argv) {
@@ -114,11 +113,6 @@ int main(int argc, char **argv) {
   rule_checker_destroy();
   return 0;
 }  
-
-//void quit() {
-//  printf("\n\nBye!\n");
-//  exit(0);
-//}
 
 void print_error_and_quit(char * error) {
   printf("\nError: %s\n", error);

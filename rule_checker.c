@@ -9,6 +9,8 @@ static TRIE_T trie = 0;
 static int initialized = FALSE;
 
 int rule_checker_load_dictionary(char * filename);
+int check_if_straight_line_move(struct move_t * move);
+void print_reason(char * str);
 //int rule_checker_check_word(char * word);
 
 int rule_checker_create(char * filename) {
@@ -46,6 +48,15 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
   int retVal = SUCCESS;
   char c;
 
+  if (num_moves < 3) { 
+    print_reason("less than 3 letters placed");
+    return FAILURE; 
+  }
+  if (check_if_straight_line_move(move) == FAILURE) {
+    print_reason("move placed is not a straight line");
+    return FAILURE;
+  }
+
   // Apparently the first player does NOT have to play on the middle tile at the
   // beginning of the game
 
@@ -56,10 +67,12 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
     tile = move->placements[i].tile;
     if (rail_find_tile(state->rails[state->turn], tile) == TILE_NOT_FOUND) {
       printf("Do not have tile: %c\n", tile);
+      print_reason("tried to play tile that you do not have");
       return FAILURE;
     }
     if (state->board[ROW_TO_BOARD(row)][COL_TO_BOARD(col)] != EMPTY) {
       printf("Space (%d,%d) is occupied\n", row, col);
+      print_reason("tried to play on occupied square");
       return FAILURE;
     }
   }
@@ -83,13 +96,10 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
 	  in_word = 0;
 	  pos = 0;
 	} else {
-	  // TODO
-	  // deal with blanks
 	  c = state->board[i][j];
 	  if (!IS_BLANK(c)) {
 	    c = TO_CHAR(c);
 	  }
-	  printf("Adding character: %c, position = %d\n", c, pos);
 	  word[pos++] = c;
 	}
       } else { // not checking word
@@ -99,7 +109,6 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
 	  if (!IS_BLANK(c)) {
 	    c = TO_CHAR(c);
 	  }
-	  printf("Adding character: %c, position = %d\n", c, pos);
 	  word[pos++] = c;
 	  in_word = 1;
 	}
@@ -122,13 +131,10 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
 	  in_word = 0;
 	  pos = 0;
 	} else {
-	  // TODO
-	  // deal with blanks
 	  c = state->board[i][j];
 	  if (!IS_BLANK(c)) {
 	    c = TO_CHAR(c);
 	  }
-	  printf("Adding character: %c, position = %d\n", c, pos);
 	  word[pos++] = c;
 	}
       } else { // not checking word
@@ -138,7 +144,6 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
 	  if (!IS_BLANK(c)) {
 	    c = TO_CHAR(c);
 	  }
-	  printf("Adding character: %c, position = %d\n", c, pos);
 	  word[pos++] = c;
 	  in_word = 1;
 	}
@@ -174,9 +179,9 @@ int rule_checker_load_dictionary(char * filename) {
   char * word = 0;
   size_t len = 0;
   ssize_t read = 0;
-  if(!filename) return FAILURE;
+  if(!filename) { return FAILURE; }
   file = fopen(filename, "r");
-  if (!file) return FAILURE;
+  if (!file) { return FAILURE; }
   
   while ((read = getline(&line, &len, file)) > 0) {
     word = malloc(read + 1);
@@ -203,6 +208,36 @@ int rule_checker_load_dictionary(char * filename) {
 }
 
 int rule_checker_check_word(char * word) {
-  if (!initialized) return FAILURE;
+  if (!initialized) { return FAILURE; }
   return trie_search(trie, word);
+}
+
+int check_if_straight_line_move(struct move_t * move) {
+  int horz_changed = 0;
+  int vert_changed = 0;
+  int horz = 0;
+  int vert = 0;
+  int i = 0;
+  int num_moves = move->n;
+  
+  horz = move->placements[0].row;
+  vert = move->placements[0].col;
+  for (; i < num_moves; ++i) {
+    if (move->placements[i].row != horz) {
+      horz_changed = 1;
+    }
+    if (move->placements[i].col != vert) {
+      vert_changed = 1;
+    }
+    if (horz_changed && vert_changed) {
+      return FAILURE;
+    }
+  }
+  return SUCCESS;
+}
+
+void print_reason(char * str) {
+  #ifdef _DEBUG
+  printf("Rule Checker Failed: %s\n", str);
+  #endif
 }

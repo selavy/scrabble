@@ -10,7 +10,6 @@ struct placement_t {
 };
 
 struct move_t {
-  //  struct placement_t * placements;
   struct placement_t placements[MAX_PLACEMENTS];
   int n;
 };

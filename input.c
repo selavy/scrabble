@@ -3,6 +3,7 @@
 int user_wants_to_quit();
 int valid_move(struct move_t * move);
 int get_input(struct move_t * move);
+char get_blank_tile_letter();
 
 ///////////////////////////// MODULE INTERFACE FUNCTIONS ////////////////////////////////////
 
@@ -106,6 +107,7 @@ int get_input(struct move_t * move) {
   int row = 0;
   int col = 0;
   char letter = 0;
+  tile_t blank_letter = 0;
   int i = 0;
   memset(&(move->placements[0]), 0, sizeof(struct placement_t) * MAX_PLACEMENTS);
   for (; i < TILES_ON_RAIL; ++i ) {
@@ -122,8 +124,15 @@ int get_input(struct move_t * move) {
 	}
 	move->placements[i].row = row;
 	move->placements[i].col = col;
-	move->placements[i].tile = CHAR_TO_TILE(letter);
-	printf("DEBUG: Received %c --> %u\n", letter, CHAR_TO_TILE(letter));
+	if (letter == '*') {
+	  letter = get_blank_tile_letter();
+	  if (letter == QUIT) { return QUIT; }
+	  else if (letter == FAILURE) { return FAILURE; }
+	  blank_letter = BLANK_BIT | letter;
+	  move->placements[i].tile = blank_letter;
+	} else {
+	  move->placements[i].tile = CHAR_TO_TILE(letter);
+	}
 	free(input);
 	input = 0;
 	len = 0;
@@ -137,4 +146,41 @@ int get_input(struct move_t * move) {
   }
   move->n = i;
   return (i == 0) ? FAILURE : SUCCESS;
+}
+
+char get_blank_tile_letter() {
+  int tries = 0;
+  char * input = 0;
+  size_t len = 0;
+  ssize_t read = 0;
+  char letter = 0;
+  do {
+    printf("What letter does the blank represent? ");
+    if ((read = getline(&input, &len, stdin)) != -1) {
+      if (input[0] == '\n') {
+	free(input);
+	input = 0;
+	continue;
+      } else if (len > 6 && strncmp(input, "quit\n", 6) == 0) {
+	free(input);
+	input = 0;
+	return QUIT;
+      } else if (sscanf(input, "%c\n", &letter) == 1) {
+	if (letter >= 'a') {
+	  letter -= 'a' - 'A';
+	}
+	if (letter >= 'A' && letter <= 'Z') {
+	  return letter - 'A';
+	} else {
+	  free(input);
+	  input = 0;
+	  continue;
+	}
+      } else {
+	if (input) { free(input); input = 0; }
+	return FAILURE;
+      }
+    }
+  } while(tries < RETRIES);
+  return FAILURE;
 }
