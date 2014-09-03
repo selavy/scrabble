@@ -36,7 +36,7 @@ void rail_print(rail_t rail) {
   for (; i < TILES_ON_RAIL; ++i) {
     if (rail[i] == EMPTY) {
       printf("_ ");
-    } else if (rail[i] == BLANK) {
+    } else if (IS_BLANK(rail[i])) {
       printf("* ");
     } else {
       printf("%c ", TILE_TO_CHAR(rail[i]));
@@ -48,23 +48,29 @@ void rail_print(rail_t rail) {
 
 int rail_find_tile(rail_t rail, tile_t tile) {
   int i = 0;
-  for (; i < TILES_ON_RAIL; ++i) {
-    if (rail[i] == CHAR_TO_TILE(tile)) {
-      return i;
+  if (IS_BLANK(tile)) {
+    for (; i < TILES_ON_RAIL; ++i) {
+      if (IS_BLANK(rail[i])) {
+	return i;
+      }
+    }
+  } else {
+    for (; i < TILES_ON_RAIL; ++i) {
+      if (rail[i] == tile) {
+	return i;
+      }
     }
   }
   return TILE_NOT_FOUND;
 }
 
 int rail_use_tile(rail_t rail, tile_t tile) {
-  int i = 0;
-  for (; i < TILES_ON_RAIL; ++i) {
-    if (rail[i] == CHAR_TO_TILE(tile)) {
-      rail[i] = EMPTY;
-      return i;
-    }
+  int i = rail_find_tile(rail, tile);
+  if (i == TILE_NOT_FOUND) { return TILE_NOT_FOUND; }
+  else {
+    rail[i] = EMPTY;
+    return i;
   }
-  return TILE_NOT_FOUND;
 }
 
 int rail_use_tile_by_index(rail_t rail, int index) {

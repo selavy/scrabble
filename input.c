@@ -122,7 +122,8 @@ int get_input(struct move_t * move) {
 	}
 	move->placements[i].row = row;
 	move->placements[i].col = col;
-	move->placements[i].tile = letter;
+	move->placements[i].tile = CHAR_TO_TILE(letter);
+	printf("DEBUG: Received %c --> %u\n", letter, CHAR_TO_TILE(letter));
 	free(input);
 	input = 0;
 	len = 0;

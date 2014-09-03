@@ -163,13 +163,13 @@ void print_board(board_t board, board_t special_letters) {
     for (j = 0; j < BOARD_SIZE; ++j) {
       if (board[i][j] == EMPTY) {
 	if (special_letters[i][j] == DOUBLE_LETTER) {
-	  printf("  DL |");
+	  printf("\033[1;31m  DL \033[0m|");
 	} else if (special_letters[i][j] == TRIPLE_LETTER) {
-	  printf("  TL |");
+	  printf("\033[1;35m  TL \033[0m|");
 	} else if (special_letters[i][j] == DOUBLE_WORD) {
-	  printf("  DW |");
+	  printf("\033[1;36m  DW \033[0m|");
 	} else if (special_letters[i][j] == TRIPLE_WORD) {
-	  printf("  TW |");
+	  printf("\033[1;33m  TW \033[0m|");
 	} else if (special_letters[i][j] == MIDDLE_SQUARE) {
 	  printf("  #  |");
 	} else {
@@ -221,10 +221,8 @@ int distribute_tiles(struct state_t * state) {
 
   for(rail = 0; rail < num_players; ++rail ) {
     for (letter = 0; letter < TILES_ON_RAIL; ++letter) {
-      //      do {
       tile = letter_bag_draw_letter(state->letter_bag);
       if (tile == ERROR) { return FAILURE; }
-      //      } while(rail_add_tile(state->rails[rail], tile) == FAILURE);
       if (rail_add_tile(state->rails[rail], tile) == FAILURE) { return FAILURE; }
     }
   }
@@ -256,7 +254,7 @@ int state_play_move(struct state_t * state, struct move_t * move) {
   int i = 0;
   int moves = move->n;
   for (; i < moves; ++i) {
-    state_place_tile(state, CHAR_TO_TILE(move->placements[i].tile), move->placements[i].row, move->placements[i].col);
+    state_place_tile(state, move->placements[i].tile, move->placements[i].row, move->placements[i].col);
     if (rail_use_tile(state->rails[state->turn], move->placements[i].tile) == TILE_NOT_FOUND) {
       return FAILURE;
     }

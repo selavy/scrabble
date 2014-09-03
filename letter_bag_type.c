@@ -9,14 +9,18 @@ void letter_bag_create(struct letter_bag_t * letter_bag, frequency_t freq) {
   tile_t * arr = 0;
   arr = &(letter_bag->bag[0]);
 
-  // i -> iterate over freq
+  // i -> iterate over letter types
   // j -> iterate over letter_bag->bag
   // f -> iterate to insert freq[i] number of i letter
   for (i = 0, j = 0; i < NUM_LETTERS && j < MAX_LETTERS; ++i) {
     // TODO: replace with memset?
     // memset(arr, i, sizeof(*arr) * freq[i]);
     for (f = 0; f < freq[i]; ++f) {
-      arr[j++] = i;
+      if (i == BLANK) {
+	arr[j++] = BLANK_BIT;
+      } else {
+	arr[j++] = i;
+      }
     }
   }
 
@@ -27,7 +31,6 @@ void letter_bag_create(struct letter_bag_t * letter_bag, frequency_t freq) {
   srand(time(0));
   for (i = 0; i < MAX_LETTERS; ++i) {
     f = rand() % MAX_LETTERS;
-
     // swap
     j = arr[i];
     arr[i] = arr[f];
@@ -45,7 +48,7 @@ tile_t letter_bag_draw_letter(struct letter_bag_t * letter_bag) {
 }
 
 void letter_bag_destroy(struct letter_bag_t * letter_bag) {
-  // emtpy
+  // empty
 }
 
 void letter_bag_print(struct letter_bag_t * letter_bag) {

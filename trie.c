@@ -83,7 +83,7 @@ int trie_helper_insert(struct trie_t * trie, char * word, int pos) {
 
 int trie_helper_search(struct trie_t * trie, char * word, int pos) {
   if (!word[pos] || word[pos] == '\0' ) { return SUCCESS; }
-  else if (word[pos] == BLANK) {
+  else if (IS_BLANK(word[pos])) {
     int i = 0;
     for (; i < 26; ++i) {
       if (trie_helper_search(trie->links[i], word, pos + 1) == SUCCESS) {

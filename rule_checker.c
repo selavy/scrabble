@@ -66,7 +66,7 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
 
   // place tiles just for the checking
   for (i = 0; i < num_moves; ++i) {
-    state->board[ROW_TO_BOARD(move->placements[i].row)][COL_TO_BOARD(move->placements[i].col)] = CHAR_TO_TILE(move->placements[i].tile);
+    state->board[ROW_TO_BOARD(move->placements[i].row)][COL_TO_BOARD(move->placements[i].col)] = move->placements[i].tile;
   }
 
   for (i = 0; i < BOARD_SIZE; ++i) {
@@ -86,7 +86,7 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
 	  // TODO
 	  // deal with blanks
 	  c = state->board[i][j];
-	  if (c != BLANK) {
+	  if (!IS_BLANK(c)) {
 	    c = TO_CHAR(c);
 	  }
 	  printf("Adding character: %c, position = %d\n", c, pos);
@@ -96,7 +96,7 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
 	if (state->board[i][j] != EMPTY) {
 	  pos = 0;
 	  c = state->board[i][j];
-	  if (c != BLANK) {
+	  if (!IS_BLANK(c)) {
 	    c = TO_CHAR(c);
 	  }
 	  printf("Adding character: %c, position = %d\n", c, pos);
@@ -125,7 +125,7 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
 	  // TODO
 	  // deal with blanks
 	  c = state->board[i][j];
-	  if (c != BLANK) {
+	  if (!IS_BLANK(c)) {
 	    c = TO_CHAR(c);
 	  }
 	  printf("Adding character: %c, position = %d\n", c, pos);
@@ -135,7 +135,7 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
 	if (state->board[i][j] != EMPTY) {
 	  pos = 0;
 	  c = state->board[i][j];
-	  if (c != BLANK) {
+	  if (!IS_BLANK(c)) {
 	    c = TO_CHAR(c);
 	  }
 	  printf("Adding character: %c, position = %d\n", c, pos);
