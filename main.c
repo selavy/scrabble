@@ -55,7 +55,6 @@ int main(int argc, char **argv) {
   ///////////////    GAME LOOP   /////////////////
 
   do {
-    // get move
     tries = 0;
     skip_move = 0;
     do {
@@ -73,30 +72,25 @@ int main(int argc, char **argv) {
 	print_error_and_quit("Too many invalid moves");
       }
 
-      // TODO
-      // Check that the move is connected to some other piece of the board
       ret = rule_checker_check_state(state, move);
       if (ret == SUCCESS) {
-	skip_move = 0;
+	skip_move = PLAY_MOVE;
 	break;
       } else {
 	printf("Invalid move!\n");
-	skip_move = 1;
+	skip_move = SKIP_MOVE;
 	break;
       }
-      // check the move
     } while (tries <= 10);
 
-    printf("SKIP MOVE = %d\n", skip_move);
-
-    if (!skip_move) {
+    if (skip_move == PLAY_MOVE) {
       // TODO
       // score the move
       if(score_state(state, move) != SUCCESS) { print_error_and_quit("scoring state"); }
       if(state_play_move(state, move) != SUCCESS) { print_error_and_quit("playing move"); }
       if(draw_tiles(state) != SUCCESS) { print_error_and_quit("drawing tile"); }
     }
-    if(state_switch_to_next_player(state) != SUCCESS) { print_error_and_quit("switching players"); }
+    if(state_switch_to_next_player(state, skip_move) != SUCCESS) { print_error_and_quit("switching players"); }
     
   } while(state_game_over(state) == FALSE);
 

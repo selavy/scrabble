@@ -4,13 +4,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-static TRIE_T trie = 0;
+#define HORZ 1
+#define VERT 2
 
+static TRIE_T trie = 0;
 static int initialized = FALSE;
 
 int rule_checker_load_dictionary(char * filename);
 int check_if_straight_line_move(struct move_t * move);
+int check_if_adjacent_tiles(board_t * board, struct move_t * move, int direction);
 void print_reason(char * str);
+int check_if_played_first_square(struct move_t * move);
+int check_if_connected_to_existing_word(board_t * board, struct move_t * move, int direction);
 //int rule_checker_check_word(char * word);
 
 int rule_checker_create(char * filename) {
@@ -47,18 +52,19 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
   int pos = 0;
   int retVal = SUCCESS;
   char c;
+  int result;
 
-  if (num_moves < 3) { 
-    print_reason("less than 3 letters placed");
-    return FAILURE; 
-  }
-  if (check_if_straight_line_move(move) == FAILURE) {
-    print_reason("move placed is not a straight line");
+  // whether or not it is an official rule, i want to force the first player to play on the
+  // middle square
+  if (state->moves_played == 0 && check_if_played_first_square(move) == FAILURE) {
+    print_reason("first move was not played on the middle square");
     return FAILURE;
   }
 
-  // Apparently the first player does NOT have to play on the middle tile at the
-  // beginning of the game
+  if ((result = check_if_straight_line_move(move)) == FAILURE) {
+    print_reason("move placed is not a straight line");
+    return FAILURE;
+  }
 
   // Check if the have tile and the square isn't already occupied
   for (i = 0; i < num_moves; ++i) {
@@ -77,9 +83,21 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
     }
   }
 
+  if (check_if_connected_to_existing_word(&state->board, move, result) == FAILURE) {
+    print_reason("word is not connected to any existing words");
+    return FAILURE;
+  }
+
   // place tiles just for the checking
+  // if a check fails, must set retVal = FAILURE and goto failure
   for (i = 0; i < num_moves; ++i) {
     state->board[ROW_TO_BOARD(move->placements[i].row)][COL_TO_BOARD(move->placements[i].col)] = move->placements[i].tile;
+  }
+
+  if (check_if_adjacent_tiles(&state->board, move, result) == FAILURE) {
+    print_reason("letters are not all adjacent");
+    retVal = FAILURE;
+    goto failure;
   }
 
   for (i = 0; i < BOARD_SIZE; ++i) {
@@ -233,11 +251,85 @@ int check_if_straight_line_move(struct move_t * move) {
       return FAILURE;
     }
   }
-  return SUCCESS;
+
+  return horz_changed ? VERT : HORZ;
 }
 
 void print_reason(char * str) {
   #ifdef _DEBUG
   printf("Rule Checker Failed: %s\n", str);
   #endif
+}
+
+int check_if_adjacent_tiles(board_t * board, struct move_t * move, int direction) {
+  int i;
+  int num_moves = move->n;
+  int min = BOARD_SIZE;
+  int max = -1;
+  int other = 0;
+
+  if (direction == HORZ) {
+    for (i = 0; i < num_moves; ++i) {
+      if (move->placements[i].col < min) {
+	min = move->placements[i].col;
+      }
+      if (move->placements[i].col > max) {
+	max = move->placements[i].col;
+      }
+    }
+    other = ROW_TO_BOARD(move->placements[0].row);
+    for (i = min; i < max; ++i) {
+      if ((*board)[other][COL_TO_BOARD(i)] == EMPTY) {
+	return FAILURE;
+      }
+    }
+  } else if (direction == VERT) {
+    for (i = 0; i < num_moves; ++i) {
+      if (move->placements[i].row < min) {
+	min = move->placements[i].row;
+      }
+      if (move->placements[i].row > max) {
+	max = move->placements[i].row;
+      }
+    }
+    other = COL_TO_BOARD(move->placements[0].col);
+    for (i = min; i < max; ++i) {
+      if ((*board)[ROW_TO_BOARD(i)][other] == EMPTY) {
+	return FAILURE;
+      }
+    }
+  } else {
+    return FAILURE;
+  }
+  return SUCCESS;
+}
+
+int check_if_played_first_square(struct move_t * move) {
+  int i = 0;
+  int num_moves = move->n;
+  for (; i < num_moves; ++i) {
+    if (move->placements[i].row == MIDDLE_ROW && move->placements[i].col == MIDDLE_COL) {
+      return SUCCESS;
+    }
+  }
+  return FAILURE;
+}
+
+int check_if_connected_to_existing_word(board_t * board, struct move_t * move, int direction) {
+  int i = 0;
+  int num_moves = move->n;
+  int row;
+  int col;
+
+  if ((*board)[BOARD_SIZE/2][BOARD_SIZE/2] == EMPTY) { return SUCCESS; }
+
+  for (i = 0; i < num_moves; ++i) {
+    row = ROW_TO_BOARD(move->placements[i].row);
+    col = COL_TO_BOARD(move->placements[i].col);
+    if (row+1 < BOARD_SIZE && (*board)[row+1][col] != EMPTY) { return SUCCESS; }
+    if (row > 1              && (*board)[row-1][col] != EMPTY) { return SUCCESS; }
+    if (col + 1 < BOARD_SIZE && (*board)[row][col+1] != EMPTY) { return SUCCESS; }
+    if (col > 1              && (*board)[row][col-1] != EMPTY) { return SUCCESS; }
+  }
+  return FAILURE;
 }

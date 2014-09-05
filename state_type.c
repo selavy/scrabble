@@ -262,8 +262,10 @@ int state_play_move(struct state_t * state, struct move_t * move) {
   return SUCCESS;
 }
 
-int state_switch_to_next_player(struct state_t * state) {
-  state->moves_played++;
+int state_switch_to_next_player(struct state_t * state, int moved) {
+  if (moved == PLAY_MOVE) {
+    state->moves_played++;
+  }
   state->turn = (state->turn + 1) % state->num_players;
   return SUCCESS;
 }

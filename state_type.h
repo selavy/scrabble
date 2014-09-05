@@ -13,14 +13,16 @@
 #endif
 
 #define BOARD_SIZE 15
+// even if BOARD_SIZE is even, then there won't be a middle square this will be
+// arbitary anyways
+#define MIDDLE_ROW ((BOARD_SIZE / 2)+1)
+#define MIDDLE_COL ((BOARD_SIZE / 2)+1)
 #define PLAYER_1 0
 #define PLAYER_2 1
 #define PLAYER_3 2
 #define PLAYER_4 3
 
-//typedef tile_t board_t[BOARD_SIZE][BOARD_SIZE];
 typedef tile_t ** board_t;
-
 struct state_t {
   board_t board;
   board_t special_letters;
@@ -28,7 +30,6 @@ struct state_t {
   score_t scores[MAX_PLAYERS];
   turn_t turn;
   struct letter_bag_t * letter_bag;
-  //  rail_t rails[MAX_PLAYERS];
   rail_t * rails;
   int moves_played;
 };
@@ -41,6 +42,6 @@ extern int state_place_tile(struct state_t * state, tile_t tile, int row, int co
 extern int state_play_move(struct state_t * state, struct move_t * move);
 extern int state_game_over(struct state_t * state);
 extern void state_print_winner(struct state_t * state);
-extern int state_switch_to_next_player(struct state_t * state);
+extern int state_switch_to_next_player(struct state_t * state, int moved);
 
 #endif
