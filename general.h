@@ -30,6 +30,7 @@
 #define TILE_TO_CHAR(letter) ((IS_BLANK(letter)) ? '*' : (((letter) >= EMPTY) ? ' ' : 'A' + (letter)))
 #define TO_CHAR(letter) ('A' + (letter))
 #define CHAR_TO_TILE(c) (((c) == '*') ? BLANK_BIT : ((c) - 'A'))
+#define TO_LETTER_INDEX(c) ((c) - 'A')
 #define ROW_TO_BOARD(row) (BOARD_SIZE - (row))
 #define COL_TO_BOARD(col) ((col) - 1)
 

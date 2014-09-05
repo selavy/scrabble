@@ -133,6 +133,7 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
       }
     }
     pos = 0;
+    in_word = 0;
   }
 
   for (j = 0; j < BOARD_SIZE; ++j) {
@@ -168,6 +169,7 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
       }
     }
     pos = 0;
+    in_word = 0;
   }
 
 
