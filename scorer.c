@@ -57,13 +57,6 @@ int score_state(struct state_t * state, struct move_t * move) {
   int letter_score = 0;
   int word_multiplier = 1;
 
-  for (i = 0; i < BOARD_SIZE; ++i) {
-    for (j = 0; j < BOARD_SIZE; ++j) {
-      printf("%d ", state->special_letters[i][j]);
-    }
-    printf("\n");
-  }
-
   // 1. find all words in the original state
   for (i = 0; i < BOARD_SIZE; ++i) {
     for (j = 0; j < BOARD_SIZE; ++j) {
@@ -122,10 +115,12 @@ int score_state(struct state_t * state, struct move_t * move) {
     in_word = FALSE;
   }
 
+#ifdef _DEBUG
   printf("WORDS: \n");
   for (i = 0; i < words_index; ++i) {
     printf("%s\n", words[i]);
   }
+#endif
 
   // 2. add move to board
   for (i = 0; i < num_moves; ++i) {
@@ -151,6 +146,7 @@ int score_state(struct state_t * state, struct move_t * move) {
 	} else {
 	  c = state->board[i][j];
 	  curr_mults[pos] = (is_new_letter(move,i,j) == TRUE) ? state->special_letters[i][j] : EMPTY;
+	  if (IS_BLANK(c)) { curr_mults[pos] |= BLANK_BIT; }
 	  word[pos++] = IS_BLANK(c) ? TO_CHAR(GET_LETTER(c)) : TO_CHAR(c);
 	}
       } else { // not in_word
@@ -158,6 +154,7 @@ int score_state(struct state_t * state, struct move_t * move) {
 	  pos = 0;
 	  c = state->board[i][j];
 	  curr_mults[pos] = (is_new_letter(move,i,j) == TRUE) ? state->special_letters[i][j] : EMPTY;
+	  if (IS_BLANK(c)) { curr_mults[pos] |= BLANK_BIT; }
 	  word[pos++] = IS_BLANK(c) ? TO_CHAR(GET_LETTER(c)) : TO_CHAR(c);
 	  in_word = TRUE;
 	}
@@ -186,6 +183,7 @@ int score_state(struct state_t * state, struct move_t * move) {
 	} else {
 	  c = state->board[i][j];
 	  curr_mults[pos] = (is_new_letter(move,i,j) == TRUE) ? state->special_letters[i][j] : EMPTY;
+	  if (IS_BLANK(c)) { curr_mults[pos] |= BLANK_BIT; }
 	  word[pos++] = IS_BLANK(c) ? TO_CHAR(GET_LETTER(c)) : TO_CHAR(c);
 	}
       } else { // not in_word
@@ -193,6 +191,7 @@ int score_state(struct state_t * state, struct move_t * move) {
 	  pos = 0;
 	  c = state->board[i][j];
 	  curr_mults[pos] = (is_new_letter(move,i,j) == TRUE) ? state->special_letters[i][j] : EMPTY;
+	  if (IS_BLANK(c)) { curr_mults[pos] |= BLANK_BIT; }
 	  word[pos++] = IS_BLANK(c) ? TO_CHAR(GET_LETTER(c)) : TO_CHAR(c);
 	  in_word = TRUE;
 	}
@@ -204,13 +203,19 @@ int score_state(struct state_t * state, struct move_t * move) {
   }
 
   // 4. score words added
+#ifdef _DEBUG
   printf("NEW WORDS: \n");
+#endif
   for (i = 0; i < new_words_index; ++i) {
     word_score = 0;
     word_multiplier = 1;
     for (j = 0, c = new_words[i][j]; j < BOARD_SIZE && c != '\0'; ++j, c = new_words[i][j]) {
       letter_score = 0;
       letter_score = letter_scores[TO_LETTER_INDEX(c)];
+      if (IS_BLANK(multipliers[i][j])) {
+	letter_score = 0;
+	multipliers[i][j] &= ~BLANK_BIT;
+      }
       if (multipliers[i][j] == DOUBLE_LETTER) {
 	letter_score *= 2;
       } else if (multipliers[i][j] == TRIPLE_LETTER) {
@@ -225,7 +230,9 @@ int score_state(struct state_t * state, struct move_t * move) {
       word_score += letter_score;
     }
     word_score *= word_multiplier;
+#ifdef _DEBUG
     printf("\n%s --> %d\n", new_words[i], word_score);
+#endif
     score += word_score;
   }
   state->scores[state->turn] += score;

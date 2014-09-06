@@ -2,15 +2,12 @@
 #define STATE_TYPE_H_
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "general.h"
 #include "letter_bag_type.h"
 #include "letter_frequency.h"
 #include "rail_type.h"
 #include "move.h"
-
-#ifdef _DEBUG
-#include <stdio.h>
-#endif
 
 #define BOARD_SIZE 15
 // even if BOARD_SIZE is even, then there won't be a middle square this will be

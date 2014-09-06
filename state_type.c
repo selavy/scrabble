@@ -1,7 +1,9 @@
 #include "state_type.h"
 
 static void print_board(board_t board, board_t special_letters);
+#ifdef _DEBUG
 static void print_turn(turn_t turn);
+#endif
 static int distribute_tiles(struct state_t * state);
 
 int state_create(struct state_t * state, int players) {
@@ -189,6 +191,7 @@ void print_board(board_t board, board_t special_letters) {
   printf("\n");
 }
 
+#ifdef _DEBUG
 void print_turn(turn_t turn) {
   char turn_str[9];
   switch (turn) {
@@ -207,11 +210,11 @@ void print_turn(turn_t turn) {
   default:
     strncpy(&(turn_str[0]), "Unknown", 9);
   }
-
   // just in case :)
   turn_str[8] = '\0';
   printf("%s", &(turn_str[0]));
 }
+#endif
 
 int distribute_tiles(struct state_t * state) {
   int rail;

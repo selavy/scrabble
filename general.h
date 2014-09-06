@@ -1,7 +1,7 @@
 #ifndef GENERAL_H_
 #define GENERAL_H_
 
-#define _DEBUG
+//#define _DEBUG
 
 // 26 letters + blank
 #define BLANK 26
