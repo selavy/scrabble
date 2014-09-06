@@ -229,6 +229,7 @@ int score_state(struct state_t * state, struct move_t * move) {
     score += word_score;
   }
   state->scores[state->turn] += score;
+  if (move->n == TILES_ON_RAIL) { state->scores[state->turn] += BINGO_VALUE; }
 
   // remove the tiles
   for (i = 0; i < num_moves; ++i) {

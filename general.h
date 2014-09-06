@@ -13,17 +13,25 @@
 #define DOUBLE_WORD (NUM_LETTERS + 3)
 #define TRIPLE_WORD (NUM_LETTERS + 4)
 #define MIDDLE_SQUARE (NUM_LETTERS + 5)
+
+// return values
 #define SUCCESS 0
 #define FAILURE -1
 #define ERROR -2
 #define TRUE 1
 #define FALSE 0
+
 #define SKIP_MOVE 1
 #define PLAY_MOVE 0
+
+// related to blank tiles
 #define BLANK_BIT (1 << 7)
 #define IS_BLANK(x) (((x) & BLANK_BIT) != 0)
 #define MAKE_BLANK(x) do { (x) |= BLANK_BIT; } while(0)
 #define GET_LETTER(x) (x & ~BLANK_BIT)
+
+// scores
+#define BINGO_VALUE 50
 
 #define PRT_EOL printf("\n")
 #define PRT_TAB printf("\t")
