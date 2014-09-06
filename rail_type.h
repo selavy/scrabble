@@ -2,11 +2,6 @@
 #define _RAIL_TYPE_H_
 
 #include "general.h"
-#include <string.h> // for memset
-
-#ifdef _DEBUG
-#include <stdio.h>
-#endif
 
 #define TILES_ON_RAIL 7
 #define TILE_NOT_FOUND -3

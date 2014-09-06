@@ -1,4 +1,6 @@
 #include "rail_type.h"
+#include <stdio.h>
+#include <string.h>
 
 void rails_create(rail_t * rail, int n) {
   int i = 0;
@@ -31,7 +33,6 @@ void rails_destroy(rail_t * rail, int n) {
 }
 
 void rail_print(rail_t rail) {
-#ifdef _DEBUG
   int i = 0;
   for (; i < TILES_ON_RAIL; ++i) {
     if (rail[i] == EMPTY) {
@@ -43,7 +44,6 @@ void rail_print(rail_t rail) {
     }
   }
   printf("\n");
-#endif
 }
 
 int rail_find_tile(rail_t rail, tile_t tile) {
