@@ -1,8 +1,6 @@
 #ifndef INPUT_MODULE_H_
 #define INPUT_MODULE_H_
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "general.h"
 #include "state_type.h"
 #include "move.h"

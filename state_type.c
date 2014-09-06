@@ -1,4 +1,7 @@
 #include "state_type.h"
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 static void print_board(board_t board, board_t special_letters);
 #ifdef _DEBUG

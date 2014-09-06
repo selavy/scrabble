@@ -1,4 +1,7 @@
 #include "input.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 int user_wants_to_quit();
 int valid_move(struct move_t * move);
