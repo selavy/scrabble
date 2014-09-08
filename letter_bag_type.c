@@ -42,8 +42,8 @@ void letter_bag_create(struct letter_bag_t * letter_bag, frequency_t freq) {
 }
 
 tile_t letter_bag_draw_letter(struct letter_bag_t * letter_bag) {
-  if (letter_bag->letters == 0) {
-    return ERROR;
+  if (letter_bag->letters <= 0) {
+    return EMPTY;
   }
   return letter_bag->bag[--letter_bag->letters];
 }
@@ -54,10 +54,12 @@ void letter_bag_destroy(struct letter_bag_t * letter_bag) {
 
 void letter_bag_print(struct letter_bag_t * letter_bag) {
   #ifdef _DEBUG
+  printf("LETTER BAG has %d letters: ", letter_bag->letters);
   int i = 0;
   tile_t * arr = &(letter_bag->bag[0]);
-  for (; i < MAX_LETTERS; ++i) {
+  for (; i < letter_bag->letters; ++i) {
     printf("%d ", arr[i]);
   }
+  printf("\n");
   #endif
 }

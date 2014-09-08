@@ -72,7 +72,7 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
     col = move->placements[i].col;
     tile = move->placements[i].tile;
     if (rail_find_tile(state->rails[state->turn], tile) == TILE_NOT_FOUND) {
-      printf("Do not have tile: %c\n", tile);
+      printf("Do not have tile: %c\n", TILE_TO_CHAR(tile));
       print_reason("tried to play tile that you do not have");
       return FAILURE;
     }

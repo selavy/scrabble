@@ -141,6 +141,7 @@ void state_debug_print_all(struct state_t * state) {
 
 void state_print(struct state_t * state) {
   state_print_winner(state);
+  letter_bag_print(state->letter_bag);
   print_board(state->board, state->special_letters);
   printf("Player #%d to move\n", state->turn);
   rail_print(state->rails[state->turn]);
@@ -228,7 +229,6 @@ int distribute_tiles(struct state_t * state) {
   for(rail = 0; rail < num_players; ++rail ) {
     for (letter = 0; letter < TILES_ON_RAIL; ++letter) {
       tile = letter_bag_draw_letter(state->letter_bag);
-      if (tile == ERROR) { return FAILURE; }
       if (rail_add_tile(state->rails[rail], tile) == FAILURE) { return FAILURE; }
     }
   }
