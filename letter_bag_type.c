@@ -28,7 +28,8 @@ void letter_bag_create(struct letter_bag_t * letter_bag, frequency_t freq) {
   // i -> iterate over letter_bag
   // f -> position to swap with letter_bag->bag[i]
   // j -> tmp var to allow swap
-  srand(time(0));
+  //  srand(time(0));
+  srand(5);
   for (i = 0; i < MAX_LETTERS; ++i) {
     f = rand() % MAX_LETTERS;
     // swap

@@ -1,8 +1,6 @@
 #ifndef STATE_TYPE_H_
 #define STATE_TYPE_H_
 
-#include <stdlib.h>
-#include <stdio.h>
 #include "general.h"
 #include "letter_bag_type.h"
 #include "letter_frequency.h"
