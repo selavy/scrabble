@@ -81,12 +81,21 @@ int score_state(struct state_t * state, struct move_t * move) {
 	}
       }
     }
+
+    if (in_word) {
+      if (pos > 1) {
+	word[pos++] = '\0';
+	strncpy(&(words[words_index++][0]), word, pos);
+      }
+    }
+
     // go to next row
     pos = 0;
     in_word = FALSE;
   }
 
   pos = 0;
+  in_word = 0;
   for (j = 0; j < BOARD_SIZE; ++j) {
     for (i = 0; i < BOARD_SIZE; ++i) {
       if (in_word == TRUE) {
@@ -110,6 +119,14 @@ int score_state(struct state_t * state, struct move_t * move) {
 	}
       }
     }
+
+    if (in_word) {
+      if (pos > 1) {
+	word[pos++] = '\0';
+	strncpy(&(words[words_index++][0]), word, pos);
+      }
+    }
+
     // go to next row
     pos = 0;
     in_word = FALSE;
@@ -160,6 +177,17 @@ int score_state(struct state_t * state, struct move_t * move) {
 	}
       }
     }
+
+    if (in_word) {
+      if (pos > 1) {
+	word[pos++] = '\0';
+	if (list_has_word(word, &(words[0]), words_index) == FAILURE) {
+	  memcpy(&(multipliers[new_words_index][0]), curr_mults, sizeof(int) * pos);
+	  strncpy(&(new_words[new_words_index++][0]), word, pos);
+	}
+      }
+    }
+
     // go to next row
     pos = 0;
     in_word = FALSE;
@@ -197,6 +225,17 @@ int score_state(struct state_t * state, struct move_t * move) {
 	}
       }
     }
+
+    if (in_word) {
+      if (pos > 1) {
+	word[pos++] = '\0';
+	if (list_has_word(word, &(words[0]), words_index) == FAILURE) {
+	  memcpy(&(multipliers[new_words_index][0]), curr_mults, sizeof(int) * pos);
+	  strncpy(&(new_words[new_words_index++][0]), word, pos);
+	}
+      }
+    }
+
     // go to next row
     pos = 0;
     in_word = FALSE;
@@ -204,7 +243,7 @@ int score_state(struct state_t * state, struct move_t * move) {
 
   // 4. score words added
 #ifdef _DEBUG
-  printf("NEW WORDS: \n");
+  printf("\nNEW WORDS: \n");
 #endif
   for (i = 0; i < new_words_index; ++i) {
     word_score = 0;
@@ -231,7 +270,7 @@ int score_state(struct state_t * state, struct move_t * move) {
     }
     word_score *= word_multiplier;
 #ifdef _DEBUG
-    printf("\n%s --> %d\n", new_words[i], word_score);
+    printf("%s --> %d\n", new_words[i], word_score);
 #endif
     score += word_score;
   }

@@ -132,10 +132,23 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
 	}
       }
     }
+
+    if (in_word) {
+      if (pos > 1) {
+	word[pos] = '\0';
+	if (trie_search(trie, word) != SUCCESS) {
+	  retVal = FAILURE;
+	  goto failure;
+	}
+      }
+    }
+
     pos = 0;
     in_word = 0;
   }
 
+  pos = 0;
+  in_word = 0;
   for (j = 0; j < BOARD_SIZE; ++j) {
     for (i = 0; i < BOARD_SIZE; ++i) {
       if (in_word) {
@@ -165,6 +178,16 @@ int rule_checker_check_state(struct state_t * state, struct move_t * move) {
 	  }
 	  word[pos++] = c;
 	  in_word = 1;
+	}
+      }
+    }
+
+    if (in_word) {
+      if (pos > 1) {
+	word[pos] = '\0';
+	if (trie_search(trie, word) != SUCCESS) {
+	  retVal = FAILURE;
+	  goto failure;
 	}
       }
     }

@@ -15,6 +15,8 @@ int state_create(struct state_t * state, int players) {
   state->num_players = players;
   state->turn = PLAYER_1;
   memset(&(state->scores[0]), 0, sizeof(score_t) * players);
+  memset(&(state->made_move[0]), FALSE, sizeof(*(state->made_move)) * players);
+  
 
   state->letter_bag = malloc(sizeof(*(state->letter_bag)));
   if (!state->letter_bag) { return FAILURE; }
@@ -238,10 +240,13 @@ int distribute_tiles(struct state_t * state) {
 int state_game_over(struct state_t * state) {
   int i;
   int num_players = state->num_players;
+  int no_plays = FALSE;
   if (letter_bag_is_empty((state->letter_bag))) {
     for (i = 0; i < num_players; ++i) {
       if (rail_empty(state->rails[i]) == TRUE) { return TRUE; }
+      no_plays |= state->made_move[i];
     }
+    return !no_plays;
   }
   return FALSE;
 }
@@ -262,9 +267,11 @@ int state_play_move(struct state_t * state, struct move_t * move) {
   for (; i < moves; ++i) {
     state_place_tile(state, move->placements[i].tile, move->placements[i].row, move->placements[i].col);
     if (rail_use_tile(state->rails[state->turn], move->placements[i].tile) == TILE_NOT_FOUND) {
+      state->made_move[state->turn] = FALSE;
       return FAILURE;
     }
   }
+  state->made_move[state->turn] = TRUE;
   return SUCCESS;
 }
 

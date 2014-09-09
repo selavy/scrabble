@@ -43,6 +43,7 @@ int main(int argc, char **argv) {
   // Get number of players
   ret = get_number_of_players();
   if (ret == QUIT) { goto quit; }
+
   
   // create the initial game state
   state = malloc(sizeof(*state));
@@ -71,7 +72,6 @@ int main(int argc, char **argv) {
       if (tries > 10) {
 	print_error_and_quit("Too many invalid moves");
       }
-
       ret = rule_checker_check_state(state, move);
       if (ret == SUCCESS) {
 	skip_move = PLAY_MOVE;
@@ -94,13 +94,16 @@ int main(int argc, char **argv) {
     
   } while(state_game_over(state) == FALSE);
 
-  state_print(state);
-  calculate_final_scores(state);
-  state_print_winner(state);
+  //  state_print(state);
+  //  calculate_final_scores(state);
+  //  state_print_winner(state);
 
   ///////////////    CLEAN UP   /////////////////
 
  quit:
+  state_print(state);
+  calculate_final_scores(state);
+  state_print_winner(state);
   state_destroy(state);
   free(state);
   free(move);

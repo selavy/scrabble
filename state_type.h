@@ -23,6 +23,7 @@ struct state_t {
   board_t special_letters;
   int num_players;
   score_t scores[MAX_PLAYERS];
+  int made_move[MAX_PLAYERS];
   turn_t turn;
   struct letter_bag_t * letter_bag;
   rail_t * rails;
