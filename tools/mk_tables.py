@@ -141,7 +141,7 @@ def xlate_board(board):
     return [1 if x == ' ' else int(x) for x in board]
 
 
-if 0:
+if 1:
     print_board(tw_board)
 
 if 0:
@@ -153,9 +153,11 @@ if 0:
 if 0:
     print_board(tl_board)
 
-
-def print_array(name, dtype, vals, width=2, n=8):
-    print(f"constexpr {dtype} {name}[{len(vals)}] = {{")
+def print_array_impl(name, dtype, vals, specifier, n, const_specifier=''):
+    const_specifier = const_specifier.strip()
+    if const_specifier:
+        const_specifier += ' '
+    print(f"{const_specifier}{dtype} {name}[{len(vals)}] = {{")
     groups = []
     grp = []
     for v in vals:
@@ -167,9 +169,20 @@ def print_array(name, dtype, vals, width=2, n=8):
     if grp:
         groups.append(grp)
     for grp in groups:
-        row = [f'{x:{width}d}' for x in grp]
+        row = [f'{x:{specifier}}' for x in grp]
         print(f"    {', '.join(row)},")
-    print("};");
+    print("};")
+
+
+def print_array(name, dtype, vals, width=2, n=8):
+    print_array_impl(
+        name=name,
+        dtype=dtype,
+        vals=vals,
+        specifier=f"{width}d",
+        n=n,
+        const_specifier='constexpr',
+    )
 
 
 tw_board = xlate_board(tw_board)
@@ -215,4 +228,30 @@ print_array(
     vals=dl_board,
     width=1,
     n=16,
+)
+
+square_colors = []
+for col in range(N_COLS):
+    for row in range(N_ROWS):
+        col_name = col
+        row_name = row+1
+        name = (col_name, row_name)
+        if name in double_words:
+            square_colors.append('DoubleWordSquareColor')
+        elif name in triple_words:
+            square_colors.append('TripleWordSquareColor')
+        elif name in double_letters:
+            square_colors.append('DoubleLetterSquareColor')
+        elif name in triple_letters:
+            square_colors.append('TripleLetterSquareColor')
+        else:
+            square_colors.append('EmptySquareColor')
+print("")
+print_array_impl(
+    name='default_square_colors',
+    dtype='ImVec4',
+    vals=square_colors,
+    specifier="23s",
+    n=4,
+    const_specifier='',
 )

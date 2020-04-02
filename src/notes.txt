@@ -1,0 +1,8 @@
+For across solving (repeat with board rotated for down):
+* keep list of letters that would be valid in a downword for that square
+* anchor squares are any square that is adjacent to a filled in square
+* a legal move must:
+    * be in the dictionary for the across
+    * meet the crosschecks
+    * contain at least 1 anchor square
+
