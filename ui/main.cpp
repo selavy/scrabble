@@ -200,9 +200,8 @@ int main(int, char**)
     //IM_ASSERT(font != NULL);
 
     // Our state
-    bool show_demo_window = false;
-    bool show_another_window = true;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    bool show_demo_window = false;
     bool show_metrics_window = true;
     bool show_scrabble_window = true;
 
@@ -251,6 +250,8 @@ int main(int, char**)
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+
+        ImGui::ShowDemoWindow(&show_demo_window);
 
         ImGui::ShowMetricsWindow(&show_metrics_window);
 
