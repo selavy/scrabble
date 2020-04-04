@@ -167,6 +167,17 @@ const char* const TileNames[28] = {
     "Y", "Z", "?", " ",
 };
 
+const char* const TileLabel(int i) noexcept {
+    if (i == '?') {
+        return TileNames[static_cast<std::size_t>(Tile::Blank)];
+    } else if (i == ' ') {
+        return TileNames[static_cast<std::size_t>(Tile::Empty)];
+    } else {
+        assert('A' <= i && i <= 'Z');
+        return TileNames[i - 'A'];
+    }
+}
+
 enum Player {
     Player1 = 0,
     Player2 = 1,
@@ -352,29 +363,6 @@ int main(int, char**) {
 
     GameState game_state;
 
-    // TODO: really only needs to be char[2]
-    // std::vector<std::string> tile_labels;
-    // for (int c = 0; c < 256; ++c) {
-    //     if (('A' <= c && c <= 'Z') || (c == '?') || (c == ' ')) {
-    //         tile_labels.emplace_back(fmt::format("{:c}", static_cast<char>(c)));
-    //     } else {
-    //         tile_labels.emplace_back("");
-    //     }
-    // }
-    auto TileLabel = [](int i) -> const char* {
-        // assert(0 <= i && i < tile_labels.size());
-        // return tile_labels[i].c_str();
-        if (i == '?') {
-            return TileNames[static_cast<std::size_t>(Tile::Blank)];
-        } else if (i == ' ') {
-            return TileNames[static_cast<std::size_t>(Tile::Empty)];
-        } else {
-            assert('A' <= i && i <= 'Z');
-            return TileNames[i - 'A'];
-        }
-    };
-    constexpr size_t BlankTileIndex = static_cast<size_t>('?');
-    constexpr size_t EmptyTileIndex = static_cast<size_t>(' ');
     std::array<int, NumRackTiles> player1_rack = {
         'I', 'E', 'G', 'U', 'J', 'A', 'X',
     };
@@ -382,7 +370,7 @@ int main(int, char**) {
         'T', 'N', 'E', 'M', 'W', 'O', 'L',
     };
 
-    std::vector<const char*> board_labels(NumSquares, TileLabel(EmptyTileIndex));
+    std::vector<const char*> board_labels(NumSquares, TileLabel(static_cast<int>(Tile::Empty)));
     std::array<const char*, NumRackTiles> player1_rack_labels;
     std::array<const char*, NumRackTiles> player2_rack_labels;
     for (size_t i = 0; i < NumRackTiles; ++i) {
@@ -449,12 +437,12 @@ int main(int, char**) {
                             int rack_index = payload_index;
                             assert(0 <= rack_index && rack_index < player1_rack.size());
                             board_labels[index] = TileLabel(player1_rack[rack_index]);
-                            player1_rack[rack_index] = EmptyTileIndex;
+                            player1_rack[rack_index] = static_cast<int>(Tile::Empty);
                         } else {
                             int rack_index = payload_index - NumRackTiles;
                             assert(0 <= rack_index && rack_index < player2_rack.size());
                             board_labels[index] = TileLabel(player2_rack[rack_index]);
-                            player2_rack[rack_index] = EmptyTileIndex;
+                            player2_rack[rack_index] = static_cast<int>(Tile::Empty);
                         }
                     }
                     ImGui::EndDragDropTarget();

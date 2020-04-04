@@ -6,3 +6,12 @@ target_link_libraries(scrabble-ui
         ImGui
         fmt::fmt
 )
+
+# add_executable(game game.cpp)
+add_executable(game
+    unit_test.cpp
+    game.h
+    game.cpp
+    game.test.cpp
+)
+target_link_libraries(game PUBLIC cxx_project_options Catch2)
