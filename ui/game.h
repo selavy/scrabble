@@ -67,7 +67,7 @@ struct Word {
         length = static_cast<int>(word.size());
         for (std::size_t i = 0; i < word.size(); ++i) {
             assert('A' <= word[i] && word[i] <= 'Z');
-            letters[i] = tiles[i] = word[i];
+            letters[i] = word[i];
         }
         assert(strlen(&letters[0]) == length);
     }
@@ -82,7 +82,7 @@ struct Word {
 
     constexpr int size() const noexcept { return length; }
     constexpr const char* c_str() const noexcept { return &letters[0]; }
-    constexpr std::string str() const noexcept { return { &letters[0], &letters[length] }; }
+    std::string str() const noexcept { return { &letters[0], &letters[length] }; }
 
     constexpr std::size_t hash() const noexcept {
         uint64_t x1 = 0;
