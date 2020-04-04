@@ -90,6 +90,38 @@ TEST_CASE("Create move guarantees contiguous in 1 direction")
             make_move(board, move);
             std::cerr << board << std::endl;
         }
+
+        // TODO: will have to fix this because words not in dictionary
+        {
+            GuiMove gmove = {
+                // { 'L', Sq_I9 },
+                { 'I', Sq_I10 },
+                { 'G', Sq_I11 },
+                { 'H', Sq_I12 },
+                { 'T', Sq_I13 },
+                { 'S', Sq_I14 },
+            };
+            std::cerr << board << std::endl;
+            auto maybe_move = Move::make(board, gmove);
+            REQUIRE(static_cast<bool>(maybe_move) == true);
+            auto move = *maybe_move;
+            REQUIRE(move.direction == Direction::HORIZONTAL);
+            REQUIRE(move.square == Sq_I9);
+            REQUIRE(move.max_word_length == 6);
+            make_move(board, move);
+            std::cerr << board << std::endl;
+        }
+
+        { // not valid because no contiguous tiles
+            GuiMove gmove = {
+                { 'P', Sq_E14 },
+                { 'E', Sq_F14 },
+                { 'T', Sq_G14 },
+            };
+            auto maybe_move = Move::make(board, gmove);
+            REQUIRE(static_cast<bool>(maybe_move) == false);
+        }
+
     }
 }
 
