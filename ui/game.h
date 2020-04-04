@@ -16,6 +16,52 @@
 
 using Dict = std::unordered_set<std::string>;
 
+constexpr int NumRows = 15;
+constexpr int NumCols = 15;
+constexpr int NumSquares = NumRows * NumCols;
+constexpr int NumBlankTiles = 2;
+
+struct Move {
+    constexpr static int MinSquareNum = 0;
+    constexpr static int MaxSquareNum = NumSquares;
+    constexpr static int MaxMoveLength = 7;
+    using Letters = std::array<char, MaxMoveLength>;
+    // clang-format off
+    constexpr static Letters all_blank = {
+        ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+    };
+    // clang-format on
+
+    enum class Direction : int {
+        HORIZONTAL = 1,
+        VERTICAL = 10,
+    };
+
+    enum class Player : int {
+        Player1 = 0,
+        Player2 = 1,
+    };
+
+    Player player;
+    Direction direction;
+    int square;
+    int length;
+    Letters letters = all_blank;
+
+    Move(Player player_, Direction direction_, int square_, std::string letters_) noexcept
+        : player{player_}, direction{direction_}, square{square_} {
+        assert(!letters_.empty());
+        assert(letters_.size() <= static_cast<std::size_t>(MaxMoveLength));
+        assert(std::count_if(letters_.begin(), letters_.end(), [](char c) { return c == ' '; }) <= NumBlankTiles);
+        length = 0;
+        for (auto c : letters_) {
+            assert(('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z'));
+            letters[length++] = c;
+        }
+        assert(static_cast<std::size_t>(length) == letters_.size());
+    }
+};
+
 struct Word {
     // blank or not            => 1 bit / letter for blank or not
     // 26 letters + 1 empty(?) => 5 bits / letter
@@ -23,6 +69,7 @@ struct Word {
 
     constexpr static int MaxWordLength = 15;
     using Letters = std::array<char, MaxWordLength>;
+
     // clang-format off
     constexpr static Letters all_blank = {
         ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
