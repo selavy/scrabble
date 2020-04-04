@@ -48,17 +48,17 @@ struct Word {
     // 1-15 length             => 4 bits for length
 
     constexpr static int MaxWordLength = 15;
-    using Tiles = std::array<char, MaxWordLength>;
+    // using Tiles = std::array<char, MaxWordLength>;
     using Letters = std::array<char, MaxWordLength + 1>;
 
-    // clang-format off
-    constexpr static Tiles all_blank = {
-        Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty,
-        Empty, Empty, Empty, Empty, Empty, Empty, Empty,
-    };
-    // clang-format on
+    // // clang-format off
+    // constexpr static Tiles all_empty_tiles = {
+    //     Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty,
+    //     Empty, Empty, Empty, Empty, Empty, Empty, Empty,
+    // };
+    // // clang-format on
 
-    Tiles tiles = all_blank;
+    // Tiles tiles = all_empty_tiles;
     Letters letters = {'\0'};  // null terminated c-string format and all caps
     int length = 0;
 
@@ -72,17 +72,17 @@ struct Word {
         assert(strlen(&letters[0]) == length);
     }
 
-    constexpr Word(const Word& other) noexcept : tiles{other.tiles}, letters{other.letters}, length{other.length} {}
+    constexpr Word(const Word& other) noexcept : letters{other.letters}, length{other.length} {}
 
-    constexpr Word(Word&& other) noexcept : tiles{other.tiles}, letters{other.letters}, length{other.length} {
-        // TODO(peter): temp temp -- don't actually need to clear other
-        std::fill(std::begin(other.tiles), std::end(other.tiles), '\0');
-        std::fill(std::begin(other.letters), std::end(other.letters), ' ');
+    constexpr Word(Word&& other) noexcept : letters{other.letters}, length{other.length} {
+        // TODO(peter): temp temp -- don't actually need to clear other.letters
+        std::fill(std::begin(other.letters), std::end(other.letters), '\0');
         other.length = 0;
     }
 
     constexpr int size() const noexcept { return length; }
     constexpr const char* c_str() const noexcept { return &letters[0]; }
+    constexpr std::string str() const noexcept { return { &letters[0], &letters[length] }; }
 
     constexpr std::size_t hash() const noexcept {
         uint64_t x1 = 0;
