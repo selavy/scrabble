@@ -14,13 +14,30 @@
 #include <unordered_set>
 #include <utility>
 
-using Dict = std::unordered_set<std::string>;
-
 constexpr int Dim = 15;
 constexpr int NumSquares = Dim * Dim;
 constexpr int NumBlankTiles = 2;
+constexpr int MinWordLength = 2;
+constexpr int MaxWordLength = Dim;
 constexpr char Empty = ' ';
 constexpr char Blank = '?';
+
+using Dict = std::unordered_set<std::string>;
+using Tile = char;
+using Square = int;
+using Tiles = std::array<Tile, MaxWordLength>;
+// clang-format off
+constexpr Tiles all_empty_tiles = {
+    Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty,
+    Empty, Empty, Empty, Empty, Empty, Empty, Empty,
+};
+// clang-format on
+
+constexpr int ix(char row, int col) {
+    assert('A' <= row && row <= 'O');
+    assert(1 <= col && col <= Dim);
+    return (row - 'A') * Dim + (col - 1);
+}
 
 struct Board {
     std::array<char, NumSquares> brd;
@@ -47,18 +64,7 @@ struct Word {
     // 26 letters + 1 empty(?) => 5 bits / letter
     // 1-15 length             => 4 bits for length
 
-    constexpr static int MaxWordLength = 15;
-    // using Tiles = std::array<char, MaxWordLength>;
     using Letters = std::array<char, MaxWordLength + 1>;
-
-    // // clang-format off
-    // constexpr static Tiles all_empty_tiles = {
-    //     Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty,
-    //     Empty, Empty, Empty, Empty, Empty, Empty, Empty,
-    // };
-    // // clang-format on
-
-    // Tiles tiles = all_empty_tiles;
     Letters letters = {'\0'};  // null terminated c-string format and all caps
     int length = 0;
 
@@ -70,6 +76,7 @@ struct Word {
             letters[i] = word[i];
         }
         assert(strlen(&letters[0]) == length);
+        assert(MinWordLength <= length && length <= MaxWordLength);
     }
 
     constexpr Word(const Word& other) noexcept : letters{other.letters}, length{other.length} {}
@@ -82,7 +89,7 @@ struct Word {
 
     constexpr int size() const noexcept { return length; }
     constexpr const char* c_str() const noexcept { return &letters[0]; }
-    std::string str() const noexcept { return { &letters[0], &letters[length] }; }
+    std::string str() const noexcept { return {&letters[0], &letters[length]}; }
 
     constexpr std::size_t hash() const noexcept {
         uint64_t x1 = 0;
@@ -104,7 +111,6 @@ struct Word {
 };
 
 std::ostream& operator<<(std::ostream& os, const Word& word) {
-    assert(word.length <= Word::MaxWordLength);
     os << '\'';
     for (int i = 0; i < word.length; ++i) {
         os << word.letters[i];
@@ -114,46 +120,51 @@ std::ostream& operator<<(std::ostream& os, const Word& word) {
 }
 
 namespace std {
-
 template <>
 struct hash<Word> {
     std::size_t operator()(const Word& w) const noexcept { return w.hash(); }
 };
-
 }  // namespace std
 
 using Dictionary = std::unordered_set<Word>;
 
-#if 0
+using GuiMove = std::vector<std::pair<Tile, Square>>;
+
 struct Move {
     constexpr static int MinSquareNum = 0;
     constexpr static int MaxSquareNum = NumSquares;
 
-    // TODO(peter): revisit whether to include player here
-    Player player;
+    // clang-format off
     Direction direction;
-    int square;
-    Word word;
+    int       square;
+    Tiles     tiles;
+    // clang-format on
 
-    Move(Player player_, Direction direction_, int square_, Word word_) noexcept
-        : player{player_}, direction{direction_}, square{square_}, word{word} {
-        assert(!letters_.empty());
-        assert(letters_.size() <= static_cast<std::size_t>(MaxMoveLength));
-        assert(std::count_if(letters_.begin(), letters_.end(), [](char c) { return c == ' '; }) <= NumBlankTiles);
-        length = 0;
-        for (auto c : letters_) {
-            assert(('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z'));
-            letters[length++] = c;
-        }
-        assert(static_cast<std::size_t>(length) == letters_.size());
+    constexpr Move(Direction direction_, int square_, Tiles tiles_) noexcept
+        : direction{direction_}, square{square_}, tiles{tiles_}
+    {
+#ifndef NDEBUG
+        assert(MinSquareNum <= square && square <= MaxSquareNum);
+        // TODO(peter): `std::count_if` is not constexpr?
+        // int n_blanks = std::count_if(
+        //                     std::begin(tiles),
+        //                     std::end(tiles),
+        //                     [](Tile c) -> bool { return 'a' <= c && c <= 'z'; }
+        //                );
+        int n_blanks = 0;
+        for (auto tile : tiles) n_blanks += ('a' <= tile && tile <= 'z') ? 1 : 0;
+        assert(n_blanks <= NumBlankTiles);
+        // TODO(peter): `std::find` is not constexpr?
+        // auto first_empty = std::find(std::begin(tiles), std::end(tiles), Empty);
+        // auto next_non_empty = std::find_if_not(first_empty, std::end(tiles), Empty);
+        auto first_empty = std::begin(tiles);
+        for (; first_empty != std::end(tiles) && *first_empty == Empty; ++first_empty) ;
+        auto next_non_empty = first_empty;
+        for (; next_non_empty != std::end(tiles) && *next_non_empty != Empty; ++next_non_empty) ;
+        assert(next_non_empty == std::end(tiles));
+#endif
     }
 };
-constexpr int ix(char row, int col) {
-    assert('A' <= row && row <= 'O');
-    assert(1 <= col && col <= Dim);
-    return (row - 'A') * Dim + (col - 1);
-}
-#endif
 
 #if 0
 // TODO: probably should score move while checking it, return 0 or -1 for invalid

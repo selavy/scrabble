@@ -16,6 +16,10 @@
 
 TEST_CASE("Can insert words into set")
 {
+    for (int i = 0; i < MaxWordLength; ++i) {
+        REQUIRE(all_empty_tiles[i] == Empty);
+    }
+
     Dictionary dict;
     auto word1 = Word{"HELLO"};
     auto word2 = Word{"HELL"};
