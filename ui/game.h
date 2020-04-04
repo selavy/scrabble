@@ -16,51 +16,31 @@
 
 using Dict = std::unordered_set<std::string>;
 
-constexpr int NumRows = 15;
-constexpr int NumCols = 15;
-constexpr int NumSquares = NumRows * NumCols;
+constexpr int Dim = 15;
+constexpr int NumSquares = Dim * Dim;
 constexpr int NumBlankTiles = 2;
+constexpr char Empty = ' ';
+constexpr char Blank = '?';
 
-struct Move {
-    constexpr static int MinSquareNum = 0;
-    constexpr static int MaxSquareNum = NumSquares;
-    constexpr static int MaxMoveLength = 7;
-    using Letters = std::array<char, MaxMoveLength>;
-    // clang-format off
-    constexpr static Letters all_blank = {
-        ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-    };
-    // clang-format on
-
-    enum class Direction : int {
-        HORIZONTAL = 1,
-        VERTICAL = 10,
-    };
-
-    enum class Player : int {
-        Player1 = 0,
-        Player2 = 1,
-    };
-
-    Player player;
-    Direction direction;
-    int square;
-    int length;
-    Letters letters = all_blank;
-
-    Move(Player player_, Direction direction_, int square_, std::string letters_) noexcept
-        : player{player_}, direction{direction_}, square{square_} {
-        assert(!letters_.empty());
-        assert(letters_.size() <= static_cast<std::size_t>(MaxMoveLength));
-        assert(std::count_if(letters_.begin(), letters_.end(), [](char c) { return c == ' '; }) <= NumBlankTiles);
-        length = 0;
-        for (auto c : letters_) {
-            assert(('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z'));
-            letters[length++] = c;
-        }
-        assert(static_cast<std::size_t>(length) == letters_.size());
-    }
+struct Board {
+    std::array<char, NumSquares> brd;
+    int moves = 0;
+    Board() noexcept { std::fill(std::begin(brd), std::end(brd), Empty); }
 };
+
+enum class Direction : int {
+    HORIZONTAL = 1,
+    VERTICAL = 10,
+};
+
+enum class Player : int {
+    Player1 = 0,
+    Player2 = 1,
+};
+constexpr Player flip_player(Player p) noexcept {
+    auto v = static_cast<int>(p);
+    return static_cast<Player>(v ^ 1);
+}
 
 struct Word {
     // blank or not            => 1 bit / letter for blank or not
@@ -68,36 +48,41 @@ struct Word {
     // 1-15 length             => 4 bits for length
 
     constexpr static int MaxWordLength = 15;
-    using Letters = std::array<char, MaxWordLength>;
+    using Tiles = std::array<char, MaxWordLength>;
+    using Letters = std::array<char, MaxWordLength + 1>;
 
     // clang-format off
-    constexpr static Letters all_blank = {
-        ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-        ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+    constexpr static Tiles all_blank = {
+        Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty,
+        Empty, Empty, Empty, Empty, Empty, Empty, Empty,
     };
     // clang-format on
 
-    Letters letters = all_blank;
+    Tiles tiles = all_blank;
+    Letters letters = {'\0'};  // null terminated c-string format and all caps
     int length = 0;
 
     constexpr Word(const std::string& word) noexcept {
         assert(word.size() <= static_cast<std::size_t>(MaxWordLength));
         length = static_cast<int>(word.size());
-        // std::fill(std::begin(letters), std::end(letters), ' ');
         for (std::size_t i = 0; i < word.size(); ++i) {
             assert('A' <= word[i] && word[i] <= 'Z');
-            letters[i] = word[i];
+            letters[i] = tiles[i] = word[i];
         }
+        assert(strlen(&letters[0]) == length);
     }
 
-    Word(const Word& other) noexcept : letters{other.letters}, length{other.length} {}
+    constexpr Word(const Word& other) noexcept : tiles{other.tiles}, letters{other.letters}, length{other.length} {}
 
-    Word(Word&& other) noexcept : letters{other.letters}, length{other.length} {
+    constexpr Word(Word&& other) noexcept : tiles{other.tiles}, letters{other.letters}, length{other.length} {
+        // TODO(peter): temp temp -- don't actually need to clear other
+        std::fill(std::begin(other.tiles), std::end(other.tiles), '\0');
         std::fill(std::begin(other.letters), std::end(other.letters), ' ');
         other.length = 0;
     }
 
     constexpr int size() const noexcept { return length; }
+    constexpr const char* c_str() const noexcept { return &letters[0]; }
 
     constexpr std::size_t hash() const noexcept {
         uint64_t x1 = 0;
@@ -129,11 +114,83 @@ std::ostream& operator<<(std::ostream& os, const Word& word) {
 }
 
 namespace std {
+
 template <>
 struct hash<Word> {
     std::size_t operator()(const Word& w) const noexcept { return w.hash(); }
 };
+
 }  // namespace std
+
+using Dictionary = std::unordered_set<Word>;
+
+#if 0
+struct Move {
+    constexpr static int MinSquareNum = 0;
+    constexpr static int MaxSquareNum = NumSquares;
+
+    // TODO(peter): revisit whether to include player here
+    Player player;
+    Direction direction;
+    int square;
+    Word word;
+
+    Move(Player player_, Direction direction_, int square_, Word word_) noexcept
+        : player{player_}, direction{direction_}, square{square_}, word{word} {
+        assert(!letters_.empty());
+        assert(letters_.size() <= static_cast<std::size_t>(MaxMoveLength));
+        assert(std::count_if(letters_.begin(), letters_.end(), [](char c) { return c == ' '; }) <= NumBlankTiles);
+        length = 0;
+        for (auto c : letters_) {
+            assert(('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z'));
+            letters[length++] = c;
+        }
+        assert(static_cast<std::size_t>(length) == letters_.size());
+    }
+};
+constexpr int ix(char row, int col) {
+    assert('A' <= row && row <= 'O');
+    assert(1 <= col && col <= Dim);
+    return (row - 'A') * Dim + (col - 1);
+}
+#endif
+
+#if 0
+// TODO: probably should score move while checking it, return 0 or -1 for invalid
+bool is_valid_play(const Dictionary& dict, const Board& board, const Move& move) {
+    Word word;
+
+    if ((board.moves % 2) != move.player) {
+        return false;
+    }
+
+    // check that extends exactly 1 row or column
+    int start = move.square;
+    int step = static_cast<int>(move.direction);
+    int len = move.length;
+    int stop = start + len * step;
+    if (move.direction == Direction::HORIZONTAL) {
+        int start_row = start / Dim;
+        int stop_row = stop / Dim;
+        if (start_row != stop_row) {
+            return false;
+        }
+    } else if (move.direction == Direction::VERTICAL) {
+        int start_col = start % Dim;
+        int stop_col = stop % Dim;
+        if (start_col != stop_col) {
+            return false;
+        }
+    }
+
+    // // first move must cross through H8
+    // if (board.moves == 0) {
+    //     constexpr int H8 = ix('H', 8);
+    // }
+
+    return true;
+}
+#endif
 
 // std::unique_ptr<Dict> load_dictionary(const char* filename)
 // {
