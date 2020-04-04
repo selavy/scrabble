@@ -13,6 +13,8 @@
 #include <string>
 #include <unordered_set>
 #include <utility>
+#include <optional>
+
 
 constexpr int Dim = 15;
 constexpr int NumSquares = Dim * Dim;
@@ -139,6 +141,11 @@ struct Move {
     int       square;
     Tiles     tiles;
     // clang-format on
+
+    static std::optional<Move> make(const Board& board, const GuiMove& move) noexcept
+    {
+        return std::nullopt_t;
+    }
 
     constexpr Move(Direction direction_, int square_, Tiles tiles_) noexcept
         : direction{direction_}, square{square_}, tiles{tiles_}
