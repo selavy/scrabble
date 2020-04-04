@@ -16,6 +16,8 @@
 #include <unordered_set>
 #include <utility>
 
+#define DEBUG(fmt, ...) fprintf(stderr, "DEBUG: " fmt "\n", ##__VA_ARGS__);
+
 constexpr int Dim = 15;
 constexpr int NumSquares = Dim * Dim;
 constexpr int NumBlankTiles = 2;
@@ -299,8 +301,8 @@ std::ostream& operator<<(std::ostream& os, const Board& board) {
 }
 
 enum class Direction : int {
-    HORIZONTAL = 1,
-    VERTICAL = 10,
+    HORIZONTAL = Right,
+    VERTICAL   = Down,
 };
 
 enum class Player : int {
@@ -409,6 +411,7 @@ struct Move {
     // state before.
     static std::optional<Move> make(const Board& board, GuiMove& move) noexcept {
         if (move.empty() || move.size() > MaxWordLength) {
+            DEBUG("word length invalid: %zu", move.size());
             return std::nullopt;
         }
 
@@ -418,9 +421,11 @@ struct Move {
         std::set<Square> seen;
         for (auto&& [tile, square] : move) {
             if (brd[AsIndex(square)] != Empty) {
+                DEBUG("square=%d occupied=%c", square, brd[AsIndex(square)]);
                 return std::nullopt;
             }
             if (seen.find(square) != seen.end()) {
+                DEBUG("duplicate square=%d", square);
                 return std::nullopt;
             }
             seen.insert(square);
@@ -485,7 +490,7 @@ struct Move {
             auto tile_it = std::begin(move);
             auto tile_end_it = std::end(move);
             assert(vert_start <= start_sq_vert && start_sq_vert < vert_stop);
-            assert((start_sq_vert / Dim) == row);
+            assert((start_sq_vert % Dim) == col);
             for (stop_sq_vert = start_sq_vert; stop_sq_vert < vert_stop; stop_sq_vert += Down) {
                 if (tile_it != tile_end_it && tile_it->second == stop_sq_vert) {
                     assert(brd[stop_sq_vert] == Empty);
@@ -502,9 +507,12 @@ struct Move {
             }
         }
 
+        DEBUG("horz=[%d,%d] vert=[%d,%d]", start_sq_horz, stop_sq_horz, start_sq_vert, stop_sq_vert);
+
         const int len_horz = (stop_sq_horz - start_sq_horz) + 1;
-        const int len_vert = (stop_sq_vert - start_sq_vert) + 1;
+        const int len_vert = ((stop_sq_vert - start_sq_vert) / Dim) + 1;
         if (len_horz < 2 && len_vert < 2) {
+            DEBUG("word not long enough in either direction: horz=%d vert=%d", len_horz, len_vert);
             return std::nullopt;  // didn't use all tiles in either direction
         }
 
@@ -512,8 +520,10 @@ struct Move {
         const auto first_square = len_horz >= len_vert ? start_sq_horz : start_sq_vert;
         const auto max_length = len_horz >= len_vert ? len_horz : len_vert;
         if (board.n_moves > 0 && AsIndex(max_length) == move.size()) {  // no contiguous board tiles
+            DEBUG("no contiguous board tiles: len_horz=%d len_vert=%d move=%zu", len_horz, len_vert, move.size());
             return std::nullopt;
         } else if (board.n_moves == 0) {  // must play through H8 on move 1
+            DEBUG("H8 not played on move 1");
             auto h8_it = std::find_if(std::begin(move), std::end(move),
                                       [](const std::pair<Tile, Square>& p) { return p.second == Sq_H8; });
             if (h8_it == std::end(move)) {
@@ -572,6 +582,7 @@ void make_move(Board& board, const Move move) {
         assert(move.tiles[tidx] != Empty);
         board.brd[sq] = move.tiles[tidx++];
     }
+    board.n_moves++;
 }
 
 #if 0

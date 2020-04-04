@@ -74,7 +74,7 @@ TEST_CASE("Create move guarantees contiguous in 1 direction")
 
         {
             GuiMove gmove = {
-                { 'O', Sq_H9 },
+                // { 'O', Sq_H9 },
                 { 'L', Sq_I9 },
                 { 'I', Sq_J9 },
                 { 'V', Sq_K9 },
@@ -84,9 +84,9 @@ TEST_CASE("Create move guarantees contiguous in 1 direction")
             auto maybe_move = Move::make(board, gmove);
             REQUIRE(static_cast<bool>(maybe_move) == true);
             auto move = *maybe_move;
-            REQUIRE(move.direction == Direction::HORIZONTAL);
-            REQUIRE(move.square == Sq_H8);
-            REQUIRE(move.max_word_length == 4);
+            REQUIRE(move.direction == Direction::VERTICAL);
+            REQUIRE(move.square == Sq_H9);
+            REQUIRE(move.max_word_length == 5);
             make_move(board, move);
             std::cerr << board << std::endl;
         }
