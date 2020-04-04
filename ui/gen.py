@@ -65,3 +65,13 @@ print(f"const char* const TileNames[{len(FREQS)}] = {{")
 for tile, _ in FREQS:
     print(f'    "{tile}",')
 print("};")
+
+
+print("enum class SquareIndex : int {{")
+for col in range(15):
+    for row in range(15):
+        letter = chr(ord('A') + col)
+        name = f'{letter}{row+1}'
+        val = col*15 + row
+        print(f"    {name:3s} = {val:3d},")
+print("};")

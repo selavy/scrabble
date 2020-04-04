@@ -1,18 +1,7 @@
 #include <catch2/catch.hpp>
 #include "game.h"
+#include <iostream>
 
-#if 0
-    struct Play
-    {
-        int square;
-        int direction;
-        char word[]; // upper case = regular tile, lower case = blank
-    };
-
-    // TODO(peter): return score? 0 or -1 == invalid move?
-    bool make_move(uint8_t* board, int sq, int dir, char word[7]);
-    int  score_move(uint8_t* board, int sq, int dir, char word[7]);
-#endif
 
 TEST_CASE("Can insert words into set")
 {
@@ -55,6 +44,52 @@ TEST_CASE("Can insert words into set")
     SECTION("Don\'t find present word \'HELL\'")
     {
         REQUIRE(dict.find(word4) == dict.end());
+    }
+}
+
+#define AsInt(x) static_cast<int>(x)
+
+TEST_CASE("Create move guarantees contiguous in 1 direction")
+{
+    {
+        Board board;
+
+        {
+            GuiMove gmove = {
+                { 'L', Sq_H8  },
+                { 'O', Sq_H9  },
+                { 'V', Sq_H10 },
+                { 'E', Sq_H11 },
+            };
+            std::cerr << board << std::endl;
+            auto maybe_move = Move::make(board, gmove);
+            REQUIRE(static_cast<bool>(maybe_move) == true);
+            auto move = *maybe_move;
+            REQUIRE(move.direction == Direction::HORIZONTAL);
+            REQUIRE(move.square == Sq_H8);
+            REQUIRE(move.max_word_length == 4);
+            make_move(board, move);
+            std::cerr << board << std::endl;
+        }
+
+        {
+            GuiMove gmove = {
+                { 'O', Sq_H9 },
+                { 'L', Sq_I9 },
+                { 'I', Sq_J9 },
+                { 'V', Sq_K9 },
+                { 'E', Sq_L9 },
+            };
+            std::cerr << board << std::endl;
+            auto maybe_move = Move::make(board, gmove);
+            REQUIRE(static_cast<bool>(maybe_move) == true);
+            auto move = *maybe_move;
+            REQUIRE(move.direction == Direction::HORIZONTAL);
+            REQUIRE(move.square == Sq_H8);
+            REQUIRE(move.max_word_length == 4);
+            make_move(board, move);
+            std::cerr << board << std::endl;
+        }
     }
 }
 
