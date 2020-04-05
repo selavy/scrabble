@@ -64,11 +64,11 @@ bool tiles_have_word(const Tiles& tile, std::string word)
     return true;
 }
 
-TEST_CASE("Moves tiles must be on only one row or column")
+TEST_CASE("Scrabble rules example", "[move_validation]")
 {
 	Board board;
 
-    { // H6 HORN
+    {
         GuiMove gmove = {
             { 'H', Sq_H6 },
             { 'O', Sq_H7 },
@@ -88,7 +88,7 @@ TEST_CASE("Moves tiles must be on only one row or column")
         std::cerr << "AFTER:\n" << board << "\n" << std::endl;
     }
 
-    { // F8 FARM
+    {
         GuiMove gmove = {
             { 'F', Sq_F8 },
             { 'A', Sq_G8 },
@@ -109,7 +109,7 @@ TEST_CASE("Moves tiles must be on only one row or column")
     }
 
     // Incorrect "PASTE", should be played on row 'J' instead of 'K'
-    { // K6 PASTE
+    {
         GuiMove gmove = {
             { 'P', Sq_K6 },
             { 'A', Sq_K7 },
@@ -124,7 +124,7 @@ TEST_CASE("Moves tiles must be on only one row or column")
         REQUIRE(board == board_before);
     }
 
-    { // J6 PASTE
+    {
         GuiMove gmove = {
             { 'P', Sq_J6 },
             { 'A', Sq_J7 },
@@ -144,150 +144,126 @@ TEST_CASE("Moves tiles must be on only one row or column")
         CHECK(tiles_have_word(move.tiles, "PASTE"));
         std::cerr << "AFTER:\n" << board << "\n" << std::endl;
     }
+
+    {
+        GuiMove gmove = {
+            // { 'M', Sq_I8 },
+            { 'O', Sq_I9 },
+            { 'B', Sq_I10 },
+        };
+        std::cerr << "BEFORE:\n" << board << std::endl;
+        auto maybe_move = make_move(board, gmove);
+        REQUIRE(static_cast<bool>(maybe_move) == true);
+        auto move = *maybe_move;
+        CHECK(move.player == Player::Player2);
+        CHECK(move.score == 16);
+        CHECK(move.square == Sq_I8);
+        CHECK(move.direction == Direction::HORIZONTAL);
+        CHECK(move.length == 3);
+        CHECK(tiles_have_word(move.tiles, "OB"));
+        std::cerr << "AFTER:\n" << board << "\n" << std::endl;
+    }
+
+    {
+        GuiMove gmove = {
+            { 'B', Sq_K5 },
+            { 'I', Sq_K6 },
+            { 'T', Sq_K7 },
+        };
+        std::cerr << "BEFORE:\n" << board << std::endl;
+        auto maybe_move = make_move(board, gmove);
+        REQUIRE(static_cast<bool>(maybe_move) == true);
+        auto move = *maybe_move;
+        CHECK(move.player == Player::Player1);
+        CHECK(move.score == 16);
+        CHECK(move.square == Sq_I8);
+        CHECK(move.direction == Direction::HORIZONTAL);
+        CHECK(move.length == 3);
+        CHECK(tiles_have_word(move.tiles, "BIT"));
+        std::cerr << "AFTER:\n" << board << "\n" << std::endl;
+    }
 }
 
+TEST_CASE("selavy v andybfan example")
+{
+    Board board;
+
+    std::vector<std::tuple<GuiMove, Player, Score, Square, Direction, int>> moves =
+    {
+        {
+            {
+                { 'S', Sq_H8 },
+                { 'E', Sq_H9 },
+                { 'E', Sq_H10 },
+            },
+            Player::Player1, 6, Sq_H8, Direction::HORIZONTAL, 3
+        },
+        {
+            {
+                { 'M', Sq_H11 },
+                { 'A', Sq_I11 },
+                { 'Y', Sq_J11 },
+                { 'O', Sq_K11 },
+            },
+            Player::Player2, 24, Sq_H11, Direction::VERTICAL, 4
+        },
+        {
+            {
+                { 'F', Sq_J9  },
+                { 'L', Sq_J10 },
+                // { 'Y', Sq_J11 },
+            },
+            Player::Player1, 8, Sq_J9, Direction::HORIZONTAL, 3
+        },
+        {
+            {
+                { 'R', Sq_K12 },
+                { 'A', Sq_L12 },
+                { 'G', Sq_M12 },
+                { 'E', Sq_N12 },
+            },
+            Player::Player2, 12, Sq_K12, Direction::VERTICAL, 4
+        },
+        {
+            {
+                // { 'G', Sq_M12 },
+                { 'O', Sq_M13 },
+            },
+            Player::Player1, 6, Sq_M12, Direction::HORIZONTAL, 6
+        },
+    };
+
+    for (auto&& [gmove, player, score, square, direction, length] : moves) {
+        std::cerr << "BEFORE:\n" << board << std::endl;
+        auto maybe_move = make_move(board, gmove);
+        REQUIRE(static_cast<bool>(maybe_move) == true);
+        auto move = *maybe_move;
+        CHECK(move.player == player);
+        CHECK(move.score == score);
+        CHECK(move.square == square);
+        CHECK(move.direction == direction);
+        CHECK(move.length == length);
+        std::cerr << "AFTER:\n" << board << "\n" << std::endl;
+    }
 
 
 #if 0
-TEST_CASE("Create move guarantees contiguous in 1 direction")
-{
     {
-        Board board;
-
-        {
-            GuiMove gmove = {
-                { 'L', Sq_H8  },
-                { 'O', Sq_H9  },
-                { 'V', Sq_H10 },
-                { 'E', Sq_H11 },
-            };
-            std::cerr << board << std::endl;
-            auto maybe_move = Move::make(board, gmove);
-            REQUIRE(static_cast<bool>(maybe_move) == true);
-            auto move = *maybe_move;
-            REQUIRE(move.direction == Direction::HORIZONTAL);
-            REQUIRE(move.square == Sq_H8);
-            REQUIRE(move.max_word_length == 4);
-            make_move(board, move);
-            std::cerr << board << std::endl;
-        }
-
-        {
-            GuiMove gmove = {
-                // { 'O', Sq_H9 },
-                { 'L', Sq_I9 },
-                { 'I', Sq_J9 },
-                { 'V', Sq_K9 },
-                { 'E', Sq_L9 },
-            };
-            std::cerr << board << std::endl;
-            auto maybe_move = Move::make(board, gmove);
-            REQUIRE(static_cast<bool>(maybe_move) == true);
-            auto move = *maybe_move;
-            REQUIRE(move.direction == Direction::VERTICAL);
-            REQUIRE(move.square == Sq_H9);
-            REQUIRE(move.max_word_length == 5);
-            make_move(board, move);
-            std::cerr << board << std::endl;
-        }
-
-        // TODO: will have to fix this because words not in dictionary
-        {
-            GuiMove gmove = {
-                // { 'L', Sq_I9 },
-                { 'I', Sq_I10 },
-                { 'G', Sq_I11 },
-                { 'H', Sq_I12 },
-                { 'T', Sq_I13 },
-                { 'S', Sq_I14 },
-            };
-            std::cerr << board << std::endl;
-            auto maybe_move = Move::make(board, gmove);
-            REQUIRE(static_cast<bool>(maybe_move) == true);
-            auto move = *maybe_move;
-            REQUIRE(move.direction == Direction::HORIZONTAL);
-            REQUIRE(move.square == Sq_I9);
-            REQUIRE(move.max_word_length == 6);
-            make_move(board, move);
-            std::cerr << board << std::endl;
-        }
-
-        { // not valid because no contiguous tiles
-            GuiMove gmove = {
-                { 'P', Sq_E14 },
-                { 'E', Sq_F14 },
-                { 'T', Sq_G14 },
-            };
-            auto maybe_move = Move::make(board, gmove);
-            REQUIRE(static_cast<bool>(maybe_move) == false);
-        }
-
-        //-------------------------------------------------------------------
-        //
-		// !!!! Working on this case: !!!!
-        //
-		//      1   2   3   4   5   6   7   8   9   0   1   2   3   4   5
-		//    -------------------------------------------------------------
-		// A  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
-		//    -------------------------------------------------------------
-		// B  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
-		//    -------------------------------------------------------------
-		// C  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
-		//    -------------------------------------------------------------
-		// D  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
-		//    -------------------------------------------------------------
-		// E  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
-		//    -------------------------------------------------------------
-		// F  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
-		//    -------------------------------------------------------------
-		// G  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
-		//    -------------------------------------------------------------
-		// H  |   |   |   |   |   |   |   | L | O | V | E |   |   |   |   |
-		//    -------------------------------------------------------------
-		// I  |   |   |   |   |   |   |   |   | L | I | G | H | T | S |   |
-		//    -------------------------------------------------------------
-		// J  |   |   |   |   |   |   |   |   | I |   |   |   |   |   |   |
-		//    -------------------------------------------------------------
-		// K  |   |   |   |   |   |   |   |   | V |   |   |   |   |   |   |
-		//    -------------------------------------------------------------
-		// L  |   |   |   |   |   |   |   |   | E |   |   |   |   |   |   |
-		//    -------------------------------------------------------------
-		// M  |   |   | l | e | t | t | e | r | s |   |   |   |   |   |   |
-		//    -------------------------------------------------------------
-		// N  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
-		//    -------------------------------------------------------------
-		// O  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
-		//    -------------------------------------------------------------
-		//
-        // When playing "letters" connected to "olive" (forming "olives") need to
-		// say that word direction = HORZ and length = 7.
-		//
-        //-------------------------------------------------------------------
-        {
-            GuiMove gmove = {
-                { 'L', Sq_M3 },
-                { 'E', Sq_M4 },
-                { 'T', Sq_M5 },
-                { 'T', Sq_M6 },
-                { 'E', Sq_M7 },
-                { 'R', Sq_M8 },
-                { 'S', Sq_M9 }, // forms OLIVEs
-            };
-            std::cerr << board << std::endl;
-            auto maybe_move = Move::make(board, gmove);
-            REQUIRE(static_cast<bool>(maybe_move) == true);
-            auto move = *maybe_move;
-            REQUIRE(move.direction == Direction::HORIZONTAL);
-            REQUIRE(move.square == Sq_M3);
-            REQUIRE(move.max_word_length == 7);
-            make_move(board, move);
-            std::cerr << board << std::endl;
-        }
+        GuiMove gmove = {
+            { 'S', Sq_H8 },
+            { 'E', Sq_H9 },
+            { 'E', Sq_H10 },
+        };
+        std::cerr << "BEFORE:\n" << board << std::endl;
+        auto maybe_move = make_move(board, gmove);
+        REQUIRE(static_cast<bool>(maybe_move) == true);
+        auto move = *maybe_move;
+        CHECK(move.player == Player::Player1);
+        CHECK(move.score == 6);
+        CHECK(move.square == Sq_H8);
+        CHECK(move.direction == Direction::HORIZONTAL);
+        CHECK(move.length == 3);
+        std::cerr << "AFTER:\n" << board << "\n" << std::endl;
     }
-}
 #endif
-
-TEST_CASE("Initial Game State", "[game_state]")
-{
-    // auto state = make_game(/*seed*/42);
 }
