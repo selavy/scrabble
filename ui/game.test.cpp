@@ -107,6 +107,43 @@ TEST_CASE("Moves tiles must be on only one row or column")
         CHECK(tiles_have_word(move.tiles, "FAM"));
         std::cerr << "AFTER:\n" << board << "\n" << std::endl;
     }
+
+    // Incorrect "PASTE", should be played on row 'J' instead of 'K'
+    { // K6 PASTE
+        GuiMove gmove = {
+            { 'P', Sq_K6 },
+            { 'A', Sq_K7 },
+            { 'S', Sq_K8 },
+            { 'T', Sq_K9 },
+            { 'E', Sq_K10 },
+        };
+        auto board_before = board;
+        std::cerr << "BEFORE:\n" << board << std::endl;
+        auto maybe_move = make_move(board, gmove);
+        REQUIRE(static_cast<bool>(maybe_move) == false);
+        REQUIRE(board == board_before);
+    }
+
+    { // J6 PASTE
+        GuiMove gmove = {
+            { 'P', Sq_J6 },
+            { 'A', Sq_J7 },
+            { 'S', Sq_J8 },
+            { 'T', Sq_J9 },
+            { 'E', Sq_J10 },
+        };
+        std::cerr << "BEFORE:\n" << board << std::endl;
+        auto maybe_move = make_move(board, gmove);
+        REQUIRE(static_cast<bool>(maybe_move) == true);
+        auto move = *maybe_move;
+        CHECK(move.player == Player::Player1);
+        CHECK(move.score == 25);
+        CHECK(move.square == Sq_J6);
+        CHECK(move.direction == Direction::HORIZONTAL);
+        CHECK(move.length == 5);
+        CHECK(tiles_have_word(move.tiles, "PASTE"));
+        std::cerr << "AFTER:\n" << board << "\n" << std::endl;
+    }
 }
 
 

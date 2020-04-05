@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <numeric>
 #include <array>
 #include <cassert>
 #include <cinttypes>
@@ -11,11 +10,13 @@
 #include <cstring>
 #include <fstream>
 #include <memory>
+#include <numeric>
 #include <optional>
 #include <set>
 #include <string>
 #include <unordered_set>
 #include <utility>
+
 #include "tables.h"
 
 #define DEBUG(fmt, ...) fprintf(stderr, "DEBUG: " fmt "\n", ##__VA_ARGS__);
@@ -29,7 +30,7 @@ using RackArray = std::array<T, NumTilesRack>;
 
 enum class Direction : int {
     HORIZONTAL = Right,
-    VERTICAL   = Down,
+    VERTICAL = Down,
 };
 
 enum class Player : int {
@@ -48,6 +49,12 @@ struct Board {
     int n_moves = 0;
     Board() noexcept { std::fill(std::begin(brd), std::end(brd), Empty); }
 };
+
+bool operator==(const Board& lhs, const Board& rhs) noexcept {
+    return lhs.n_moves == rhs.n_moves && lhs.brd == rhs.brd;
+}
+
+bool operator!=(const Board& lhs, const Board& rhs) noexcept { return !(lhs == rhs); }
 
 std::ostream& operator<<(std::ostream& os, const Board& board) {
     auto print_row = [&os](const char* r) {
@@ -160,8 +167,7 @@ struct Move
 // clang-format on
 
 template <class Iter, class F>
-bool all_same(Iter first, Iter last, F f)
-{
+bool all_same(Iter first, Iter last, F f) {
     auto&& val = f(*first++);
     while (first != last) {
         if (val != f(*first++)) {
@@ -180,8 +186,7 @@ bool all_unique(Iter first, Iter last) {
     return std::unique(first, last) == last;
 }
 
-std::optional<Move> make_move(Board& b, const GuiMove& m)
-{
+std::optional<Move> make_move(Board& b, const GuiMove& m) {
     // New words may be formed by:
     //  + adding one or more letters to a word or letters already on the board
     //  + must read either across or down; diagonal words are not allowed
@@ -199,25 +204,23 @@ std::optional<Move> make_move(Board& b, const GuiMove& m)
     }
 
     int n_tiles = static_cast<int>(m.size());
-    Tiles             tiles;
+    Tiles tiles;
     RackArray<Square> squares;
-    RackArray<int>    indices;
+    RackArray<int> indices;
     std::iota(indices.begin(), indices.end(), 0);
     std::sort(indices.begin(), indices.begin() + n_tiles,
-            [&m](int lhs, int rhs) {
-                return m[lhs].second < m[rhs].second;
-            });
-    std::fill(tiles.begin(),   tiles.end(),   Empty);
+              [&m](int lhs, int rhs) { return m[lhs].second < m[rhs].second; });
+    std::fill(tiles.begin(), tiles.end(), Empty);
     std::fill(squares.begin(), squares.end(), InvalidSquare);
     for (int i = 0; i < n_tiles; ++i) {
-        tiles[i]   = m[indices[i]].first;
+        tiles[i] = m[indices[i]].first;
         squares[i] = m[indices[i]].second;
     }
 
     const auto squares_begin = squares.begin();
-    const auto squares_end   = squares.begin() + n_tiles;
-    const auto tiles_begin   = tiles.begin();
-    const auto tiles_end     = tiles.begin() + n_tiles;
+    const auto squares_end = squares.begin() + n_tiles;
+    const auto tiles_begin = tiles.begin();
+    const auto tiles_end = tiles.begin() + n_tiles;
 
     if (!all_unique(squares_begin, squares_end)) {
         DEBUG("error: squares are not unique");
@@ -232,9 +235,32 @@ std::optional<Move> make_move(Board& b, const GuiMove& m)
     }
     assert((same_row || same_col) || (same_row && same_col && m.size() == 1));
 
+    if (b.n_moves > 0) {
+        if (std::none_of(squares_begin, squares_end, [&board](Square square) -> bool {
+                auto row = getrow(square);
+                auto col = getcol(square);
+                if (col - 1 >= 0 && board[square + Left] != Empty) {
+                    return true;
+                }
+                if (col + 1 < Dim && board[square + Right] != Empty) {
+                    return true;
+                }
+                if (row - 1 >= 0 && board[square + Up] != Empty) {
+                    return true;
+                }
+                if (row + 1 < Dim && board[square + Down] != Empty) {
+                    return true;
+                }
+                return false;
+            })) {
+            DEBUG("error: no tiles add to word already on board");
+            return std::nullopt;
+        }
+    }
+
     for (int i = 0; i < n_tiles; ++i) {
         const auto square = squares[i];
-        const auto tile   = tiles[i];
+        const auto tile = tiles[i];
         if (board[square] != Empty) {
             for (int j = i - 1; j >= 0; --j) {
                 board[square] = Empty;
@@ -245,11 +271,11 @@ std::optional<Move> make_move(Board& b, const GuiMove& m)
         board[square] = tile;
     }
 
-    { // TEMP TEMP
+    {  // TEMP TEMP
         DEBUG("Dumping sorted tiles:");
         for (int i = 0; i < NumTilesRack; ++i) {
             const auto square = squares[i];
-            const auto tile   = tiles[i];
+            const auto tile = tiles[i];
             DEBUG("tile='%c' square=%s (%d)", tile, SquareNames[square], square);
         }
     }
@@ -295,8 +321,8 @@ std::optional<Move> make_move(Board& b, const GuiMove& m)
     const int first_tile_col = getcol(first_tile_sq);
     const int last_tile_sq = *(squares_end - 1);
     if (same_row) {
-        const int row_start = first_tile_row * Dim; // inclusive
-        const int row_stop  = row_start      + Dim; // exclusive
+        const int row_start = first_tile_row * Dim;  // inclusive
+        const int row_stop = row_start + Dim;        // exclusive
         int horz_start = first_tile_sq + Left;
         while (horz_start >= row_start && board[horz_start] != Empty) {
             horz_start += Left;
@@ -309,7 +335,7 @@ std::optional<Move> make_move(Board& b, const GuiMove& m)
             horz_stop += Right;
         }
         assert(horz_start < horz_stop);
-        DEBUG("horz=[%d, %d) [%s, %s]", horz_start, horz_stop, SquareNames[horz_start], SquareNames[horz_stop+Left]);
+        DEBUG("horz=[%d, %d) [%s, %s]", horz_start, horz_stop, SquareNames[horz_start], SquareNames[horz_stop + Left]);
 
         if (last_tile_sq >= horz_stop) {
             DEBUG("error: tiles are not contiguous horizontally: last_tile=%d horz_stop=%d", last_tile_sq, horz_stop);
@@ -322,8 +348,8 @@ std::optional<Move> make_move(Board& b, const GuiMove& m)
     }
 
     if (same_col) {
-        const int col_start = first_tile_col; // inclusive
-        const int col_stop  = NumSquares;     // exclusive
+        const int col_start = first_tile_col;  // inclusive
+        const int col_stop = NumSquares;       // exclusive
         int vert_start = first_tile_sq + Up;
         while (vert_start >= col_start && board[col_start] != Empty) {
             vert_start += Up;
@@ -336,7 +362,7 @@ std::optional<Move> make_move(Board& b, const GuiMove& m)
             vert_stop += Down;
         }
         assert(vert_start < vert_stop);
-        DEBUG("vert=[%d, %d) [%s, %s]", vert_start, vert_stop, SquareNames[vert_start], SquareNames[vert_stop+Up]);
+        DEBUG("vert=[%d, %d) [%s, %s]", vert_start, vert_stop, SquareNames[vert_start], SquareNames[vert_stop + Up]);
 
         if (last_tile_sq >= vert_stop) {
             DEBUG("error: tiles are not contiguous vertically");
