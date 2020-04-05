@@ -32,6 +32,9 @@ enum class Direction : int {
     HORIZONTAL = Right,
     VERTICAL = Down,
 };
+constexpr Direction flip_direction(Direction x) {
+    return x == Direction::HORIZONTAL ? Direction::VERTICAL : Direction::HORIZONTAL;
+}
 
 enum class Player : int {
     Player1 = 0,
@@ -162,6 +165,7 @@ struct Move
     Tiles     tiles;
 
     // TEMP TEMP
+    std::string              root_word;
     std::vector<std::string> words_formed;
 };
 // clang-format on
@@ -186,7 +190,96 @@ bool all_unique(Iter first, Iter last) {
     return std::unique(first, last) == last;
 }
 
-std::optional<Move> make_move(Board& b, const GuiMove& m) {
+int score_move(const Board& b, /*const*/ Move& m) noexcept
+{
+    int score = 0;
+
+    auto&& board = b.brd;
+    if (m.direction == Direction::HORIZONTAL) {
+        const int hstart = m.square;
+        const int hstep = static_cast<int>(m.direction);
+        const int hstop = hstart + hstep*m.length;
+
+        m.root_word.clear();
+        for (int sq = hstart; sq != hstop; sq += hstep) {
+            m.root_word += board[sq];
+        }
+        assert(m.root_word.size() >= MinWordLength);
+        DEBUG("found root horizontal word: '%s'", m.root_word.c_str());
+
+        for (int root = hstart; root != hstop; root += hstep) {
+            const int vstart = getcol(root);
+            const int vstep = static_cast<int>(flip_direction(m.direction));
+            const int vstop  = vstart + Dim*vstep; // NumSquares;
+            int sq = root - vstep;
+            while (sq >= vstart && board[sq] != Empty) {
+                sq -= vstep;
+            }
+            sq += vstep;
+
+            std::string word;
+            while (sq < vstop && board[sq] != Empty) {
+                word += board[sq];
+                sq += vstep;
+            }
+            if (word.size() > 1) {
+                DEBUG("found vertical word: '%s'", word.c_str());
+                m.words_formed.emplace_back(std::move(word));
+            }
+        }
+
+    }
+    else {
+        const int vstart = m.square;
+        const int vstep = static_cast<int>(m.direction);
+        const int vstop = vstart + vstep*m.length;
+
+        m.root_word.clear();
+        for (int sq = vstart; sq != vstop; sq += vstep) {
+            m.root_word += board[sq];
+        }
+        assert(m.root_word.size() >= MinWordLength);
+        DEBUG("found root vertical word: '%s'", m.root_word.c_str());
+
+        for (int root = vstart; root != vstop; root += vstep) {
+            const int hstart = getrow(root) * Dim;
+            const int hstep = static_cast<int>(flip_direction(m.direction));
+            const int hstop  = hstart + Dim*hstep;
+            int sq = root - hstep;
+            while (sq >= hstart && board[sq] != Empty) {
+                sq -= hstep;
+            }
+            sq += hstep;
+
+            std::string word;
+            while (sq < hstop && board[sq] != Empty) {
+                word += board[sq];
+                sq += hstep;
+            }
+            if (word.size() > 1) {
+                DEBUG("found horizontal word: '%s'", word.c_str());
+                m.words_formed.emplace_back(std::move(word));
+            }
+        }
+
+    }
+
+
+    // const int first_square  = m.square;
+    // const int length = m.length;
+    // const int dir = static_cast<int>(m.direction);
+    // const int opp = static_cast<int>(flip_direction(m.direction));
+
+    // for (int i = 0; i < length; ++i) {
+    //     const int root_square = first_square + i;
+    //     const int sq = 
+    // }
+
+
+    return 0;
+}
+
+std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
     // New words may be formed by:
     //  + adding one or more letters to a word or letters already on the board
     //  + must read either across or down; diagonal words are not allowed
@@ -272,6 +365,7 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) {
         board[square] = tile;
     }
 
+#if 0
     {  // TEMP TEMP
         DEBUG("Dumping sorted tiles:");
         for (int i = 0; i < NumTilesRack; ++i) {
@@ -280,6 +374,7 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) {
             DEBUG("tile='%c' square=%s (%d)", tile, SquareNames[square], square);
         }
     }
+#endif
 
     auto _undo_move_and_return_null = [&board, &m]() {
         for (auto&& [tile, square] : m) {
@@ -377,6 +472,9 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) {
             result.length = length;
         }
     }
+
+    result.score = score_move(b, result);
+    // assert(result.score > 0);
 
     b.n_moves++;
     return result;
