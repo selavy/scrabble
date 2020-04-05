@@ -31,6 +31,36 @@ FREQS = (
     (' ',  0),
 )
 
+VALUES = {
+    '?': 0,
+    'E': 1,
+    'A': 1,
+    'I': 1,
+    'O': 1,
+    'N': 1,
+    'R': 1,
+    'T': 1,
+    'L': 1,
+    'S': 1,
+    'U': 1,
+    'D': 2,
+    'G': 2,
+    'B': 3,
+    'C': 3,
+    'M': 3,
+    'P': 3,
+    'F': 4,
+    'H': 4,
+    'V': 4,
+    'W': 4,
+    'Y': 4,
+    'K': 5,
+    'J': 8,
+    'X': 8,
+    'Q': 10,
+    'Z': 10,
+}
+
 def xlate_basename(x):
     if x == '?':
         return 'Blank'
@@ -43,6 +73,37 @@ def xlate_basename(x):
 def xlate_name(x):
     return f'Tile::{xlate_basename(x)}'
 
+
+def print_array_impl(name, dtype, vals, specifier, n, const_specifier=''):
+    const_specifier = const_specifier.strip()
+    if const_specifier:
+        const_specifier += ' '
+    print(f"{const_specifier}{dtype} {name}[{len(vals)}] = {{")
+    groups = []
+    grp = []
+    for v in vals:
+        if len(grp) >= n:
+            groups.append(grp)
+            grp = [v]
+        else:
+            grp.append(v)
+    if grp:
+        groups.append(grp)
+    for grp in groups:
+        row = [f'{x:{specifier}}' for x in grp]
+        print(f"    {', '.join(row)},")
+    print("};")
+
+
+def print_array(name, dtype, vals, width=2, n=8):
+    print_array_impl(
+        name=name,
+        dtype=dtype,
+        vals=vals,
+        specifier=f"{width}d",
+        n=n,
+        const_specifier='constexpr',
+    )
 
 NAME = { x: xlate_name(x) for x, _ in FREQS }
 
@@ -87,3 +148,20 @@ for i in range(225):
     print(f'    "{name:>3s}",')
 print(f'    "Invalid",')
 print("};")
+
+
+letter_values = []
+for i in range(128):
+    c = chr(i)
+    if 'a' <= c <= 'z':
+        c = '?'
+    letter_values.append(VALUES.get(c, 0))
+
+print_array(
+    name='letter_values',
+    dtype='int',
+    vals=letter_values,
+    width=2,
+    n=16,
+)
+

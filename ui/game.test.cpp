@@ -117,6 +117,7 @@ TEST_CASE("Scrabble rules example", "[move_validation]")
 
     for (auto&& [gmove, player, score, square, direction, length, tiles, root_word] : ts) {
         // std::cerr << "BEFORE:\n" << board << std::endl;
+        INFO("Placing root word: " << root_word);
         auto maybe_move = make_move(board, gmove);
         REQUIRE(static_cast<bool>(maybe_move) == true);
         auto move = *maybe_move;
@@ -128,7 +129,6 @@ TEST_CASE("Scrabble rules example", "[move_validation]")
         CHECK(tiles_have_word(move.tiles, tiles));
         CHECK(move.root_word == root_word);
         // std::cerr << "AFTER:\n" << board << "\n" << std::endl;
-
     }
 }
 
@@ -158,7 +158,7 @@ TEST_CASE("selavy v andybfan example")
         {
             {
                 { 'F', Sq_J9  },
-                { 'L', Sq_J10 },
+                { 'l', Sq_J10 }, // NOTE: blank
                 // { 'Y', Sq_J11 },
             },
             Player::Player1, 8, Sq_J9, Direction::HORIZONTAL, 3
@@ -177,7 +177,7 @@ TEST_CASE("selavy v andybfan example")
                 // { 'G', Sq_M12 },
                 { 'O', Sq_M13 },
             },
-            Player::Player1, 6, Sq_M12, Direction::HORIZONTAL, 6
+            Player::Player1, 6, Sq_M12, Direction::HORIZONTAL, 2
         },
     };
 

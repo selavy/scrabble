@@ -157,12 +157,13 @@ using GuiMove = std::vector<std::pair<Tile, Square>>;
 // clang-format off
 struct Move
 {
-    Player    player;
-    Score     score;
-    Square    square;
-    Direction direction;
-    int       length;
-    Tiles     tiles;
+    Player            player;
+    Score             score;
+    Square            square;
+    Direction         direction;
+    int               length;
+    Tiles             tiles;
+    RackArray<Square> squares;
 
     // TEMP TEMP
     std::string              root_word;
@@ -190,8 +191,26 @@ bool all_unique(Iter first, Iter last) {
     return std::unique(first, last) == last;
 }
 
+bool contains(const RackArray<Square>& c, Square sq) noexcept {
+    return std::find(std::begin(c), std::end(c), sq) != std::end(c);
+}
+
+int get_word_multiplier(const RackArray<Square>& squares) noexcept {
+    int result = 1;
+    for (auto sq : squares) {
+        result *= double_word_squares[sq];
+        result *= triple_word_squares[sq];
+    }
+    return result;
+}
+
+int get_letter_multiplier(Square square) noexcept {
+    return double_letter_squares[square] * triple_letter_squares[square];
+}
+
 int score_move(const Board& b, /*const*/ Move& m) noexcept
 {
+    int total_score = 0;
     int score = 0;
 
     auto&& board = b.brd;
@@ -200,14 +219,28 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept
         const int hstep = static_cast<int>(m.direction);
         const int hstop = hstart + hstep*m.length;
 
+        score = 0;
         m.root_word.clear();
         for (int sq = hstart; sq != hstop; sq += hstep) {
             m.root_word += board[sq];
+            if (contains(m.squares, sq)) {
+                DEBUG("HORZ ROOT: '%c' -- val=%d mult=%d", board[sq], letter_values[board[sq]], get_letter_multiplier(sq));
+                score += letter_values[board[sq]] * get_letter_multiplier(sq);
+            } else {
+                DEBUG("HORZ ROOT: '%c' -- val=%d NO MULT", board[sq], letter_values[board[sq]]);
+                score += letter_values[board[sq]];
+            }
         }
         assert(m.root_word.size() >= MinWordLength);
-        DEBUG("found root horizontal word: '%s'", m.root_word.c_str());
+        const int word_multiplier = get_word_multiplier(m.squares);
+        total_score += word_multiplier*score;
+        DEBUG("found root horizontal word: '%s' -- %d (mult=%d)", m.root_word.c_str(), score, word_multiplier);
 
-        for (int root = hstart; root != hstop; root += hstep) {
+        // for (int root = hstart; root != hstop; root += hstep) {
+        for (const auto root : m.squares) {
+            if (root == InvalidSquare) {
+                break;
+            }
             const int vstart = getcol(root);
             const int vstep = static_cast<int>(flip_direction(m.direction));
             const int vstop  = vstart + Dim*vstep; // NumSquares;
@@ -217,31 +250,47 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept
             }
             sq += vstep;
 
+            score = 0;
             std::string word;
-            while (sq < vstop && board[sq] != Empty) {
+            for (; sq < vstop && board[sq] != Empty; sq += vstep) {
                 word += board[sq];
-                sq += vstep;
+                if (sq == root) {
+                    score += letter_values[board[sq]] * get_letter_multiplier(sq);
+                } else {
+                    score += letter_values[board[sq]];
+                }
             }
             if (word.size() > 1) {
-                DEBUG("found vertical word: '%s'", word.c_str());
+                DEBUG("found vertical word: '%s' starting from root '%c' -- %d", word.c_str(), board[root], score);
+                total_score += score;
                 m.words_formed.emplace_back(std::move(word));
             }
         }
-
-    }
-    else {
+    } else {
         const int vstart = m.square;
         const int vstep = static_cast<int>(m.direction);
         const int vstop = vstart + vstep*m.length;
 
+        score = 0;
         m.root_word.clear();
         for (int sq = vstart; sq != vstop; sq += vstep) {
             m.root_word += board[sq];
+            if (contains(m.squares, sq)) {
+                score += letter_values[board[sq]] * get_letter_multiplier(sq);
+            } else {
+                score += letter_values[board[sq]];
+            }
         }
         assert(m.root_word.size() >= MinWordLength);
-        DEBUG("found root vertical word: '%s'", m.root_word.c_str());
+        const int word_multiplier = get_word_multiplier(m.squares);
+        total_score += word_multiplier*score;
+        DEBUG("found root vertical word: '%s' -- %d (mult=%d)", m.root_word.c_str(), score, word_multiplier);
 
-        for (int root = vstart; root != vstop; root += vstep) {
+        // for (int root = vstart; root != vstop; root += vstep) {
+        for (const auto root : m.squares) {
+            if (root == InvalidSquare) {
+                break;
+            }
             const int hstart = getrow(root) * Dim;
             const int hstep = static_cast<int>(flip_direction(m.direction));
             const int hstop  = hstart + Dim*hstep;
@@ -251,32 +300,25 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept
             }
             sq += hstep;
 
+            score = 0;
             std::string word;
-            while (sq < hstop && board[sq] != Empty) {
+            for (; sq < hstop && board[sq] != Empty; sq += hstep) {
                 word += board[sq];
-                sq += hstep;
+                if (sq == root) {
+                    score += letter_values[board[sq]] * get_letter_multiplier(sq);
+                } else {
+                    score += letter_values[board[sq]];
+                }
             }
             if (word.size() > 1) {
-                DEBUG("found horizontal word: '%s'", word.c_str());
+                DEBUG("found horizontal word: '%s' starting from root '%c' -- %d", word.c_str(), board[root], score);
+                total_score += score;
                 m.words_formed.emplace_back(std::move(word));
             }
         }
-
     }
 
-
-    // const int first_square  = m.square;
-    // const int length = m.length;
-    // const int dir = static_cast<int>(m.direction);
-    // const int opp = static_cast<int>(flip_direction(m.direction));
-
-    // for (int i = 0; i < length; ++i) {
-    //     const int root_square = first_square + i;
-    //     const int sq = 
-    // }
-
-
-    return 0;
+    return total_score;
 }
 
 std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
@@ -411,6 +453,7 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
     // result.direction = /* INVALID */;
     result.length = 0;
     result.tiles = std::move(tiles);
+    result.squares = std::move(squares);
 
     const int first_tile_sq = squares[0];
     const int first_tile_row = getrow(first_tile_sq);

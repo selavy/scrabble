@@ -190,6 +190,12 @@ dw_board = xlate_board(dw_board)
 tl_board = xlate_board(tl_board)
 dl_board = xlate_board(dl_board)
 
+# Add index=225 (InvalidSquare) => 1
+tw_board.append(1)
+dw_board.append(1)
+tl_board.append(1)
+dl_board.append(1)
+
 print("#pragma once")
 print("")
 print("// Generated file!! Run ./gen_tables.py to re-generate")
@@ -203,7 +209,7 @@ print_array(
     dtype='int',
     vals=tw_board,
     width=1,
-    n=16,
+    n=15,
 )
 print("")
 print_array(
@@ -211,7 +217,7 @@ print_array(
     dtype='int',
     vals=dw_board,
     width=1,
-    n=16,
+    n=15,
 )
 print("")
 print_array(
@@ -219,7 +225,7 @@ print_array(
     dtype='int',
     vals=tl_board,
     width=1,
-    n=16,
+    n=15,
 )
 print("")
 print_array(
@@ -227,7 +233,7 @@ print_array(
     dtype='int',
     vals=dl_board,
     width=1,
-    n=16,
+    n=15,
 )
 
 square_colors = []
