@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <numeric>
 #include <array>
 #include <cassert>
 #include <cinttypes>
@@ -15,259 +16,26 @@
 #include <string>
 #include <unordered_set>
 #include <utility>
+#include "tables.h"
 
 #define DEBUG(fmt, ...) fprintf(stderr, "DEBUG: " fmt "\n", ##__VA_ARGS__);
 
-constexpr int Dim = 15;
-constexpr int NumSquares = Dim * Dim;
-constexpr int NumBlankTiles = 2;
-constexpr int MinWordLength = 2;
-constexpr int MaxWordLength = Dim;
-constexpr char Empty = ' ';
-constexpr char Blank = '?';
-constexpr int Left = -1;
-constexpr int Right = 1;
-constexpr int Up = -Dim;
-constexpr int Down = Dim;
+using Dict = std::unordered_set<std::string>;
 
-constexpr int Sq_A1 = 0;
-constexpr int Sq_A2 = 1;
-constexpr int Sq_A3 = 2;
-constexpr int Sq_A4 = 3;
-constexpr int Sq_A5 = 4;
-constexpr int Sq_A6 = 5;
-constexpr int Sq_A7 = 6;
-constexpr int Sq_A8 = 7;
-constexpr int Sq_A9 = 8;
-constexpr int Sq_A10 = 9;
-constexpr int Sq_A11 = 10;
-constexpr int Sq_A12 = 11;
-constexpr int Sq_A13 = 12;
-constexpr int Sq_A14 = 13;
-constexpr int Sq_A15 = 14;
-constexpr int Sq_B1 = 15;
-constexpr int Sq_B2 = 16;
-constexpr int Sq_B3 = 17;
-constexpr int Sq_B4 = 18;
-constexpr int Sq_B5 = 19;
-constexpr int Sq_B6 = 20;
-constexpr int Sq_B7 = 21;
-constexpr int Sq_B8 = 22;
-constexpr int Sq_B9 = 23;
-constexpr int Sq_B10 = 24;
-constexpr int Sq_B11 = 25;
-constexpr int Sq_B12 = 26;
-constexpr int Sq_B13 = 27;
-constexpr int Sq_B14 = 28;
-constexpr int Sq_B15 = 29;
-constexpr int Sq_C1 = 30;
-constexpr int Sq_C2 = 31;
-constexpr int Sq_C3 = 32;
-constexpr int Sq_C4 = 33;
-constexpr int Sq_C5 = 34;
-constexpr int Sq_C6 = 35;
-constexpr int Sq_C7 = 36;
-constexpr int Sq_C8 = 37;
-constexpr int Sq_C9 = 38;
-constexpr int Sq_C10 = 39;
-constexpr int Sq_C11 = 40;
-constexpr int Sq_C12 = 41;
-constexpr int Sq_C13 = 42;
-constexpr int Sq_C14 = 43;
-constexpr int Sq_C15 = 44;
-constexpr int Sq_D1 = 45;
-constexpr int Sq_D2 = 46;
-constexpr int Sq_D3 = 47;
-constexpr int Sq_D4 = 48;
-constexpr int Sq_D5 = 49;
-constexpr int Sq_D6 = 50;
-constexpr int Sq_D7 = 51;
-constexpr int Sq_D8 = 52;
-constexpr int Sq_D9 = 53;
-constexpr int Sq_D10 = 54;
-constexpr int Sq_D11 = 55;
-constexpr int Sq_D12 = 56;
-constexpr int Sq_D13 = 57;
-constexpr int Sq_D14 = 58;
-constexpr int Sq_D15 = 59;
-constexpr int Sq_E1 = 60;
-constexpr int Sq_E2 = 61;
-constexpr int Sq_E3 = 62;
-constexpr int Sq_E4 = 63;
-constexpr int Sq_E5 = 64;
-constexpr int Sq_E6 = 65;
-constexpr int Sq_E7 = 66;
-constexpr int Sq_E8 = 67;
-constexpr int Sq_E9 = 68;
-constexpr int Sq_E10 = 69;
-constexpr int Sq_E11 = 70;
-constexpr int Sq_E12 = 71;
-constexpr int Sq_E13 = 72;
-constexpr int Sq_E14 = 73;
-constexpr int Sq_E15 = 74;
-constexpr int Sq_F1 = 75;
-constexpr int Sq_F2 = 76;
-constexpr int Sq_F3 = 77;
-constexpr int Sq_F4 = 78;
-constexpr int Sq_F5 = 79;
-constexpr int Sq_F6 = 80;
-constexpr int Sq_F7 = 81;
-constexpr int Sq_F8 = 82;
-constexpr int Sq_F9 = 83;
-constexpr int Sq_F10 = 84;
-constexpr int Sq_F11 = 85;
-constexpr int Sq_F12 = 86;
-constexpr int Sq_F13 = 87;
-constexpr int Sq_F14 = 88;
-constexpr int Sq_F15 = 89;
-constexpr int Sq_G1 = 90;
-constexpr int Sq_G2 = 91;
-constexpr int Sq_G3 = 92;
-constexpr int Sq_G4 = 93;
-constexpr int Sq_G5 = 94;
-constexpr int Sq_G6 = 95;
-constexpr int Sq_G7 = 96;
-constexpr int Sq_G8 = 97;
-constexpr int Sq_G9 = 98;
-constexpr int Sq_G10 = 99;
-constexpr int Sq_G11 = 100;
-constexpr int Sq_G12 = 101;
-constexpr int Sq_G13 = 102;
-constexpr int Sq_G14 = 103;
-constexpr int Sq_G15 = 104;
-constexpr int Sq_H1 = 105;
-constexpr int Sq_H2 = 106;
-constexpr int Sq_H3 = 107;
-constexpr int Sq_H4 = 108;
-constexpr int Sq_H5 = 109;
-constexpr int Sq_H6 = 110;
-constexpr int Sq_H7 = 111;
-constexpr int Sq_H8 = 112;
-constexpr int Sq_H9 = 113;
-constexpr int Sq_H10 = 114;
-constexpr int Sq_H11 = 115;
-constexpr int Sq_H12 = 116;
-constexpr int Sq_H13 = 117;
-constexpr int Sq_H14 = 118;
-constexpr int Sq_H15 = 119;
-constexpr int Sq_I1 = 120;
-constexpr int Sq_I2 = 121;
-constexpr int Sq_I3 = 122;
-constexpr int Sq_I4 = 123;
-constexpr int Sq_I5 = 124;
-constexpr int Sq_I6 = 125;
-constexpr int Sq_I7 = 126;
-constexpr int Sq_I8 = 127;
-constexpr int Sq_I9 = 128;
-constexpr int Sq_I10 = 129;
-constexpr int Sq_I11 = 130;
-constexpr int Sq_I12 = 131;
-constexpr int Sq_I13 = 132;
-constexpr int Sq_I14 = 133;
-constexpr int Sq_I15 = 134;
-constexpr int Sq_J1 = 135;
-constexpr int Sq_J2 = 136;
-constexpr int Sq_J3 = 137;
-constexpr int Sq_J4 = 138;
-constexpr int Sq_J5 = 139;
-constexpr int Sq_J6 = 140;
-constexpr int Sq_J7 = 141;
-constexpr int Sq_J8 = 142;
-constexpr int Sq_J9 = 143;
-constexpr int Sq_J10 = 144;
-constexpr int Sq_J11 = 145;
-constexpr int Sq_J12 = 146;
-constexpr int Sq_J13 = 147;
-constexpr int Sq_J14 = 148;
-constexpr int Sq_J15 = 149;
-constexpr int Sq_K1 = 150;
-constexpr int Sq_K2 = 151;
-constexpr int Sq_K3 = 152;
-constexpr int Sq_K4 = 153;
-constexpr int Sq_K5 = 154;
-constexpr int Sq_K6 = 155;
-constexpr int Sq_K7 = 156;
-constexpr int Sq_K8 = 157;
-constexpr int Sq_K9 = 158;
-constexpr int Sq_K10 = 159;
-constexpr int Sq_K11 = 160;
-constexpr int Sq_K12 = 161;
-constexpr int Sq_K13 = 162;
-constexpr int Sq_K14 = 163;
-constexpr int Sq_K15 = 164;
-constexpr int Sq_L1 = 165;
-constexpr int Sq_L2 = 166;
-constexpr int Sq_L3 = 167;
-constexpr int Sq_L4 = 168;
-constexpr int Sq_L5 = 169;
-constexpr int Sq_L6 = 170;
-constexpr int Sq_L7 = 171;
-constexpr int Sq_L8 = 172;
-constexpr int Sq_L9 = 173;
-constexpr int Sq_L10 = 174;
-constexpr int Sq_L11 = 175;
-constexpr int Sq_L12 = 176;
-constexpr int Sq_L13 = 177;
-constexpr int Sq_L14 = 178;
-constexpr int Sq_L15 = 179;
-constexpr int Sq_M1 = 180;
-constexpr int Sq_M2 = 181;
-constexpr int Sq_M3 = 182;
-constexpr int Sq_M4 = 183;
-constexpr int Sq_M5 = 184;
-constexpr int Sq_M6 = 185;
-constexpr int Sq_M7 = 186;
-constexpr int Sq_M8 = 187;
-constexpr int Sq_M9 = 188;
-constexpr int Sq_M10 = 189;
-constexpr int Sq_M11 = 190;
-constexpr int Sq_M12 = 191;
-constexpr int Sq_M13 = 192;
-constexpr int Sq_M14 = 193;
-constexpr int Sq_M15 = 194;
-constexpr int Sq_N1 = 195;
-constexpr int Sq_N2 = 196;
-constexpr int Sq_N3 = 197;
-constexpr int Sq_N4 = 198;
-constexpr int Sq_N5 = 199;
-constexpr int Sq_N6 = 200;
-constexpr int Sq_N7 = 201;
-constexpr int Sq_N8 = 202;
-constexpr int Sq_N9 = 203;
-constexpr int Sq_N10 = 204;
-constexpr int Sq_N11 = 205;
-constexpr int Sq_N12 = 206;
-constexpr int Sq_N13 = 207;
-constexpr int Sq_N14 = 208;
-constexpr int Sq_N15 = 209;
-constexpr int Sq_O1 = 210;
-constexpr int Sq_O2 = 211;
-constexpr int Sq_O3 = 212;
-constexpr int Sq_O4 = 213;
-constexpr int Sq_O5 = 214;
-constexpr int Sq_O6 = 215;
-constexpr int Sq_O7 = 216;
-constexpr int Sq_O8 = 217;
-constexpr int Sq_O9 = 218;
-constexpr int Sq_O10 = 219;
-constexpr int Sq_O11 = 220;
-constexpr int Sq_O12 = 221;
-constexpr int Sq_O13 = 222;
-constexpr int Sq_O14 = 223;
-constexpr int Sq_O15 = 224;
+template <class T>
+using RackArray = std::array<T, NumTilesRack>;
 
 #define AsIndex(x) static_cast<std::size_t>(x)
 
-using Dict = std::unordered_set<std::string>;
-using Tile = char;
-using Square = int;
-using Tiles = std::array<Tile, MaxWordLength>;
-// clang-format off
-constexpr Tiles all_empty_tiles = {
-    Empty, Empty, Empty, Empty, Empty, Empty, Empty, Empty,
-    Empty, Empty, Empty, Empty, Empty, Empty, Empty,
+enum class Direction : int {
+    HORIZONTAL = Right,
+    VERTICAL   = Down,
 };
-// clang-format on
+
+enum class Player : int {
+    Player1 = 0,
+    Player2 = 1,
+};
 
 constexpr int ix(char row, int col) {
     assert('A' <= row && row <= 'O');
@@ -300,15 +68,6 @@ std::ostream& operator<<(std::ostream& os, const Board& board) {
     return os;
 }
 
-enum class Direction : int {
-    HORIZONTAL = Right,
-    VERTICAL   = Down,
-};
-
-enum class Player : int {
-    Player1 = 0,
-    Player2 = 1,
-};
 constexpr Player flip_player(Player p) noexcept {
     auto v = static_cast<int>(p);
     return static_cast<Player>(v ^ 1);
@@ -385,6 +144,218 @@ using Dictionary = std::unordered_set<Word>;
 
 using GuiMove = std::vector<std::pair<Tile, Square>>;
 
+// clang-format off
+struct Move
+{
+    Player    player;
+    Score     score;
+    Square    square;
+    Direction direction;
+    int       length;
+    Tiles     tiles;
+
+    // TEMP TEMP
+    std::vector<std::string> words_formed;
+};
+// clang-format on
+
+template <class Iter, class F>
+bool all_same(Iter first, Iter last, F f)
+{
+    auto&& val = f(*first++);
+    while (first != last) {
+        if (val != f(*first++)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+constexpr int getrow(Square s) noexcept { return s / Dim; }
+constexpr int getcol(Square s) noexcept { return s % Dim; }
+
+template <class Iter>
+bool all_unique(Iter first, Iter last) {
+    assert(std::is_sorted(first, last));
+    return std::unique(first, last) == last;
+}
+
+std::optional<Move> make_move(Board& b, const GuiMove& m)
+{
+    // New words may be formed by:
+    //  + adding one or more letters to a word or letters already on the board
+    //  + must read either across or down; diagonal words are not allowed
+    //  + Placing a word at right angles to a word already on the board.
+    //    The new word must use one of the ltters already on the board or
+    //    must add a letter to it.
+    //  + Placing a complete word parallel to a word already played so that
+    //    adjacent letters also form complete words.
+
+    auto& board = b.brd;
+
+    if (!(1 <= m.size() && m.size() <= NumTilesRack)) {
+        DEBUG("error: invalid number of tiles: %zu", m.size());
+        return std::nullopt;
+    }
+
+    int n_tiles = static_cast<int>(m.size());
+    Tiles             tiles;
+    RackArray<Square> squares;
+    RackArray<int>    indices;
+    std::iota(indices.begin(), indices.end(), 0);
+    std::sort(indices.begin(), indices.begin() + n_tiles,
+            [&m](int lhs, int rhs) {
+                return m[lhs].second < m[rhs].second;
+            });
+    std::fill(tiles.begin(),   tiles.end(),   Empty);
+    std::fill(squares.begin(), squares.end(), InvalidSquare);
+    for (int i = 0; i < n_tiles; ++i) {
+        tiles[i]   = m[indices[i]].first;
+        squares[i] = m[indices[i]].second;
+    }
+
+    const auto squares_begin = squares.begin();
+    const auto squares_end   = squares.begin() + n_tiles;
+    const auto tiles_begin   = tiles.begin();
+    const auto tiles_end     = tiles.begin() + n_tiles;
+
+    if (!all_unique(squares_begin, squares_end)) {
+        DEBUG("error: squares are not unique");
+        return std::nullopt;
+    }
+
+    bool same_row = all_same(squares_begin, squares_end, getrow);
+    bool same_col = all_same(squares_begin, squares_end, getcol);
+    if (!same_row && !same_col) {
+        DEBUG("error: squares are not all on the same row or column");
+        return std::nullopt;
+    }
+    assert((same_row || same_col) || (same_row && same_col && m.size() == 1));
+
+    for (int i = 0; i < n_tiles; ++i) {
+        const auto square = squares[i];
+        const auto tile   = tiles[i];
+        if (board[square] != Empty) {
+            for (int j = i - 1; j >= 0; --j) {
+                board[square] = Empty;
+            }
+            DEBUG("error: square not available: %s (%d)", SquareNames[square], square);
+            return std::nullopt;
+        }
+        board[square] = tile;
+    }
+
+    { // TEMP TEMP
+        DEBUG("Dumping sorted tiles:");
+        for (int i = 0; i < NumTilesRack; ++i) {
+            const auto square = squares[i];
+            const auto tile   = tiles[i];
+            DEBUG("tile='%c' square=%s (%d)", tile, SquareNames[square], square);
+        }
+    }
+
+    auto _undo_move_and_return_null = [&board, &m]() {
+        for (auto&& [tile, square] : m) {
+            board[square] = Empty;
+        }
+        return std::nullopt;
+    };
+
+    // Have verified that:
+    //   1) all squares being played are unique
+    //   2) all squares being played are on the same row or column
+    //   3) all squares being played were previously empty on the board
+    //
+    // Need to verify that:
+    //   1) if first move, H8 must be occupied
+    //   2) play connects to a previous play if not first move
+    //   3) play is contiguous in one direction
+    //   4) all words formed are valid
+    //
+    // Need to determine:
+    //   1) starting square
+    //   2) direction
+    //   3) score
+
+    if (board[Sq_H8] == Empty) {
+        DEBUG("error: did not occupy H8 square on first move");
+        return _undo_move_and_return_null();
+    }
+
+    Move result;
+    result.player = b.n_moves % 2 == 0 ? Player::Player1 : Player::Player2;
+    result.score = 0;
+    result.square = InvalidSquare;
+    // result.direction = /* INVALID */;
+    result.length = 0;
+    result.tiles = std::move(tiles);
+
+    const int first_tile_sq = squares[0];
+    const int first_tile_row = getrow(first_tile_sq);
+    const int first_tile_col = getcol(first_tile_sq);
+    const int last_tile_sq = *(squares_end - 1);
+    if (same_row) {
+        const int row_start = first_tile_row * Dim; // inclusive
+        const int row_stop  = row_start      + Dim; // exclusive
+        int horz_start = first_tile_sq + Left;
+        while (horz_start >= row_start && board[horz_start] != Empty) {
+            horz_start += Left;
+        }
+        horz_start += Right;
+        assert(board[horz_start] != Empty);
+
+        int horz_stop = first_tile_sq + Right;
+        while (horz_stop < row_stop && board[horz_stop] != Empty) {
+            horz_stop += Right;
+        }
+        assert(horz_start < horz_stop);
+        DEBUG("horz=[%d, %d) [%s, %s]", horz_start, horz_stop, SquareNames[horz_start], SquareNames[horz_stop+Left]);
+
+        if (last_tile_sq >= horz_stop) {
+            DEBUG("error: tiles are not contiguous horizontally: last_tile=%d horz_stop=%d", last_tile_sq, horz_stop);
+            return _undo_move_and_return_null();
+        }
+
+        result.square = horz_start;
+        result.direction = Direction::HORIZONTAL;
+        result.length = horz_stop - horz_start;
+    }
+
+    if (same_col) {
+        const int col_start = first_tile_col; // inclusive
+        const int col_stop  = NumSquares;     // exclusive
+        int vert_start = first_tile_sq + Up;
+        while (vert_start >= col_start && board[col_start] != Empty) {
+            vert_start += Up;
+        }
+        vert_start += Down;
+        assert(board[vert_start] != Empty);
+
+        int vert_stop = first_tile_sq + Down;
+        while (vert_stop < col_stop && board[vert_stop] != Empty) {
+            vert_stop += Down;
+        }
+        assert(vert_start < vert_stop);
+        DEBUG("vert=[%d, %d) [%s, %s]", vert_start, vert_stop, SquareNames[vert_start], SquareNames[vert_stop+Up]);
+
+        if (last_tile_sq >= vert_stop) {
+            DEBUG("error: tiles are not contiguous vertically");
+            return _undo_move_and_return_null();
+        }
+
+        int length = (vert_stop - vert_start) / Dim;
+        if (length > result.length) {
+            result.square = vert_start;
+            result.direction = Direction::VERTICAL;
+            result.length = length;
+        }
+    }
+
+    b.n_moves++;
+    return result;
+}
+
+#if 0
 struct Move {
     constexpr static int MinSquareNum = 0;
     constexpr static int MaxSquareNum = NumSquares;
@@ -406,10 +377,23 @@ struct Move {
         return true;
     }
 
+    template <class Iter>
+    static bool is_unique(Iter a, Iter b) {
+
+    }
+
     // TODO: might be easier to let this function place the pieces on the
     // board, and remove them if it is bad / just save off a copy of the board
     // state before.
     static std::optional<Move> make(const Board& board, GuiMove& move) noexcept {
+        // New words may be formed by:
+        //  + adding one or more letters to a word or letters already on the board
+        //  + Placing a word at right angles to a word already on the board.
+        //    The new word must use one of the ltters already on the board or
+        //    must add a letter to it.
+        //  + Placing a complete word parallel to a word already played so that
+        //    adjacent letters also form complete words.
+
         if (move.empty() || move.size() > MaxWordLength) {
             DEBUG("word length invalid: %zu", move.size());
             return std::nullopt;
@@ -475,11 +459,10 @@ struct Move {
                     break;
                 }
             }
-            stop_sq_horz += Left;
             if (tile_it != tile_end_it) {
                 stop_sq_horz = start_sq_horz;
             } else {
-                assert(brd[stop_sq_horz] != Empty || move.back().second == stop_sq_horz);
+                assert(brd[stop_sq_horz+Left] != Empty || move.back().second == stop_sq_horz+Left);
             }
         }
 
@@ -499,18 +482,17 @@ struct Move {
                     break;
                 }
             }
-            stop_sq_vert += Up;
             if (tile_it != tile_end_it) {
                 stop_sq_vert = start_sq_vert;
             } else {
-                assert(brd[stop_sq_vert] != Empty || move.back().second == stop_sq_vert);
+                assert(brd[stop_sq_vert+Up] != Empty || move.back().second == stop_sq_vert+Up);
             }
         }
 
         DEBUG("horz=[%d,%d] vert=[%d,%d]", start_sq_horz, stop_sq_horz, start_sq_vert, stop_sq_vert);
 
-        const int len_horz = (stop_sq_horz - start_sq_horz) + 1;
-        const int len_vert = ((stop_sq_vert - start_sq_vert) / Dim) + 1;
+        const int len_horz = stop_sq_horz - start_sq_horz;
+        const int len_vert = (stop_sq_vert - start_sq_vert) / Dim;
         if (len_horz < 2 && len_vert < 2) {
             DEBUG("word not long enough in either direction: horz=%d vert=%d", len_horz, len_vert);
             return std::nullopt;  // didn't use all tiles in either direction
@@ -566,7 +548,9 @@ struct Move {
 #endif
     }
 };
+#endif
 
+#if 0
 // TODO(peter): I am thinking that applying during move creation is going to be
 // better because I'm having to recalculate information here that I already had
 void make_move(Board& board, const Move move) {
@@ -584,6 +568,7 @@ void make_move(Board& board, const Move move) {
     }
     board.n_moves++;
 }
+#endif
 
 #if 0
 // TODO: probably should score move while checking it, return 0 or -1 for invalid

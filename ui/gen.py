@@ -67,11 +67,23 @@ for tile, _ in FREQS:
 print("};")
 
 
-print("enum class SquareIndex : int {{")
+print("enum class SquareIndex : int {")
 for col in range(15):
     for row in range(15):
         letter = chr(ord('A') + col)
         name = f'{letter}{row+1}'
         val = col*15 + row
         print(f"    {name:3s} = {val:3d},")
+print("};")
+
+
+# TODO: organize into rows of 15
+print("const char* const SquareNames[225+1] = {")
+for i in range(225):
+    col = i % 15
+    row = i // 15
+    letter = chr(ord('A') + col)
+    name = f'{letter}{row+1}'
+    print(f'    "{name:>3s}",')
+print(f'    "Invalid",')
 print("};")
