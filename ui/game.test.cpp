@@ -194,3 +194,30 @@ TEST_CASE("selavy v andybfan example")
         // std::cerr << "AFTER:\n" << board << "\n" << std::endl;
     }
 }
+
+TEST_CASE("ISC Notation")
+{
+    Board board;
+
+    std::vector<std::tuple<std::string, std::string, Score>> ts = {
+        // square spec, word     , score
+        { "H8"        , "see"    , 6     },
+        { "11H"       , "mayo"   , 24    },
+        { "J9"        , "fLy"    , 8     },
+        { "12K"       , "rage"   , 12    },
+        { "M12"       , "go"     , 6     },
+        { "O12"       , "Swan"   , 23    },
+        { "15M"       , "son"    , 3     },
+        { "13L"       , "to"     , 4     },
+        { "11H"       , "mayor"  , 13    },
+    };
+
+    for (auto&& [square_spec, word, score] : ts) {
+        std::cerr << "BEFORE:\n" << board << std::endl;
+        auto maybe_move = make_move_isc_notation(board, square_spec, word, score);
+        REQUIRE(static_cast<bool>(maybe_move) == true);
+        auto move = *maybe_move;
+        play_move(board, move);
+        std::cerr << "AFTER:\n" << board << "\n" << std::endl;
+    }
+}

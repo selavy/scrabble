@@ -208,6 +208,40 @@ int get_letter_multiplier(Square square) noexcept {
     return double_letter_squares[square] * triple_letter_squares[square];
 }
 
+// precondition: move is legal to play
+void play_move(Board& b, Move& m) noexcept
+{
+    auto& board = b.brd;
+    assert((b.n_moves % 2) == static_cast<int>(m.player));
+
+    // play using `tiles` and `squares`
+    for (std::size_t i = 0; i < m.squares.size(); ++i) {
+        auto square = m.squares[i];
+        auto tile   = m.tiles[i];
+        if (square == InvalidSquare)
+            break;
+        assert(board[square] == Empty);
+        board[square] = tile;
+    }
+
+    // // play using `root_word`
+    // const int start = m.square;
+    // const int step  = static_cast<int>(m.direction);
+    // const int stop  = start + step*DIM;
+    // assert (start + step*result.length < stop);
+    // for (int i = 0; i < result.length; ++i) {
+    //     const int sq = start + i*step;
+    //     assert(start <= sq && sq < stop);
+    //     if (board[sq] == Empty) {
+    //         board[sq] = result.root_word[i];
+    //     } else {
+    //         assert(board[sq] == result.root_word[i]);
+    //     }
+    // }
+
+    b.n_moves++;
+}
+
 int score_move(const Board& b, /*const*/ Move& m) noexcept
 {
     int total_score = 0;
@@ -319,6 +353,95 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept
     }
 
     return total_score;
+}
+
+std::string convert_to_internal_word(std::string word) {
+    for (std::size_t i = 0; i < word.size(); ++i) {
+        if ('a' <= word[i] && word[i] <= 'z') {
+            word[i] = (word[i] - 'a') + 'A';
+        } else if ('A' <= word[i] && word[i] <= 'Z') {
+            word[i] = (word[i] - 'A') + 'a';
+        } else {
+            assert(0 && "invalid character");
+        }
+    }
+    return word;
+}
+
+std::optional<Move> make_move_isc_notation(const Board& b, std::string square, std::string word, int score)
+{
+    // ISC uses lower case letters for regular, and upper case for blanks
+    word = convert_to_internal_word(word);
+
+    if (square.size() != 2 && square.size() != 3) {
+        DEBUG("error: invalid square specification: '%s'", square.c_str());
+        return std::nullopt;
+    }
+
+    Direction direction;
+    int row;
+    int col;
+    if ('A' <= square[0] && square[0] <= 'Z') {
+        row = square[0] - 'A';
+        if (square.size() == 2) {
+            col = (square[1] - '0');
+        } else {
+            col = (square[1] - '0')*10 + (square[2] - '0');
+        }
+        direction = Direction::HORIZONTAL;
+    } else if (square.size() == 2) {
+        col = square[0] - '0';
+        row = square[1] - 'A';
+        direction = Direction::VERTICAL;
+    } else {
+        col = (square[0] - '0')*10 + (square[1] - '0');
+        row = square[2] - 'A';
+        direction = Direction::VERTICAL;
+    }
+    col--;
+
+    if (!(0 <= row && row < Dim)) {
+        DEBUG("error: invalid row: %d", row);
+        return std::nullopt;
+    }
+    if (!(0 <= col && col < Dim)) {
+        DEBUG("error: invalid col: %d", col);
+        return std::nullopt;
+    }
+
+    auto& board = b.brd;
+    Move result;
+    result.player = b.n_moves % 2 == 0 ? Player::Player1 : Player::Player2;
+    result.score = 0;
+    result.square = row*Dim + col;
+    result.direction = direction;
+    result.length = static_cast<int>(word.size());
+    std::fill(std::begin(result.tiles),   std::end(result.tiles),   Empty);
+    std::fill(std::begin(result.squares), std::end(result.squares), InvalidSquare);
+
+    const int start = result.square;
+    const int step = static_cast<int>(direction);
+    const int stop = start + step*Dim;
+    if (start + step*result.length >= stop) {
+        DEBUG("error: word to long to fit: '%s' starting at %s", word.c_str(), SquareNames[start]);
+        return std::nullopt;
+    }
+
+    int tiles = 0;
+    for (int i = 0; i < result.length; ++i) {
+        const int sq = start + i*step;
+        assert(start <= sq && sq < stop);
+        if (board[sq] == Empty) {
+            result.tiles[tiles]   = word[i];
+            result.squares[tiles] = sq;
+            ++tiles;
+        } else if (board[sq] != word[i]) {
+            DEBUG("error: tried to play letter '%c' on %s that is occupied by %c", word[i], SquareNames[sq], board[sq]);
+            return std::nullopt;
+        }
+    }
+
+    return result;
 }
 
 std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
