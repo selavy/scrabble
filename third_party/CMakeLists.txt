@@ -29,3 +29,9 @@ option(CATCH_ENABLE_WERROR "Enable all warnings as errors" OFF)
 option(CATCH_INSTALL_DOCS "Install documentation alongside library" OFF)
 option(CATCH_INSTALL_HELPERS "Install contrib alongside library" OFF)
 add_subdirectory(Catch2)
+
+option(BUILD_SHARED_LIBS "build shared libraries" OFF)
+option(USEPCRE "use PCRE in tests and benchmarks" OFF)
+option(RE2_BUILD_TESTING "enable testing for RE2" OFF)
+add_subdirectory(re2) # target re2::re2
+# target_include_directories(re2 PUBLIC "./re2")

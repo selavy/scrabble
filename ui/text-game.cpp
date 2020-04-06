@@ -7,25 +7,25 @@
 #include <memory>
 #include <regex>
 
+#include <re2/re2.h>
+
 #include "game.h"
 
 const char* prompt = "\1\033[7m\1Scrabble$\1\033[0m\1 ";
+
+#ifdef USE_STD_REGEX
 static std::regex isc_regex(R"(((?:\d\d?[A-O])|(?:[A-O]\d\d?))\s+([a-zA-Z]+)(?:\s+(\d+))?\s*)", std::regex_constants::ECMAScript);
+#else
+static re2::RE2 isc_regex(R"(\s*((?:\d{1,2}[A-O])|(?:[A-O]\d{1,2}))\s+([a-zA-Z]+)(?:\s+(\d+))?\s*)");
+#endif
 
 std::optional<IscMove> valid_isc_form(const char* isc) {
+#if USE_STD_REGEX
     std::cmatch match;
     if (std::regex_match(isc, match, isc_regex) && match.size() == 4) {
-
         // NOTE(peter): strangely (to me) the regex library reports 4 matches
         // even in the case that it doesn't match with the final \d+ group so
         // have to test if the match string is empty instead.
-#if 0
-        std::cout << "# matches = " << match.size() << std::endl;
-        for (size_t i = 0; i < match.size(); ++i) {
-            std::cout << "match[" << i << "] = '" << match[i] << "'\n";
-        }
-#endif
-
         IscMove move;
         move.sqspec = match[1];
         move.root   = match[2];
@@ -34,6 +34,13 @@ std::optional<IscMove> valid_isc_form(const char* isc) {
             auto score = match[3].str();
             move.score = atoi(score.c_str());
         }
+#else
+    assert(isc_regex.ok());
+    IscMove move;
+    move.score = -1;
+    re2::RE2::FullMatch(isc, isc_regex, &move.sqspec, &move.root, &move.score);
+    if (!move.sqspec.empty() && !move.root.empty()) {
+#endif
         std::cout << "SQUARE SPEC: " << move.sqspec << "\n";
         std::cout << "ROOT WORD  : " << move.root << "\n";
         std::cout << "SCORE      : " << move.score << "\n";

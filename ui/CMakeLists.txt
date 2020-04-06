@@ -17,4 +17,4 @@ add_executable(unittest
 target_link_libraries(unittest PUBLIC game Catch2)
 
 add_executable(text-game text-game.cpp)
-target_link_libraries(text-game PUBLIC game LibEdit)
+target_link_libraries(text-game PUBLIC game LibEdit re2::re2)
