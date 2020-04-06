@@ -285,7 +285,7 @@ constexpr int letter_values[128] = {
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
 };
 
-constexpr int triple_word_squares[226] = {
+constexpr std::array<int, 226> triple_word_squares = {
 //  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
 //  -------------------------------------------
     3, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 3, // A
@@ -306,7 +306,7 @@ constexpr int triple_word_squares[226] = {
     1,
 };
 
-constexpr int double_word_squares[226] = {
+constexpr std::array<int, 226> double_word_squares = {
 //  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
 //  -------------------------------------------
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // A
@@ -327,7 +327,7 @@ constexpr int double_word_squares[226] = {
     1,
 };
 
-constexpr int triple_letter_squares[226] = {
+constexpr std::array<int, 226> triple_letter_squares = {
 //  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
 //  -------------------------------------------
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // A
@@ -348,7 +348,7 @@ constexpr int triple_letter_squares[226] = {
     1,
 };
 
-constexpr int double_letter_squares[226] = {
+constexpr std::array<int, 226> double_letter_squares = {
 //  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
 //  -------------------------------------------
     1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, // A

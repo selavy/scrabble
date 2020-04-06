@@ -49,6 +49,14 @@ constexpr int ix(char row, int col) {
 
 struct Board {
     std::array<char, NumSquares> brd;
+    // const int* const double_word_sqs   = &double_word_squares[0];
+    // const int* const triple_word_sqs   = &triple_word_squares[0];
+    // const int* const double_letter_sqs = &double_letter_squares[0];
+    // const int* const triple_letter_sqs = &triple_letter_squares[0];
+    std::array<int, NumSquares+1> double_word_sqs = double_word_squares;
+    std::array<int, NumSquares+1> triple_word_sqs = triple_word_squares;
+    std::array<int, NumSquares+1> double_letter_sqs = double_letter_squares;
+    std::array<int, NumSquares+1> triple_letter_sqs = triple_letter_squares;
     int n_moves = 0;
     Board() noexcept { std::fill(std::begin(brd), std::end(brd), Empty); }
 };
@@ -195,17 +203,23 @@ bool contains(const RackArray<Square>& c, Square sq) noexcept {
     return std::find(std::begin(c), std::end(c), sq) != std::end(c);
 }
 
-int get_word_multiplier(const RackArray<Square>& squares) noexcept {
+int get_word_multiplier(const Board& board, const RackArray<Square>& squares) noexcept {
     int result = 1;
-    for (auto sq : squares) {
-        result *= double_word_squares[sq];
-        result *= triple_word_squares[sq];
+    for (auto square : squares) {
+        result *= board.double_word_sqs[square];
+        result *= board.triple_word_sqs[square];
     }
     return result;
 }
 
-int get_letter_multiplier(Square square) noexcept {
-    return double_letter_squares[square] * triple_letter_squares[square];
+int get_letter_multiplier(const Board& board, Square square) noexcept {
+    return board.double_letter_sqs[square] * board.triple_letter_sqs[square];
+}
+
+void clear_multiplier_for_squares(const RackArray<Square>& squares, std::array<int, 226>& mults) {
+    for (auto square : squares) {
+        mults[square] = 1;
+    }
 }
 
 // precondition: move is legal to play
@@ -256,19 +270,16 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept
         score = 0;
         m.root_word.clear();
         for (int sq = hstart; sq != hstop; sq += hstep) {
+            const int letter_value = letter_values[board[sq]];
+            const int letter_mult = get_letter_multiplier(b, sq);
             m.root_word += board[sq];
-            if (contains(m.squares, sq)) {
-                DEBUG("HORZ ROOT: '%c' -- val=%d mult=%d", board[sq], letter_values[board[sq]], get_letter_multiplier(sq));
-                score += letter_values[board[sq]] * get_letter_multiplier(sq);
-            } else {
-                DEBUG("HORZ ROOT: '%c' -- val=%d NO MULT", board[sq], letter_values[board[sq]]);
-                score += letter_values[board[sq]];
-            }
+            score       += letter_value * letter_mult;
+            DEBUG("HORZ ROOT: '%c' -- val=%d mult=%d", board[sq], letter_value, letter_mult);
         }
         assert(m.root_word.size() >= MinWordLength);
-        const int word_multiplier = get_word_multiplier(m.squares);
-        total_score += word_multiplier*score;
-        DEBUG("found root horizontal word: '%s' -- %d (mult=%d)", m.root_word.c_str(), score, word_multiplier);
+        const int word_mult = get_word_multiplier(b, m.squares);
+        total_score += word_mult*score;
+        DEBUG("found root horizontal word: '%s' -- %d (mult=%d)", m.root_word.c_str(), score, word_mult);
 
         // for (int root = hstart; root != hstop; root += hstep) {
         for (const auto root : m.squares) {
@@ -287,18 +298,16 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept
             score = 0;
             std::string word;
             for (; sq < vstop && board[sq] != Empty; sq += vstep) {
-                word += board[sq];
-                if (sq == root) {
-                    score += letter_values[board[sq]] * get_letter_multiplier(sq);
-                } else {
-                    score += letter_values[board[sq]];
-                }
+                const int letter_value = letter_values[board[sq]];
+                const int letter_mult  = get_letter_multiplier(b, sq);
+                word  += board[sq];
+                score += letter_value * letter_mult;
             }
             if (word.size() > 1) {
-                const int word_multiplier = double_word_squares[root] * triple_word_squares[root];
-                total_score += score * word_multiplier;
+                const int word_mult = double_word_squares[root] * triple_word_squares[root];
+                total_score += score * word_mult;
                 DEBUG("found vertical word: '%s' starting from root '%c' -- %d (mult=%d)",
-                        word.c_str(), board[root], score, word_multiplier);
+                        word.c_str(), board[root], score, word_mult);
                 m.words_formed.emplace_back(std::move(word));
             }
         }
@@ -310,17 +319,16 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept
         score = 0;
         m.root_word.clear();
         for (int sq = vstart; sq != vstop; sq += vstep) {
+            const int letter_value = letter_values[board[sq]];
+            const int letter_mult = get_letter_multiplier(b, sq);
             m.root_word += board[sq];
-            if (contains(m.squares, sq)) {
-                score += letter_values[board[sq]] * get_letter_multiplier(sq);
-            } else {
-                score += letter_values[board[sq]];
-            }
+            score       += letter_value * letter_mult;
+            DEBUG("VERT ROOT: '%c' -- val=%d mult=%d", board[sq], letter_value, letter_mult);
         }
         assert(m.root_word.size() >= MinWordLength);
-        const int word_multiplier = get_word_multiplier(m.squares);
-        total_score += word_multiplier*score;
-        DEBUG("found root vertical word: '%s' -- %d (mult=%d)", m.root_word.c_str(), score, word_multiplier);
+        const int word_mult = get_word_multiplier(b, m.squares);
+        total_score += word_mult * score;
+        DEBUG("found root vertical word: '%s' -- %d (mult=%d)", m.root_word.c_str(), score, word_mult);
 
         // for (int root = vstart; root != vstop; root += vstep) {
         for (const auto root : m.squares) {
@@ -339,18 +347,16 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept
             score = 0;
             std::string word;
             for (; sq < hstop && board[sq] != Empty; sq += hstep) {
-                word += board[sq];
-                if (sq == root) {
-                    score += letter_values[board[sq]] * get_letter_multiplier(sq);
-                } else {
-                    score += letter_values[board[sq]];
-                }
+                const int letter_value = letter_values[board[sq]];
+                const int letter_mult  = get_letter_multiplier(b, sq);
+                word  += board[sq];
+                score += letter_value * letter_mult;
             }
             if (word.size() > 1) {
-                const int word_multiplier = double_word_squares[root] * triple_word_squares[root];
-                total_score += score * word_multiplier;
+                const int word_mult = double_word_squares[root] * triple_word_squares[root];
+                total_score += score * word_mult;
                 DEBUG("found horizontal word: '%s' starting from root '%c' -- %d (mult=%d)",
-                        word.c_str(), board[root], score, word_multiplier);
+                        word.c_str(), board[root], score, word_mult);
                 m.words_formed.emplace_back(std::move(word));
             }
         }
@@ -648,8 +654,11 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
     }
 
     result.score = score_move(b, result);
-    // assert(result.score > 0);
-
+    clear_multiplier_for_squares(result.squares, b.double_letter_sqs);
+    clear_multiplier_for_squares(result.squares, b.triple_letter_sqs);
+    clear_multiplier_for_squares(result.squares, b.double_word_sqs);
+    clear_multiplier_for_squares(result.squares, b.triple_word_sqs);
     b.n_moves++;
+
     return result;
 }

@@ -66,7 +66,7 @@ bool tiles_have_word(const Tiles& tile, std::string word)
 
 TEST_CASE("Scrabble rules example", "[move_validation]")
 {
-	Board board;
+	auto board = std::make_unique<Board>();
 
     std::vector<std::tuple<GuiMove, Player, Score, Square, Direction, int, std::string, std::string>> ts = {
         {
@@ -116,9 +116,9 @@ TEST_CASE("Scrabble rules example", "[move_validation]")
     };
 
     for (auto&& [gmove, player, score, square, direction, length, tiles, root_word] : ts) {
-        // std::cerr << "BEFORE:\n" << board << std::endl;
+        // std::cerr << "BEFORE:\n" << *board << std::endl;
         INFO("Placing root word: " << root_word);
-        auto maybe_move = make_move(board, gmove);
+        auto maybe_move = make_move(*board, gmove);
         REQUIRE(static_cast<bool>(maybe_move) == true);
         auto move = *maybe_move;
         CHECK(move.player == player);
@@ -128,7 +128,7 @@ TEST_CASE("Scrabble rules example", "[move_validation]")
         CHECK(move.length == length);
         CHECK(tiles_have_word(move.tiles, tiles));
         CHECK(move.root_word == root_word);
-        // std::cerr << "AFTER:\n" << board << "\n" << std::endl;
+        // std::cerr << "AFTER:\n" << *board << "\n" << std::endl;
     }
 }
 
@@ -183,9 +183,8 @@ GuiTestCase make_test_case_from_isc(const Board& b, IscMove isc)
 
 TEST_CASE("selavy v andybfan example")
 {
-    Board board;
+    auto board = std::make_unique<Board>();
 
-    // std::vector<std::tuple<GuiMove, Player, Score, Square, Direction, int>> moves =
     std::vector<GuiTestCase> moves =
     {
         {
@@ -232,8 +231,8 @@ TEST_CASE("selavy v andybfan example")
     };
 
     for (auto&& [gmove, player, score, square, direction, length] : moves) {
-        // std::cerr << "BEFORE:\n" << board << std::endl;
-        auto maybe_move = make_move(board, gmove);
+        // std::cerr << "BEFORE:\n" << *board << std::endl;
+        auto maybe_move = make_move(*board, gmove);
         REQUIRE(static_cast<bool>(maybe_move) == true);
         auto move = *maybe_move;
         CHECK(move.player == player);
@@ -241,13 +240,13 @@ TEST_CASE("selavy v andybfan example")
         CHECK(move.square == square);
         CHECK(move.direction == direction);
         CHECK(move.length == length);
-        // std::cerr << "AFTER:\n" << board << "\n" << std::endl;
+        // std::cerr << "AFTER:\n" << *board << "\n" << std::endl;
     }
 }
 
 TEST_CASE("ISC Notation")
 {
-    Board board;
+    auto board = std::make_unique<Board>();
 
     std::vector<IscMove> ts = {
         // square spec, word     , score
@@ -296,10 +295,10 @@ TEST_CASE("ISC Notation")
 
     for (const auto& isc : ts) {
         INFO("Playing " << isc.sqspec << " " << isc.root << " " << isc.score);
-        // std::cerr << "BEFORE:\n" << board << std::endl;
-        auto&& [gmove, player, score, square, direction, length] = make_test_case_from_isc(board, isc);
-        // auto maybe_move = make_move_isc_notation(board, square_spec, word, score);
-        auto maybe_move = make_move(board, gmove);
+        // std::cerr << "BEFORE:\n" << *board << std::endl;
+        auto&& [gmove, player, score, square, direction, length] = make_test_case_from_isc(*board, isc);
+        // auto maybe_move = make_move_isc_notation(*board, square_spec, word, score);
+        auto maybe_move = make_move(*board, gmove);
         REQUIRE(static_cast<bool>(maybe_move) == true);
         auto move = *maybe_move;
         CHECK(move.player == player);
@@ -307,6 +306,6 @@ TEST_CASE("ISC Notation")
         CHECK(move.square == square);
         CHECK(move.direction == direction);
         CHECK(move.length == length);
-        // std::cerr << "AFTER:\n" << board << "\n" << std::endl;
+        // std::cerr << "AFTER:\n" << *board << "\n" << std::endl;
     }
 }
