@@ -49,8 +49,8 @@ constexpr int ix(char row, int col) {
 
 struct Board {
     std::array<char, NumSquares> brd;
-    std::array<int, NumSquares+1> double_letter_squares_ = double_letter_squares;
-    std::array<int, NumSquares+1> triple_letter_squares_ = triple_letter_squares;
+    std::array<int, NumSquares + 1> double_letter_squares_ = double_letter_squares;
+    std::array<int, NumSquares + 1> triple_letter_squares_ = triple_letter_squares;
     int n_moves = 0;
     Board() noexcept { std::fill(std::begin(brd), std::end(brd), Empty); }
 };
@@ -217,17 +217,15 @@ void clear_multiplier_for_squares(const RackArray<Square>& squares, std::array<i
 }
 
 // precondition: move is legal to play
-void play_move(Board& b, Move& m) noexcept
-{
+void play_move(Board& b, Move& m) noexcept {
     auto& board = b.brd;
     assert((b.n_moves % 2) == static_cast<int>(m.player));
 
     // play using `tiles` and `squares`
     for (std::size_t i = 0; i < m.squares.size(); ++i) {
         auto square = m.squares[i];
-        auto tile   = m.tiles[i];
-        if (square == InvalidSquare)
-            break;
+        auto tile = m.tiles[i];
+        if (square == InvalidSquare) break;
         assert(board[square] == Empty);
         board[square] = tile;
     }
@@ -250,23 +248,22 @@ void play_move(Board& b, Move& m) noexcept
     b.n_moves++;
 }
 
-int score_move(const Board& b, /*const*/ Move& m) noexcept
-{
+int score_move(const Board& b, /*const*/ Move& m) noexcept {
     int total_score = 0;
     auto& board = b.brd;
 
-    { // root word score along `m.direction` direction
+    {  // root word score along `m.direction` direction
         const int start = m.square;
-        const int step  = static_cast<int>(m.direction);
-        const int stop  = start + step * m.length;
+        const int step = static_cast<int>(m.direction);
+        const int stop = start + step * m.length;
         int score = 0;
         m.root_word.clear();
         for (int sq = start; sq != stop; sq += step) {
             const char letter = board[sq];
             const int value = letter_values[letter];
-            const int mult  = get_letter_multiplier(b, sq);
+            const int mult = get_letter_multiplier(b, sq);
             m.root_word += letter;
-            score       += value * mult;
+            score += value * mult;
             DEBUG("ROOT: '%c' -- val=%d mult=%d", letter, value, mult)
         }
         assert(m.root_word.size() >= MinWordLength);
@@ -280,9 +277,9 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept
             break;
         }
         ++tiles_played;
-        const int start = m.direction == Direction::HORIZONTAL ? getcol(root) : Dim*getrow(root);
-        const int step  = static_cast<int>(flip_direction(m.direction));
-        const int stop  = start + Dim*step;
+        const int start = m.direction == Direction::HORIZONTAL ? getcol(root) : Dim * getrow(root);
+        const int step = static_cast<int>(flip_direction(m.direction));
+        const int stop = start + Dim * step;
         int sq = root - step;
         while (sq >= start && board[sq] != Empty) {
             sq -= step;
@@ -293,19 +290,18 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept
         for (; sq < stop && board[sq] != Empty; sq += step) {
             const char letter = board[sq];
             const int value = letter_values[letter];
-            const int mult  = get_letter_multiplier(b, sq);
-            word  += letter;
+            const int mult = get_letter_multiplier(b, sq);
+            word += letter;
             score += value * mult;
         }
         if (word.size() > 1) {
             const int mult = double_word_squares[root] * triple_word_squares[root];
             total_score += score * mult;
-            DEBUG("THRU WORD: '%s' starting from root '%c' -- %d (mult=%d)",
-                    word.c_str(), board[root], score, mult);
+            DEBUG("THRU WORD: '%s' starting from root '%c' -- %d (mult=%d)", word.c_str(), board[root], score, mult);
         }
     }
 
-    if (tiles_played == 7) { // Bingo!
+    if (tiles_played == 7) {  // Bingo!
         total_score += 50;
     }
 
@@ -326,8 +322,7 @@ std::string convert_to_internal_word(std::string word) {
 }
 
 // TODO(peter): using exceptions for now
-std::tuple<int, int, Direction> _parse_isc_spec(std::string sqspec)
-{
+std::tuple<int, int, Direction> _parse_isc_spec(std::string sqspec) {
     if (sqspec.size() != 2 && sqspec.size() != 3) {
         throw std::runtime_error("invalid ISC square spec");
     }
@@ -339,7 +334,7 @@ std::tuple<int, int, Direction> _parse_isc_spec(std::string sqspec)
         if (sqspec.size() == 2) {
             col = (sqspec[1] - '0');
         } else {
-            col = (sqspec[1] - '0')*10 + (sqspec[2] - '0');
+            col = (sqspec[1] - '0') * 10 + (sqspec[2] - '0');
         }
         direction = Direction::HORIZONTAL;
     } else if (sqspec.size() == 2) {
@@ -347,7 +342,7 @@ std::tuple<int, int, Direction> _parse_isc_spec(std::string sqspec)
         row = sqspec[1] - 'A';
         direction = Direction::VERTICAL;
     } else {
-        col = (sqspec[0] - '0')*10 + (sqspec[1] - '0');
+        col = (sqspec[0] - '0') * 10 + (sqspec[1] - '0');
         row = sqspec[2] - 'A';
         direction = Direction::VERTICAL;
     }
@@ -358,40 +353,38 @@ std::tuple<int, int, Direction> _parse_isc_spec(std::string sqspec)
     if (!(0 <= col && col < Dim)) {
         throw std::runtime_error("invalid ISC square spec");
     }
-    return { row, col, direction };
+    return {row, col, direction};
 }
 
-std::optional<Move> make_move_isc_notation(const Board& b, std::string sqspec, std::string word, int score)
-{
+std::optional<Move> make_move_isc_notation(const Board& b, std::string sqspec, std::string word, int score) {
     // ISC uses lower case letters for regular, and upper case for blanks
     word = convert_to_internal_word(word);
-
 
     auto& board = b.brd;
     auto&& [row, col, direction] = _parse_isc_spec(sqspec);
     Move result;
     result.player = b.n_moves % 2 == 0 ? Player::Player1 : Player::Player2;
     result.score = 0;
-    result.square = row*Dim + col;
+    result.square = row * Dim + col;
     result.direction = direction;
     result.length = static_cast<int>(word.size());
-    std::fill(std::begin(result.tiles),   std::end(result.tiles),   Empty);
+    std::fill(std::begin(result.tiles), std::end(result.tiles), Empty);
     std::fill(std::begin(result.squares), std::end(result.squares), InvalidSquare);
 
     const int start = result.square;
     const int step = static_cast<int>(result.direction);
-    const int stop = start + step*Dim;
-    if (start + step*result.length >= stop) {
+    const int stop = start + step * Dim;
+    if (start + step * result.length >= stop) {
         DEBUG("error: word to long to fit: '%s' starting at %s", word.c_str(), SquareNames[start]);
         return std::nullopt;
     }
 
     int tiles = 0;
     for (int i = 0; i < result.length; ++i) {
-        const int sq = start + i*step;
+        const int sq = start + i * step;
         assert(start <= sq && sq < stop);
         if (board[sq] == Empty) {
-            result.tiles[tiles]   = word[i];
+            result.tiles[tiles] = word[i];
             result.squares[tiles] = sq;
             ++tiles;
         } else if (board[sq] != word[i]) {
@@ -452,28 +445,27 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
     }
     assert((same_row || same_col) || (same_row && same_col && m.size() == 1));
 
-    // TODO(peter): not correct for case where first player passes
-    if (b.n_moves > 0) {
-        if (std::none_of(squares_begin, squares_end, [&board](Square square) -> bool {
-                auto row = getrow(square);
-                auto col = getcol(square);
-                if (col - 1 >= 0 && board[square + Left] != Empty) {
-                    return true;
-                }
-                if (col + 1 < Dim && board[square + Right] != Empty) {
-                    return true;
-                }
-                if (row - 1 >= 0 && board[square + Up] != Empty) {
-                    return true;
-                }
-                if (row + 1 < Dim && board[square + Down] != Empty) {
-                    return true;
-                }
-                return false;
-            })) {
-            DEBUG("error: no tiles add to word already on board");
-            return std::nullopt;
+    bool h8_played = std::find(squares_begin, squares_end, Sq_H8);
+    bool adjacent_to_played_square = std::any_of(squares_begin, squares_end, [&board](Square square) -> bool {
+        auto row = getrow(square);
+        auto col = getcol(square);
+        if (col - 1 >= 0 && board[square + Left] != Empty) {
+            return true;
         }
+        if (col + 1 < Dim && board[square + Right] != Empty) {
+            return true;
+        }
+        if (row - 1 >= 0 && board[square + Up] != Empty) {
+            return true;
+        }
+        if (row + 1 < Dim && board[square + Down] != Empty) {
+            return true;
+        }
+        return false;
+    });
+    if (!h8_played && !adjacent_to_played_square) {
+        DEBUG("error: play not adjacent to any played tiles");
+        return std::nullopt;
     }
 
     for (int i = 0; i < n_tiles; ++i) {
@@ -511,22 +503,21 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
     //   1) all squares being played are unique
     //   2) all squares being played are on the same row or column
     //   3) all squares being played were previously empty on the board
+    //   4) if first move, H8 must be occupied
+    //   5) play connects to a previous play if not first move
     //
     // Need to verify that:
-    //   1) if first move, H8 must be occupied
-    //   2) play connects to a previous play if not first move
-    //   3) play is contiguous in one direction
-    //   4) all words formed are valid
+    //   1) play is contiguous in one direction
     //
     // Need to determine:
     //   1) starting square
     //   2) direction
     //   3) score
 
-    if (board[Sq_H8] == Empty) {
-        DEBUG("error: did not occupy H8 square on first move");
-        return _undo_move_and_return_null();
-    }
+    // if (board[Sq_H8] == Empty) {
+    //     DEBUG("error: did not occupy H8 square on first move");
+    //     return _undo_move_and_return_null();
+    // }
 
     Move result;
     result.player = b.n_moves % 2 == 0 ? Player::Player1 : Player::Player2;
