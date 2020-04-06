@@ -138,6 +138,10 @@ int main(int argc, char** argv) {
         auto move = *maybe_move;
         std::cout << "Got a move: " << move << std::endl;
         assert(isc_move.score == -1 || move.score == isc_move.score);
+
+        auto words = find_words(*board, move);
+        std::cout << "Move Scored  : " << move.score << "\n";
+        std::cout << "Created words: " << words << "\n";
     }
 
     std::cerr << "Bye." << std::endl;

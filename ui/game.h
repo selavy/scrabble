@@ -441,6 +441,15 @@ std::vector<Word> find_words(const Board& b, const Move& m) noexcept {
     return words;
 }
 
+std::ostream& operator<<(std::ostream& os, const std::vector<Word>& words) {
+    os << "{ ";
+    for (const auto& word : words) {
+        os << word << " ";
+    }
+    os << "}";
+    return os;
+}
+
 int score_move(const Board& b, /*const*/ Move& m) noexcept {
     int total_score = 0;
     auto& board = b.brd;
