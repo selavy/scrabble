@@ -52,10 +52,26 @@ enum class Player : int {
     Player2 = 1,
 };
 
+const char* GetPlayerName(Player player) {
+    switch (player) {
+        case Player::Player1:
+            return "Player 1";
+        case Player::Player2:
+            return "Player 2";
+    }
+    return "Unknown";
+}
+
 constexpr int ix(char row, int col) {
     assert('A' <= row && row <= 'O');
     assert(1 <= col && col <= Dim);
     return (row - 'A') * Dim + (col - 1);
+}
+
+// TODO: need to distinguish between a tile where
+// blank = Blank and blank = lower case
+constexpr bool isBlankTile(Tile t) noexcept {
+    return (t == Blank) || ('a' <= t && t <= 'z');
 }
 
 // clang-format off
@@ -135,6 +151,20 @@ struct Bag {
 
     std::vector<Tile> tiles;
 };
+
+void draw_tiles(Bag& bag, Rack& rack) {
+    for (;;) {
+        auto empty_it = std::find(std::begin(rack), std::end(rack), Empty);
+        if (empty_it == std::end(rack)) {
+            break;
+        }
+        auto maybe_tile = bag.draw();
+        if (!maybe_tile) {
+            break;
+        }
+        *empty_it = *maybe_tile;
+    }
+}
 
 constexpr Player flip_player(Player p) noexcept {
     auto v = static_cast<int>(p);
@@ -556,6 +586,25 @@ std::tuple<int, int, Direction> _parse_isc_spec(const std::string& sqspec) {
         throw std::runtime_error("invalid ISC square spec");
     }
     return {row, col, direction};
+}
+
+bool rack_has_tiles(const Rack& rack, const GuiMove& move) {
+    std::map<Tile, TileFreq> rackfreq;
+    std::map<Tile, TileFreq> movefreq;
+    for (auto tile : rack) {
+        rackfreq[tile]++;
+    }
+    for (auto [tile, square] : move) {
+        if (isBlankTile(tile)) {
+            tile = Blank;
+        }
+        movefreq[tile]++;
+        if (movefreq[tile] > rackfreq[tile]) {
+            DEBUG("error: attempt to play '%c', which not enough of in rack (%d)", tile, rackfreq[tile]);
+            return false;
+        }
+    }
+    return true;
 }
 
 std::optional<Move> make_move_isc_notation(const Board& b, std::string sqspec, std::string word, int score) {

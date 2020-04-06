@@ -50,13 +50,18 @@ std::optional<IscMove> valid_isc_form(const char* isc) {
     return std::nullopt;
 }
 
-std::optional<IscMove> get_move() {
+std::optional<IscMove> get_move(Player player, const Rack& rack) {
     bool quit = false;
     char* buf;
     do {
+        std::cout << GetPlayerName(player) << " rack: " << rack << "\n";
         while ((buf = readline(prompt)) != nullptr) {
             if (strlen(buf) > 0) {
                 add_history(buf);
+            }
+            if (strcasecmp(buf, "pass") == 0) {
+                free(buf);
+                return IscMove{};
             }
             auto maybe_isc = valid_isc_form(buf);
             free(buf);
@@ -65,6 +70,7 @@ std::optional<IscMove> get_move() {
             }
         }
 
+        std::cout << "\n";
         bool keep_asking = true;
         do {
             buf = readline("Quit? [Y/n] ");
@@ -99,12 +105,25 @@ bool no_squares_in_gui_move_are_not_empty(const Board& board, const GuiMove& gui
     return true;
 }
 
+void remove_tiles_from_rack(Rack& rack, const GuiMove& move) {
+    for (auto [tile, square] : move) {
+        if (isBlankTile(tile)) {
+            tile = Empty;
+        }
+        auto it = std::find(std::begin(rack), std::end(rack), tile);
+        assert(it != std::end(rack));
+        *it = Empty;
+    }
+}
+
 int main(int argc, char** argv) {
     int seed = 42;
     auto board = std::make_unique<Board>();
     auto bag = std::make_unique<Bag>(seed);
-    std::array<Rack, 2> racks;
     Player ptm = Player::Player1;
+    std::array<Rack, 2> racks;
+    std::fill(std::begin(racks[0]), std::end(racks[0]), Empty);
+    std::fill(std::begin(racks[1]), std::end(racks[1]), Empty);
 
     {  // TEMP TEMP
         DEBUG("--- DRAW ORDER ---");
@@ -115,35 +134,50 @@ int main(int argc, char** argv) {
     }
 
     for (;;) {
+        auto& rack = racks[static_cast<std::size_t>(ptm)];
+        draw_tiles(*bag, rack);
         std::cout << *board << std::endl;
-        auto maybe_isc_move = get_move();
+        auto maybe_isc_move = get_move(ptm, rack);
         if (!maybe_isc_move) {
             break;
         }
         auto isc_move = *maybe_isc_move;
-        std::cout << "DEBUG: Got a ISC move: " << isc_move << "\n";
+        if (isc_move.sqspec.empty()) {
+            std::cout << GetPlayerName(ptm) << " PASSED!\n";
+        } else {
+            std::cout << "DEBUG: Got a ISC move: " << isc_move << "\n";
+            auto gui_move = make_gui_move_from_isc(*board, isc_move);
+            std::cout << "DEBUG: Got a GUI move: " << gui_move << "\n";
+            assert(no_squares_in_gui_move_are_not_empty(*board, gui_move));
 
-        auto gui_move = make_gui_move_from_isc(*board, isc_move);
-        std::cout << "DEBUG: Got a GUI move: " << gui_move << "\n";
-        assert(no_squares_in_gui_move_are_not_empty(*board, gui_move));
+            if (!rack_has_tiles(rack, gui_move)) {
+                std::cerr << "Attempted to play tiles you don't have!" << std::endl;
+                continue;
+            }
 
-        auto debug_board_copy = std::make_unique<Board>(*board);
-        auto maybe_move = make_move(*board, gui_move);
-        if (!maybe_move) {
-            assert(*debug_board_copy == *board);
-            // TODO: add error message about why?
-            std::cerr << "Invalid move" << std::endl;
-            continue;
+            auto debug_board_copy = std::make_unique<Board>(*board);
+            auto maybe_move = make_move(*board, gui_move);
+            if (!maybe_move) {
+                assert(*debug_board_copy == *board);
+                // TODO: add error message about why?
+                std::cerr << "Invalid move" << std::endl;
+                continue;
+            }
+            auto move = *maybe_move;
+            std::cout << "DEBUG: Got a move: " << move << "\n";
+            assert(isc_move.score == -1 || move.score == isc_move.score);
+
+            auto words = find_words(*board, move);
+            std::cout << "--------------------------------------\n";
+            std::cout << "| Move Scored  : " << move.score  << "\n";
+            std::cout << "| Created words: " << words       << "\n";
+            std::cout << "--------------------------------------\n";
+            // TODO: include tile frequencies in the rack instead so can do
+            //       tile check and removal faster
+            remove_tiles_from_rack(rack, gui_move);
         }
-        auto move = *maybe_move;
-        std::cout << "DEBUG: Got a move: " << move << "\n";
-        assert(isc_move.score == -1 || move.score == isc_move.score);
 
-        auto words = find_words(*board, move);
-        std::cout << "--------------------------------------\n";
-        std::cout << "| Move Scored  : " << move.score  << "\n";
-        std::cout << "| Created words: " << words       << "\n";
-        std::cout << "--------------------------------------\n";
+        ptm = flip_player(ptm);
     }
 
     std::cerr << "Bye." << std::endl;
