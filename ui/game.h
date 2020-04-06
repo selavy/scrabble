@@ -295,8 +295,10 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept
                 }
             }
             if (word.size() > 1) {
-                DEBUG("found vertical word: '%s' starting from root '%c' -- %d", word.c_str(), board[root], score);
-                total_score += score;
+                const int word_multiplier = double_word_squares[root] * triple_word_squares[root];
+                total_score += score * word_multiplier;
+                DEBUG("found vertical word: '%s' starting from root '%c' -- %d (mult=%d)",
+                        word.c_str(), board[root], score, word_multiplier);
                 m.words_formed.emplace_back(std::move(word));
             }
         }
@@ -345,8 +347,10 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept
                 }
             }
             if (word.size() > 1) {
-                DEBUG("found horizontal word: '%s' starting from root '%c' -- %d", word.c_str(), board[root], score);
-                total_score += score;
+                const int word_multiplier = double_word_squares[root] * triple_word_squares[root];
+                total_score += score * word_multiplier;
+                DEBUG("found horizontal word: '%s' starting from root '%c' -- %d (mult=%d)",
+                        word.c_str(), board[root], score, word_multiplier);
                 m.words_formed.emplace_back(std::move(word));
             }
         }
