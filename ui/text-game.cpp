@@ -121,10 +121,10 @@ int main(int argc, char** argv) {
             break;
         }
         auto isc_move = *maybe_isc_move;
-        std::cout << "Got a ISC move: " << isc_move << std::endl;
+        std::cout << "DEBUG: Got a ISC move: " << isc_move << "\n";
 
         auto gui_move = make_gui_move_from_isc(*board, isc_move);
-        std::cout << "Got a GUI move: " << gui_move << std::endl;
+        std::cout << "DEBUG: Got a GUI move: " << gui_move << "\n";
         assert(no_squares_in_gui_move_are_not_empty(*board, gui_move));
 
         auto debug_board_copy = std::make_unique<Board>(*board);
@@ -136,12 +136,14 @@ int main(int argc, char** argv) {
             continue;
         }
         auto move = *maybe_move;
-        std::cout << "Got a move: " << move << std::endl;
+        std::cout << "DEBUG: Got a move: " << move << "\n";
         assert(isc_move.score == -1 || move.score == isc_move.score);
 
         auto words = find_words(*board, move);
-        std::cout << "Move Scored  : " << move.score << "\n";
-        std::cout << "Created words: " << words << "\n";
+        std::cout << "--------------------------------------\n";
+        std::cout << "| Move Scored  : " << move.score  << "\n";
+        std::cout << "| Created words: " << words       << "\n";
+        std::cout << "--------------------------------------\n";
     }
 
     std::cerr << "Bye." << std::endl;
