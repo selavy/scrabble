@@ -516,7 +516,6 @@ TEST_CASE("Word must be contiguous")
         CHECK(maybe_move->score == isc_move.score);
     }
 
-    std::cout << *board << std::endl;
     std::vector<std::string> should_fail = {
         "1A hello",
         "A1 hello",

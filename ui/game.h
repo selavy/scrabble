@@ -598,8 +598,9 @@ GuiMove make_gui_move_from_isc(const Board& b, const IscMove& isc) {
     const int len = std::min(static_cast<int>(root.size()), MaxWordLength);
     const int start = row * Dim + col;
     const int step = static_cast<int>(direction);
-    const int mdim = direction == Direction::HORIZONTAL ? row : col;
-    const int stop = start + step * std::min(Dim, mdim + len);
+    const int mdim = direction == Direction::HORIZONTAL ? col : row;
+    assert(mdim + len <= Dim);
+    const int stop = start + step * (mdim + len);
     for (int i = 0; i < len; ++i) {
         const int square = start + i * step;
         assert(start <= square && square < stop);
