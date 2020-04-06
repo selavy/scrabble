@@ -2,6 +2,7 @@
 #include "game.h"
 #include <iostream>
 
+#define SQR(x) AsSquare(x)
 
 TEST_CASE("Can insert words into set")
 {
@@ -68,50 +69,50 @@ TEST_CASE("Scrabble rules example", "[move_validation]")
 {
 	auto board = std::make_unique<Board>();
 
-    std::vector<std::tuple<GuiMove, Player, Score, Square, Direction, int, std::string, std::string>> ts = {
+    std::vector<std::tuple<GuiMove, Player, Score, Sq, Direction, int, std::string, std::string>> ts = {
         {
             {
-                { 'H', Sq_H6 },
-                { 'O', Sq_H7 },
-                { 'R', Sq_H8 },
-                { 'N', Sq_H9 },
+                { 'H', SQR(Sq::H6) },
+                { 'O', SQR(Sq::H7) },
+                { 'R', SQR(Sq::H8) },
+                { 'N', SQR(Sq::H9) },
             },
-            Player::Player1, 14, Sq_H6, Direction::HORIZONTAL, 4, "HORN", "HORN"
+            Player::Player1, 14, Sq::H6, Direction::HORIZONTAL, 4, "HORN", "HORN"
         },
         {
             {
-                { 'F', Sq_F8 },
-                { 'A', Sq_G8 },
-                // { 'R', Sq_H8 },
-                { 'M', Sq_I8 },
+                { 'F', SQR(Sq::F8) },
+                { 'A', SQR(Sq::G8) },
+                // { 'R', SQR(Sq::H8) },
+                { 'M', SQR(Sq::I8) },
             },
-            Player::Player2, 9, Sq_F8, Direction::VERTICAL, 4, "FAM", "FARM"
+            Player::Player2, 9, Sq::F8, Direction::VERTICAL, 4, "FAM", "FARM"
         },
         {
             {
-                { 'P', Sq_J6 },
-                { 'A', Sq_J7 },
-                { 'S', Sq_J8 },
-                { 'T', Sq_J9 },
-                { 'E', Sq_J10 },
+                { 'P', SQR(Sq::J6 ) },
+                { 'A', SQR(Sq::J7 ) },
+                { 'S', SQR(Sq::J8 ) },
+                { 'T', SQR(Sq::J9 ) },
+                { 'E', SQR(Sq::J10) },
             },
-            Player::Player1, 25, Sq_J6, Direction::HORIZONTAL, 5, "PASTE", "PASTE"
+            Player::Player1, 25, Sq::J6, Direction::HORIZONTAL, 5, "PASTE", "PASTE"
         },
         {
             {
-                // { 'M', Sq_I8 },
-                { 'O', Sq_I9 },
-                { 'B', Sq_I10 },
+                // { 'M', SQR(Sq::I8 ) },
+                { 'O', SQR(Sq::I9 ) },
+                { 'B', SQR(Sq::I10) },
             },
-            Player::Player2, 16, Sq_I8, Direction::HORIZONTAL, 3, "OB", "MOB"
+            Player::Player2, 16, Sq::I8, Direction::HORIZONTAL, 3, "OB", "MOB"
         },
         {
             {
-                { 'B', Sq_K5 },
-                { 'I', Sq_K6 },
-                { 'T', Sq_K7 },
+                { 'B', SQR(Sq::K5 ) },
+                { 'I', SQR(Sq::K6 ) },
+                { 'T', SQR(Sq::K7 ) },
             },
-            Player::Player1, 16, Sq_K5, Direction::HORIZONTAL, 3, "BIT", "BIT"
+            Player::Player1, 16, Sq::K5, Direction::HORIZONTAL, 3, "BIT", "BIT"
         },
     };
 
@@ -123,7 +124,7 @@ TEST_CASE("Scrabble rules example", "[move_validation]")
         auto move = *maybe_move;
         CHECK(move.player == player);
         CHECK(move.score == score);
-        CHECK(move.square == square);
+        CHECK(move.square == AsSquare(square));
         CHECK(move.direction == direction);
         CHECK(move.length == length);
         CHECK(tiles_have_word(move.tiles, tiles));
@@ -136,8 +137,8 @@ TEST_CASE("Scrabble rules example", "[move_validation]")
 struct GuiTestCase
 {
     GuiTestCase()=default;
-    GuiTestCase(GuiMove gm, Player p, Score s, Square sq, Direction d, int l)
-        : gmove{gm}, player{p}, score{s}, square{sq}, direction{d}, length{l} {}
+    GuiTestCase(GuiMove gm, Player p, Score s, Sq sq, Direction d, int l)
+        : gmove{gm}, player{p}, score{s}, square{AsSquare(sq)}, direction{d}, length{l} {}
 
     GuiMove   gmove;
     Player    player;
@@ -182,44 +183,44 @@ TEST_CASE("selavy v andybfan example")
     {
         {
             {
-                { 'S', Sq_H8 },
-                { 'E', Sq_H9 },
-                { 'E', Sq_H10 },
+                { 'S', SQR(Sq::H8 ) },
+                { 'E', SQR(Sq::H9 ) },
+                { 'E', SQR(Sq::H10) },
             },
-            Player::Player1, 6, Sq_H8, Direction::HORIZONTAL, 3
+            Player::Player1, 6, Sq::H8, Direction::HORIZONTAL, 3
         },
         {
             {
-                { 'M', Sq_H11 },
-                { 'A', Sq_I11 },
-                { 'Y', Sq_J11 },
-                { 'O', Sq_K11 },
+                { 'M', SQR(Sq::H11) },
+                { 'A', SQR(Sq::I11) },
+                { 'Y', SQR(Sq::J11) },
+                { 'O', SQR(Sq::K11) },
             },
-            Player::Player2, 24, Sq_H11, Direction::VERTICAL, 4
+            Player::Player2, 24, Sq::H11, Direction::VERTICAL, 4
         },
         {
             {
-                { 'F', Sq_J9  },
-                { 'l', Sq_J10 }, // NOTE: blank
-                // { 'Y', Sq_J11 },
+                { 'F', SQR(Sq::J9 ) },
+                { 'l', SQR(Sq::J10) }, // NOTE: blank
+                // { 'Y', SQR(Sq::J11) },
             },
-            Player::Player1, 8, Sq_J9, Direction::HORIZONTAL, 3
+            Player::Player1, 8, Sq::J9, Direction::HORIZONTAL, 3
         },
         {
             {
-                { 'R', Sq_K12 },
-                { 'A', Sq_L12 },
-                { 'G', Sq_M12 },
-                { 'E', Sq_N12 },
+                { 'R', SQR(Sq::K12) },
+                { 'A', SQR(Sq::L12) },
+                { 'G', SQR(Sq::M12) },
+                { 'E', SQR(Sq::N12) },
             },
-            Player::Player2, 12, Sq_K12, Direction::VERTICAL, 4
+            Player::Player2, 12, Sq::K12, Direction::VERTICAL, 4
         },
         {
             {
-                // { 'G', Sq_M12 },
-                { 'O', Sq_M13 },
+                // { 'G', SQR(Sq::M12) },
+                { 'O', SQR(Sq::M13) },
             },
-            Player::Player1, 6, Sq_M12, Direction::HORIZONTAL, 2
+            Player::Player1, 6, Sq::M12, Direction::HORIZONTAL, 2
         },
     };
 
@@ -438,7 +439,7 @@ bool operator==(const std::vector<Word>& lhs, const std::vector<Word>& rhs)
     std::set_symmetric_difference(lhs.begin(), lhs.end(),
             rhs.begin(), rhs.end(),
             std::back_inserter(diffs));
-    std::cerr << "DIFFS" << diffs << std::endl;
+    // std::cerr << "DIFFS" << diffs << std::endl;
     return diffs.empty();
 }
 

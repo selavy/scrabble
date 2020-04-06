@@ -12,14 +12,15 @@
 #include <memory>
 #include <numeric>
 #include <optional>
+#include <random>
 #include <set>
 #include <string>
 #include <unordered_set>
 #include <utility>
-#include <random>
 
 #include "tables.h"
 
+#define AsSquare(x) static_cast<int>(x)
 #define DEBUG(fmt, ...) fprintf(stderr, "DEBUG: " fmt "\n", ##__VA_ARGS__);
 
 using Dict = std::unordered_set<std::string>;
@@ -36,6 +37,15 @@ enum class Direction : int {
 constexpr Direction flip_direction(Direction x) {
     return x == Direction::HORIZONTAL ? Direction::VERTICAL : Direction::HORIZONTAL;
 }
+constexpr const char* GetDirectionName(Direction x) {
+    switch (x) {
+        case Direction::HORIZONTAL:
+            return "Horizontal";
+        case Direction::VERTICAL:
+            return "Vertical";
+    }
+    return "Unknown";
+}
 
 enum class Player : int {
     Player1 = 0,
@@ -46,6 +56,21 @@ constexpr int ix(char row, int col) {
     assert('A' <= row && row <= 'O');
     assert(1 <= col && col <= Dim);
     return (row - 'A') * Dim + (col - 1);
+}
+
+// clang-format off
+struct IscMove
+{
+    // format: ((?:\d\d?[A-O])|(?:[A-O]\d\d?)) ([a-zA-Z]+) (\d+)
+    std::string sqspec;
+    std::string root;
+    int         score;
+};
+// clang-format on
+
+std::ostream& operator<<(std::ostream& os, const IscMove& m) {
+    os << m.sqspec << " " << m.root << " " << m.score;
+    return os;
 }
 
 struct Board {
@@ -81,19 +106,14 @@ std::ostream& operator<<(std::ostream& os, const Board& board) {
     return os;
 }
 
-struct Bag
-{
+struct Bag {
     constexpr static std::array<TileFreq, 27> starting_frequencies = {
-         9,  2,  2,  4, 12,  2,  3,  2,
-         9,  1,  1,  4,  2,  6,  8,  2,
-         1,  6,  4,  6,  4,  2,  2,  1,
-         2, 1, 2,
+        9, 2, 2, 4, 12, 2, 3, 2, 9, 1, 1, 4, 2, 6, 8, 2, 1, 6, 4, 6, 4, 2, 2, 1, 2, 1, 2,
     };
 
     Bag() noexcept : Bag(std::random_device{}()) {}
 
-    explicit Bag(int seed) noexcept
-    {
+    explicit Bag(int seed) noexcept {
         tiles.reserve(NumTotalTiles);
         for (size_t i = 0; i < starting_frequencies.size(); ++i) {
             char c = i < 26 ? 'A' + i : '?';
@@ -127,7 +147,7 @@ struct Word {
     // 1-15 length             => 4 bits for length
 
     using Letters = std::array<char, MaxWordLength + 1>;
-    Letters letters = {}; // null terminated c-string format and all caps
+    Letters letters = {};  // null terminated c-string format and all caps
     int length = 0;
 
     constexpr Word() noexcept = default;
@@ -230,6 +250,23 @@ using Dictionary = std::unordered_set<Word>;
 
 using GuiMove = std::vector<std::pair<Tile, Square>>;
 
+std::ostream& operator<<(std::ostream& os, const GuiMove& move) {
+    os << "[ ";
+    for (auto&& [tile, square] : move) {
+        os << "(" << tile << ", " << SquareNames[square] << " [" << square << "]" << ") ";
+    }
+    os << "]";
+    return os;
+}
+
+const char* const GetSqName(Square sq) {
+    if (sq < 0 || sq > SquareNames.size()) {
+        return "Invalid [out-of-range]";
+    } else {
+        return SquareNames[sq];
+    }
+}
+
 // clang-format off
 struct Move
 {
@@ -246,6 +283,45 @@ struct Move
     std::vector<std::string> words_formed;
 };
 // clang-format on
+
+std::ostream& operator<<(std::ostream& os, const Tiles& tiles) {
+    os << "{ ";
+    for (auto tile : tiles) {
+        if (tile == Empty) {
+            continue;
+        }
+        os << "'" << tile << "' ";
+    }
+    os << "}";
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const RackArray<Square>& squares) {
+    os << "{ ";
+    for (auto square : squares) {
+        if (square == InvalidSquare) {
+            continue;
+        }
+        os << GetSqName(square) << " ";
+    }
+    os << "}";
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const Move& move)
+{
+    // clang-format off
+    os << "Player   : " << (static_cast<int>(move.player) + 1) << "\n"
+       << "Score    : " << move.score << "\n"
+       << "Square   : " << GetSqName(move.square) << "\n"
+       << "Direction: " << GetDirectionName(move.direction) << "\n"
+       << "Length   : " << move.length << "\n"
+       << "Tiles    : " << move.tiles << "\n"
+       << "Squares  : " << move.squares << "\n"
+       ;
+    return os;
+    // clang-format on
+}
 
 template <class Iter, class F>
 bool all_same(Iter first, Iter last, F f) {
@@ -439,7 +515,7 @@ std::string convert_to_internal_word(std::string word) {
 }
 
 // TODO(peter): using exceptions for now
-std::tuple<int, int, Direction> _parse_isc_spec(std::string sqspec) {
+std::tuple<int, int, Direction> _parse_isc_spec(const std::string& sqspec) {
     if (sqspec.size() != 2 && sqspec.size() != 3) {
         throw std::runtime_error("invalid ISC square spec");
     }
@@ -490,7 +566,8 @@ std::optional<Move> make_move_isc_notation(const Board& b, std::string sqspec, s
 
     const int start = result.square;
     const int step = static_cast<int>(result.direction);
-    const int stop = start + step * Dim;
+    const int mdim = direction == Direction::HORIZONTAL ? row : col;
+    const int stop = start + step * std::min(Dim, mdim + result.length);
     if (start + step * result.length >= stop) {
         DEBUG("error: word to long to fit: '%s' starting at %s", word.c_str(), SquareNames[start]);
         return std::nullopt;
@@ -510,6 +587,29 @@ std::optional<Move> make_move_isc_notation(const Board& b, std::string sqspec, s
         }
     }
 
+    return result;
+}
+
+GuiMove make_gui_move_from_isc(const Board& b, const IscMove& isc) {
+    GuiMove result;
+    const auto root = convert_to_internal_word(isc.root);
+    const auto& board = b.brd;
+    const auto [row, col, direction] = _parse_isc_spec(isc.sqspec);
+    const int len = std::min(static_cast<int>(root.size()), MaxWordLength);
+    const int start = row * Dim + col;
+    const int step = static_cast<int>(direction);
+    const int mdim = direction == Direction::HORIZONTAL ? row : col;
+    const int stop = start + step * std::min(Dim, mdim + len);
+    for (int i = 0; i < len; ++i) {
+        const int square = start + i * step;
+        assert(start <= square && square < stop);
+        if (board[square] == Empty) {
+            auto tile = root[i];
+            result.emplace_back(tile, square);
+        } else {
+            assert(board[square] == root[i]);
+        }
+    }
     return result;
 }
 
@@ -562,7 +662,7 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
     }
     assert((same_row || same_col) || (same_row && same_col && m.size() == 1));
 
-    bool h8_played = std::find(squares_begin, squares_end, Sq_H8);
+    bool h8_played = std::find(squares_begin, squares_end, AsSquare(Sq::H8));
     bool adjacent_to_played_square = std::any_of(squares_begin, squares_end, [&board](Square square) -> bool {
         auto row = getrow(square);
         auto col = getcol(square);
@@ -630,11 +730,6 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
     //   1) starting square
     //   2) direction
     //   3) score
-
-    // if (board[Sq_H8] == Empty) {
-    //     DEBUG("error: did not occupy H8 square on first move");
-    //     return _undo_move_and_return_null();
-    // }
 
     Move result;
     result.player = b.n_moves % 2 == 0 ? Player::Player1 : Player::Player2;
@@ -716,12 +811,3 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
     return result;
 }
 
-// clang-format off
-struct IscMove
-{
-    // format: ((?:\d\d?[A-O])|(?:[A-O]\d\d?)) ([a-zA-Z]+) (\d+)
-    std::string sqspec;
-    std::string root;
-    int         score;
-};
-// clang-format on

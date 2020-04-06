@@ -74,11 +74,7 @@ def xlate_name(x):
     return f'Tile::{xlate_basename(x)}'
 
 
-def print_array_impl(name, dtype, vals, specifier, n, const_specifier=''):
-    const_specifier = const_specifier.strip()
-    if const_specifier:
-        const_specifier += ' '
-    print(f"{const_specifier}{dtype} {name}[{len(vals)}] = {{")
+def print_values(vals, specifier, n):
     groups = []
     grp = []
     for v in vals:
@@ -92,6 +88,14 @@ def print_array_impl(name, dtype, vals, specifier, n, const_specifier=''):
     for grp in groups:
         row = [f'{x:{specifier}}' for x in grp]
         print(f"    {', '.join(row)},")
+
+
+def print_array_impl(name, dtype, vals, specifier, n, const_specifier=''):
+    const_specifier = const_specifier.strip()
+    if const_specifier:
+        const_specifier += ' '
+    print(f"{const_specifier}std::array<{dtype}, {len(vals)}> {name} = {{")
+    print_values(vals=vals, specifier=specifier, n=n)
     print("};")
 
 
@@ -128,26 +132,51 @@ for tile, _ in FREQS:
 print("};")
 
 
-print("enum class SquareIndex : int {")
+square_indices = []
 for col in range(15):
     for row in range(15):
         letter = chr(ord('A') + col)
         name = f'{letter}{row+1}'
         val = col*15 + row
-        print(f"    {name:3s} = {val:3d},")
+        square_indices.append(f"{name:>3s}")
+print("enum class Sq : int {")
+print_values(
+    vals=square_indices,
+    specifier="s",
+    n=15
+)
 print("};")
 
 
 # TODO: organize into rows of 15
-print("const char* const SquareNames[225+1] = {")
+square_names = []
 for i in range(225):
     col = i % 15
     row = i // 15
-    letter = chr(ord('A') + col)
-    name = f'{letter}{row+1}'
-    print(f'    "{name:>3s}",')
-print(f'    "Invalid",')
-print("};")
+    letter = chr(ord('A') + row)
+    name = f'{letter}{col+1}'
+    final = f'"{name:>3s}"'
+    square_names.append(final)
+square_names.append('"INVALID"')
+
+print_array_impl(
+    name='SquareNames',
+    dtype='const char* const',
+    vals=square_names,
+    specifier="s",
+    n=15,
+    const_specifier='constexpr',
+)
+
+# print("constexpr std::array<const char* const, 225+1> SquareNames = {")
+# for i in range(225):
+#     col = i % 15
+#     row = i // 15
+#     letter = chr(ord('A') + row)
+#     name = f'{letter}{col+1}'
+#     print(f'    "{name:>3s}",')
+# print(f'    "Invalid",')
+# print("};")
 
 
 letter_values = []
