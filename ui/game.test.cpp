@@ -132,11 +132,61 @@ TEST_CASE("Scrabble rules example", "[move_validation]")
     }
 }
 
+// clang-format off
+struct GuiTestCase
+{
+    GuiTestCase()=default;
+    GuiTestCase(GuiMove gm, Player p, Score s, Square sq, Direction d, int l)
+        : gmove{gm}, player{p}, score{s}, square{sq}, direction{d}, length{l} {}
+
+    GuiMove   gmove;
+    Player    player;
+    Score     score;
+    Square    square;
+    Direction direction;
+    int       length;
+};
+
+struct IscMove
+{
+    std::string sqspec;
+    std::string root;
+    int         score;
+};
+// clang-format on
+
+GuiTestCase make_test_case_from_isc(const Board& b, IscMove isc)
+{
+    GuiTestCase t;
+    auto& board = b.brd;
+    auto&& [row, col, direction] = _parse_isc_spec(isc.sqspec);
+    auto root = convert_to_internal_word(isc.root);
+    t.player = b.n_moves % 2 == 0 ? Player::Player1 : Player::Player2;
+    t.score = isc.score;
+    t.square = row*Dim + col;
+    t.direction = direction;
+    t.length = static_cast<int>(root.size());
+    const int start = t.square;
+    const int step = static_cast<int>(t.direction);
+    const int stop = start + step*Dim;
+    assert (start + step * t.length < stop);
+    for (size_t i = 0; i < root.size(); ++i) {
+        const int sq = start + i * step;
+        if (board[sq] == Empty) {
+            t.gmove.emplace_back(root[i], sq);
+        } else {
+            assert(board[sq] == root[i]);
+        }
+    }
+    return t;
+}
+
 TEST_CASE("selavy v andybfan example")
 {
     Board board;
 
-    std::vector<std::tuple<GuiMove, Player, Score, Square, Direction, int>> moves =
+    // std::vector<std::tuple<GuiMove, Player, Score, Square, Direction, int>> moves =
+    std::vector<GuiTestCase> moves =
     {
         {
             {
@@ -199,7 +249,7 @@ TEST_CASE("ISC Notation")
 {
     Board board;
 
-    std::vector<std::tuple<std::string, std::string, Score>> ts = {
+    std::vector<IscMove> ts = {
         // square spec, word     , score
         { "H8"        , "see"    , 6     },
         { "11H"       , "mayo"   , 24    },
@@ -212,12 +262,18 @@ TEST_CASE("ISC Notation")
         { "11H"       , "mayor"  , 13    },
     };
 
-    for (auto&& [square_spec, word, score] : ts) {
+    for (const auto& isc : ts) {
         std::cerr << "BEFORE:\n" << board << std::endl;
-        auto maybe_move = make_move_isc_notation(board, square_spec, word, score);
+        auto&& [gmove, player, score, square, direction, length] = make_test_case_from_isc(board, isc);
+        // auto maybe_move = make_move_isc_notation(board, square_spec, word, score);
+        auto maybe_move = make_move(board, gmove);
         REQUIRE(static_cast<bool>(maybe_move) == true);
         auto move = *maybe_move;
-        play_move(board, move);
+        CHECK(move.player == player);
+        CHECK(move.score == score);
+        CHECK(move.square == square);
+        CHECK(move.direction == direction);
+        CHECK(move.length == length);
         std::cerr << "AFTER:\n" << board << "\n" << std::endl;
     }
 }

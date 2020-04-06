@@ -368,48 +368,50 @@ std::string convert_to_internal_word(std::string word) {
     return word;
 }
 
-std::optional<Move> make_move_isc_notation(const Board& b, std::string square, std::string word, int score)
+// TODO(peter): using exceptions for now
+std::tuple<int, int, Direction> _parse_isc_spec(std::string sqspec)
+{
+    if (sqspec.size() != 2 && sqspec.size() != 3) {
+        throw std::runtime_error("invalid ISC square spec");
+    }
+    int row;
+    int col;
+    Direction direction;
+    if ('A' <= sqspec[0] && sqspec[0] <= 'Z') {
+        row = sqspec[0] - 'A';
+        if (sqspec.size() == 2) {
+            col = (sqspec[1] - '0');
+        } else {
+            col = (sqspec[1] - '0')*10 + (sqspec[2] - '0');
+        }
+        direction = Direction::HORIZONTAL;
+    } else if (sqspec.size() == 2) {
+        col = sqspec[0] - '0';
+        row = sqspec[1] - 'A';
+        direction = Direction::VERTICAL;
+    } else {
+        col = (sqspec[0] - '0')*10 + (sqspec[1] - '0');
+        row = sqspec[2] - 'A';
+        direction = Direction::VERTICAL;
+    }
+    col--;
+    if (!(0 <= row && row < Dim)) {
+        throw std::runtime_error("invalid ISC square spec");
+    }
+    if (!(0 <= col && col < Dim)) {
+        throw std::runtime_error("invalid ISC square spec");
+    }
+    return { row, col, direction };
+}
+
+std::optional<Move> make_move_isc_notation(const Board& b, std::string sqspec, std::string word, int score)
 {
     // ISC uses lower case letters for regular, and upper case for blanks
     word = convert_to_internal_word(word);
 
-    if (square.size() != 2 && square.size() != 3) {
-        DEBUG("error: invalid square specification: '%s'", square.c_str());
-        return std::nullopt;
-    }
-
-    Direction direction;
-    int row;
-    int col;
-    if ('A' <= square[0] && square[0] <= 'Z') {
-        row = square[0] - 'A';
-        if (square.size() == 2) {
-            col = (square[1] - '0');
-        } else {
-            col = (square[1] - '0')*10 + (square[2] - '0');
-        }
-        direction = Direction::HORIZONTAL;
-    } else if (square.size() == 2) {
-        col = square[0] - '0';
-        row = square[1] - 'A';
-        direction = Direction::VERTICAL;
-    } else {
-        col = (square[0] - '0')*10 + (square[1] - '0');
-        row = square[2] - 'A';
-        direction = Direction::VERTICAL;
-    }
-    col--;
-
-    if (!(0 <= row && row < Dim)) {
-        DEBUG("error: invalid row: %d", row);
-        return std::nullopt;
-    }
-    if (!(0 <= col && col < Dim)) {
-        DEBUG("error: invalid col: %d", col);
-        return std::nullopt;
-    }
 
     auto& board = b.brd;
+    auto&& [row, col, direction] = _parse_isc_spec(sqspec);
     Move result;
     result.player = b.n_moves % 2 == 0 ? Player::Player1 : Player::Player2;
     result.score = 0;
@@ -420,7 +422,7 @@ std::optional<Move> make_move_isc_notation(const Board& b, std::string square, s
     std::fill(std::begin(result.squares), std::end(result.squares), InvalidSquare);
 
     const int start = result.square;
-    const int step = static_cast<int>(direction);
+    const int step = static_cast<int>(result.direction);
     const int stop = start + step*Dim;
     if (start + step*result.length >= stop) {
         DEBUG("error: word to long to fit: '%s' starting at %s", word.c_str(), SquareNames[start]);
