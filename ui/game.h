@@ -609,6 +609,7 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
         result.square = horz_start;
         result.direction = Direction::HORIZONTAL;
         result.length = horz_stop - horz_start;
+        DEBUG("HORIZONTAL LENGTH: [%d, %d) -> %d", horz_start, horz_stop, result.length);
     }
 
     if (same_col) {
@@ -634,6 +635,7 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
         }
 
         int length = (vert_stop - vert_start) / Dim;
+        DEBUG("VERTICAL LENGTH: [%d, %d) -> %d", vert_start, vert_stop, length);
         if (length > result.length) {
             result.square = vert_start;
             result.direction = Direction::VERTICAL;
