@@ -10,7 +10,7 @@
 #include "game.h"
 
 const char* prompt = "\1\033[7m\1Scrabble$\1\033[0m\1 ";
-static std::regex isc_regex(R"(((?:\d\d?[A-O])|(?:[A-O]\d\d?)) ([a-zA-Z]+)(?: (\d+))?)", std::regex_constants::ECMAScript);
+static std::regex isc_regex(R"(((?:\d\d?[A-O])|(?:[A-O]\d\d?))\s+([a-zA-Z]+)(?:\s+(\d+))?\s*)", std::regex_constants::ECMAScript);
 
 std::optional<IscMove> valid_isc_form(const char* isc) {
     std::cmatch match;
