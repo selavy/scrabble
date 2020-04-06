@@ -146,13 +146,6 @@ struct GuiTestCase
     Direction direction;
     int       length;
 };
-
-struct IscMove
-{
-    std::string sqspec;
-    std::string root;
-    int         score;
-};
 // clang-format on
 
 GuiTestCase make_test_case_from_isc(const Board& b, IscMove isc)

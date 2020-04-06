@@ -16,6 +16,7 @@
 #include <string>
 #include <unordered_set>
 #include <utility>
+#include <random>
 
 #include "tables.h"
 
@@ -79,6 +80,41 @@ std::ostream& operator<<(std::ostream& os, const Board& board) {
     }
     return os;
 }
+
+struct Bag
+{
+    constexpr static std::array<TileFreq, 27> starting_frequencies = {
+         9,  2,  2,  4, 12,  2,  3,  2,
+         9,  1,  1,  4,  2,  6,  8,  2,
+         1,  6,  4,  6,  4,  2,  2,  1,
+         2, 1, 2,
+    };
+
+    Bag() noexcept : Bag(std::random_device{}()) {}
+
+    explicit Bag(int seed) noexcept
+    {
+        tiles.reserve(NumTotalTiles);
+        for (size_t i = 0; i < starting_frequencies.size(); ++i) {
+            char c = i < 26 ? 'A' + i : '?';
+            tiles.insert(tiles.end(), starting_frequencies[i], c);
+        }
+        assert(tiles.size() == NumTotalTiles);
+        std::mt19937 gen(seed);
+        std::shuffle(tiles.begin(), tiles.end(), gen);
+    }
+
+    std::optional<Tile> draw() noexcept {
+        if (tiles.empty()) {
+            return std::nullopt;
+        }
+        auto tile = tiles.back();
+        tiles.pop_back();
+        return tile;
+    }
+
+    std::vector<Tile> tiles;
+};
 
 constexpr Player flip_player(Player p) noexcept {
     auto v = static_cast<int>(p);
@@ -679,3 +715,12 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
 
     return result;
 }
+
+// clang-format off
+struct IscMove
+{
+    std::string sqspec;
+    std::string root;
+    int         score;
+};
+// clang-format on

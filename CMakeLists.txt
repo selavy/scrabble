@@ -20,6 +20,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
+find_package(Libedit REQUIRED)
+add_library(LibEdit INTERFACE)
+target_link_libraries(LibEdit INTERFACE ${LIBEDIT_LIBRARIES})
+target_include_directories(LibEdit INTERFACE ${LIBEDIT_INCLUDE_DIR})
+
 add_subdirectory(third_party)
 add_subdirectory(src)
 add_subdirectory(ui)

@@ -9,13 +9,17 @@ constexpr int NumTilesRack = 7;
 using Tile = char;
 using Square = int;
 using Score = int;
+using TileFreq = int;
 using Tiles = std::array<Tile, NumTilesRack>;
+using Rack = Tiles;
 
 constexpr int Dim = 15;
 constexpr int NumSquares = Dim * Dim;
 constexpr int NumBlankTiles = 2;
 constexpr int MinWordLength = 2;
 constexpr int MaxWordLength = Dim;
+constexpr int NumTotalTiles = 100;
+constexpr int NumTileKinds = 27;
 constexpr Tile Empty = ' ';
 constexpr Tile Blank = '?';
 constexpr Square InvalidSquare = NumSquares;
