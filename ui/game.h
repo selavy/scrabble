@@ -64,7 +64,7 @@ struct IscMove
     // format: ((?:\d\d?[A-O])|(?:[A-O]\d\d?)) ([a-zA-Z]+) (\d+)
     std::string sqspec;
     std::string root;
-    int         score;
+    int         score = -1;
 };
 // clang-format on
 
@@ -662,7 +662,7 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
     }
     assert((same_row || same_col) || (same_row && same_col && m.size() == 1));
 
-    bool h8_played = std::find(squares_begin, squares_end, AsSquare(Sq::H8));
+    bool h8_played = std::find(squares_begin, squares_end, AsSquare(Sq::H8)) != squares_end;
     bool adjacent_to_played_square = std::any_of(squares_begin, squares_end, [&board](Square square) -> bool {
         auto row = getrow(square);
         auto col = getcol(square);

@@ -497,3 +497,46 @@ TEST_CASE("Find all words")
         // std::cerr << "AFTER:\n" << *board << "\n" << std::endl;
     }
 }
+
+TEST_CASE("Word must be contiguous")
+{
+    auto board = std::make_unique<Board>();
+    std::vector<std::string> isc_moves = {
+        "H7 zag 26",
+        "I6 bam 24",
+        "J5 tag 25",
+        "8F tram 6",
+    };
+
+    for (auto isc_spec : isc_moves) {
+        auto isc_move = _parse_isc_string(isc_spec);
+        auto gui_move = make_gui_move_from_isc(*board, isc_move);
+        auto maybe_move = make_move(*board, gui_move);
+        REQUIRE(static_cast<bool>(maybe_move) == true);
+        CHECK(maybe_move->score == isc_move.score);
+    }
+
+    std::cout << *board << std::endl;
+    std::vector<std::string> should_fail = {
+        "1A hello",
+        "A1 hello",
+        "4G bag",
+        "F10 histor",
+        "A13 run",
+        "15A run",
+        "O13 bye",
+        "15M bye",
+        "O1 longwor",
+        "1I longwor",
+    };
+
+    for (auto isc_spec : should_fail) {
+        INFO("isc spec: " << isc_spec);
+        auto isc_move = _parse_isc_string(isc_spec);
+        auto gui_move = make_gui_move_from_isc(*board, isc_move);
+        auto board_copy = std::make_unique<Board>(*board);
+        auto maybe_move = make_move(*board, gui_move);
+        REQUIRE(static_cast<bool>(maybe_move) == false);
+        REQUIRE(*board == *board_copy);
+    }
+}
