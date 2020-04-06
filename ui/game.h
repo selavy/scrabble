@@ -91,13 +91,7 @@ struct Word {
     // 1-15 length             => 4 bits for length
 
     using Letters = std::array<char, MaxWordLength + 1>;
-    // clang-format off
-    Letters letters = {
-        '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
-        '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
-    };
-    // clang-format on
-    // null terminated c-string format and all caps
+    Letters letters = {}; // null terminated c-string format and all caps
     int length = 0;
 
     constexpr Word() noexcept = default;

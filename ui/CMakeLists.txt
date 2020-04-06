@@ -7,11 +7,11 @@ target_link_libraries(scrabble-ui
         fmt::fmt
 )
 
-# add_executable(game game.cpp)
-add_executable(game
+add_library(game game.h game.cpp)
+target_link_libraries(game PUBLIC cxx_project_options)
+
+add_executable(unittest
     unit_test.cpp
-    game.h
-    game.cpp
     game.test.cpp
 )
-target_link_libraries(game PUBLIC cxx_project_options Catch2)
+target_link_libraries(unittest PUBLIC game Catch2)
