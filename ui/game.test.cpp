@@ -367,3 +367,57 @@ TEST_CASE("ISC -- insidious v chloso20")
         // std::cerr << "AFTER:\n" << *board << "\n" << std::endl;
     }
 }
+
+TEST_CASE("ISC -- insidious v cleatier")
+{
+    auto board = std::make_unique<Board>();
+
+    // clang-format off
+    std::vector<std::string> ts = {
+        "H7 fou 12",
+        "G4 eejit 21",
+        "H1 enow 42",
+        "I2 area 16",
+        "J1 igg 21",
+        "J5 mannite 67",
+        "11E lavates 40",
+        "K4 dine 24",
+        "L1 cruor 32",
+        "1L chit 27",
+        "10D yEz 66",
+        "H11 afire 36",
+        "14E chirp 20",
+        "J13 pya 40",
+        "13G xi 34",
+        "9C qat 29",
+        "D3 interlay 24",
+        "12D beg 28",
+        "C2 mooed 27",
+        "L7 wud 14",
+        "15J aubade 36",
+        "O8 roselIke 86",
+        "6B odea 7",
+    };
+    // clang-format on
+
+    char spec[32];
+    char root[32];
+    for (const auto& s : ts) {
+        IscMove isc;
+        sscanf(s.c_str(), "%s %s %d", &spec[0], &root[0], &isc.score);
+        isc.sqspec = spec;
+        isc.root   = root;
+        INFO("Playing " << isc.sqspec << " " << isc.root << " " << isc.score);
+        // std::cerr << "BEFORE:\n" << *board << std::endl;
+        auto&& [gmove, player, score, square, direction, length] = make_test_case_from_isc(*board, isc);
+        auto maybe_move = make_move(*board, gmove);
+        REQUIRE(static_cast<bool>(maybe_move) == true);
+        auto move = *maybe_move;
+        CHECK(move.player == player);
+        CHECK(move.score == score);
+        CHECK(move.square == square);
+        CHECK(move.direction == direction);
+        CHECK(move.length == length);
+        // std::cerr << "AFTER:\n" << *board << "\n" << std::endl;
+    }
+}
