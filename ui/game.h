@@ -719,6 +719,7 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
 // clang-format off
 struct IscMove
 {
+    // format: ((?:\d\d?[A-O])|(?:[A-O]\d\d?)) ([a-zA-Z]+) (\d+)
     std::string sqspec;
     std::string root;
     int         score;
