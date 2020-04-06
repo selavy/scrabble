@@ -14,7 +14,7 @@
 const char* prompt = "\1\033[7m\1Scrabble$\1\033[0m\1 ";
 
 #ifdef USE_STD_REGEX
-static std::regex isc_regex(R"(((?:\d\d?[A-O])|(?:[A-O]\d\d?))\s+([a-zA-Z]+)(?:\s+(\d+))?\s*)", std::regex_constants::ECMAScript);
+static std::regex isc_regex(R"(\s*((?:\d\d?[A-O])|(?:[A-O]\d\d?))\s+([a-zA-Z]+)(?:\s+(\d+))?\s*)", std::regex_constants::ECMAScript);
 #else
 static re2::RE2 isc_regex(R"(\s*((?:\d{1,2}[A-O])|(?:[A-O]\d{1,2}))\s+([a-zA-Z]+)(?:\s+(\d+))?\s*)");
 #endif
@@ -90,6 +90,15 @@ std::optional<IscMove> get_move() {
     return std::nullopt;
 }
 
+bool no_squares_in_gui_move_are_not_empty(const Board& board, const GuiMove& gui_move) {
+    for (auto&& [tile, square] : gui_move) {
+        if (board.brd[square] != Empty) {
+            return false;
+        }
+    }
+    return true;
+}
+
 int main(int argc, char** argv) {
     int seed = 42;
     auto board = std::make_unique<Board>();
@@ -116,9 +125,12 @@ int main(int argc, char** argv) {
 
         auto gui_move = make_gui_move_from_isc(*board, isc_move);
         std::cout << "Got a GUI move: " << gui_move << std::endl;
+        assert(no_squares_in_gui_move_are_not_empty(*board, gui_move));
 
+        auto debug_board_copy = std::make_unique<Board>(*board);
         auto maybe_move = make_move(*board, gui_move);
         if (!maybe_move) {
+            assert(*debug_board_copy == *board);
             // TODO: add error message about why?
             std::cerr << "Invalid move" << std::endl;
             continue;
