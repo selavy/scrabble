@@ -427,36 +427,62 @@ TEST_CASE("ISC -- insidious v cleatier")
     }
 }
 
+std::ostream& operator<<(std::ostream& os, const std::vector<Word>& words)
+{
+    os << "{ ";
+    for (const auto& word : words) {
+        os << word << " ";
+    }
+    os << "}";
+    return os;
+}
+
+bool operator==(const std::vector<Word>& lhs, const std::vector<Word>& rhs)
+{
+    assert(std::is_sorted(lhs.begin(), lhs.end()));
+    assert(std::is_sorted(rhs.begin(), rhs.end()));
+    std::vector<Word> diffs;
+    std::set_symmetric_difference(lhs.begin(), lhs.end(),
+            rhs.begin(), rhs.end(),
+            std::back_inserter(diffs));
+    std::cerr << "DIFFS" << diffs << std::endl;
+    return diffs.empty();
+}
+
+bool operator!=(const std::vector<Word>& lhs, const std::vector<Word>& rhs) {
+    return !(lhs == rhs);
+}
+
 TEST_CASE("Find all words")
 {
     auto board = std::make_unique<Board>();
     // clang-format off
-    std::vector<std::string> ts = {
-        "8D areca 16",
-        "D7 fauvist 26",
-        "F6 zoea 33",
-        "10F lipoma 34",
-        "6F za 11",
-        "K5 outhear 40",
-        "12F dearest 79",
-        "9I jeed 41",
-        "C3 aioli 18",
-        "D1 karn 32",
-        "1A brokenlY 167",
-        "H12 ably 27",
-        "8K hedge 37",
-        "L1 wingy 37",
-        "3G footing 32",
-        "4F new 24",
-        "2K qi 22",
-        "14B vest 28",
-        "O1 hexamine 113",
-        "N8 guidons 22",
-        "B5 pAretic 73",
+    std::vector<std::pair<std::string, std::vector<Word>>> ts = {
+        { "8D areca 16", { "ARECA" } },
+        { "D7 fauvist 26", { "FAUVIST" } },
+        { "F6 zoea 33", { "ZOEA" } },
+        { "10F lipoma 34", { "ZOEAL", "LIPOMA" } },
+        { "6F za 11", { "ZA" } },
+        { "K5 outhear 40", { "OUTHEAR" } },
+        { "12F dearest 79", { "DEAREST", "OUTHEARS" } },
+        { "9I jeed 41", { "JO", "EM", "JEED" } },
+        { "C3 aioli 18", { "AIOLI", "IF" } },
+        { "D1 karn 32", { "KARN", "AR", "IN" } },
+        // { "1A brokenlY 167", },
+        // { "H12 ably 27", },
+        // { "8K hedge 37", },
+        // { "L1 wingy 37", },
+        // { "3G footing 32", },
+        // { "4F new 24", },
+        // { "2K qi 22", },
+        // { "14B vest 28", },
+        // { "O1 hexamine 113", },
+        // { "N8 guidons 22", },
+        // { "B5 pAretic 73", },
     };
     // clang-format on
 
-    for (const auto& s : ts) {
+    for (auto&& [s, expected_words] : ts) {
         auto isc = _parse_isc_string(s);
         INFO("Playing " << isc.sqspec << " " << isc.root << " " << isc.score);
         // std::cerr << "BEFORE:\n" << *board << std::endl;
@@ -469,6 +495,11 @@ TEST_CASE("Find all words")
         CHECK(move.square == square);
         CHECK(move.direction == direction);
         CHECK(move.length == length);
+
+        auto result = find_words(*board, move);
+        std::sort(result.begin(), result.end());
+        std::sort(expected_words.begin(), expected_words.end());
+        REQUIRE(result == expected_words);
         // std::cerr << "AFTER:\n" << *board << "\n" << std::endl;
     }
 }

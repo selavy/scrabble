@@ -91,21 +91,34 @@ struct Word {
     // 1-15 length             => 4 bits for length
 
     using Letters = std::array<char, MaxWordLength + 1>;
-    Letters letters = {'\0'};  // null terminated c-string format and all caps
+    // clang-format off
+    Letters letters = {
+        '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+        '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+    };
+    // clang-format on
+    // null terminated c-string format and all caps
     int length = 0;
 
     constexpr Word() noexcept = default;
 
-    constexpr Word(const std::string& word) noexcept {
-        assert(word.size() <= static_cast<std::size_t>(MaxWordLength));
-        length = static_cast<int>(word.size());
-        for (std::size_t i = 0; i < word.size(); ++i) {
+    constexpr Word(const char* word) noexcept {
+        length = strlen(word);
+        assert(MinWordLength <= length && length <= MaxWordLength);
+        for (int i = 0; i < length; ++i) {
             assert('A' <= word[i] && word[i] <= 'Z');
             letters[i] = word[i];
         }
         assert(strlen(&letters[0]) == length);
-        assert(MinWordLength <= length && length <= MaxWordLength);
+#ifndef NDEBUG
+        for (int i = length; i <= MaxWordLength; ++i) {
+            assert(letters[i] == '\0');
+        }
+#endif
     }
+
+    // c_str() isn't constexpr??
+    /*constexpr*/ Word(const std::string& word) noexcept : Word(word.c_str()) {}
 
     constexpr Word(const Word& other) noexcept : letters{other.letters}, length{other.length} {}
 
@@ -113,6 +126,22 @@ struct Word {
         // TODO(peter): temp temp -- don't actually need to clear other.letters
         std::fill(std::begin(other.letters), std::end(other.letters), '\0');
         other.length = 0;
+    }
+
+    constexpr Word& operator=(const Word& other) noexcept {
+        letters = other.letters;
+        length = other.length;
+        return *this;
+    }
+
+    constexpr Word& operator=(Word&& other) noexcept {
+        if (this != &other) {
+            *this = other;
+            // TODO(peter): temp temp -- don't actually need to clear other.letters
+            std::fill(std::begin(other.letters), std::end(other.letters), '\0');
+            other.length = 0;
+        }
+        return *this;
     }
 
     constexpr int size() const noexcept { return length; }
@@ -148,7 +177,7 @@ struct Word {
 
     bool operator!=(const Word& other) const noexcept { return !(*this == other); }
 
-    bool operator<(const Word& other) const noexcept { return strcmp(this->c_str(), other.c_str()) <= 0; }
+    bool operator<(const Word& other) const noexcept { return strcmp(this->c_str(), other.c_str()) < 0; }
 };
 
 std::ostream& operator<<(std::ostream& os, const Word& word) {
