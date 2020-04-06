@@ -616,7 +616,7 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
         const int col_start = first_tile_col;  // inclusive
         const int col_stop = NumSquares;       // exclusive
         int vert_start = first_tile_sq + Up;
-        while (vert_start >= col_start && board[col_start] != Empty) {
+        while (vert_start >= col_start && board[vert_start] != Empty) {
             vert_start += Up;
         }
         vert_start += Down;
@@ -636,7 +636,7 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
 
         int length = (vert_stop - vert_start) / Dim;
         DEBUG("VERTICAL LENGTH: [%d, %d) -> %d", vert_start, vert_stop, length);
-        if (length > result.length) {
+        if (length >= result.length) {
             result.square = vert_start;
             result.direction = Direction::VERTICAL;
             result.length = length;

@@ -81,7 +81,7 @@ double_letters = [
     (M, 7),
     (M, 9),
     (O, 4),
-    (O, 13),
+    (O, 12),
 ]
 assert len(double_letters) == 24
 

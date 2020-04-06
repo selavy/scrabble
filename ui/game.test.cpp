@@ -260,10 +260,43 @@ TEST_CASE("ISC Notation")
         { "15M"       , "son"    , 3     },
         { "13L"       , "to"     , 4     },
         { "11H"       , "mayor"  , 13    },
+        { "M12"       , "goos"   , 5     },
+        { "8F"        , "qis"    , 12    },
+        { "9E"        , "tine"   , 19    },
+        { "E9"        , "triad"  , 12    },
+        { "12D"       , "lax"    , 20    },
+        { "13B"       , "bead"   , 16    },
+        { "D12"       , "lac"    , 5     },
+        { "15A"       , "aide"   , 25    },
+        { "N10"       , "nee"    , 5     },
+        { "N9"        , "knee"   , 8     },
+        { "O8"        , "fie"    , 26    },
+        { "G6"        , "gain"   , 6     },
+        { "6D"        , "hung"   , 10    },
+        { "D5"        , "shoe"   , 8     },
+        { "15A"       , "aided"  , 7     },
+        { "7C"        , "cop"    , 14    },
+        { "H8"        , "seems"  , 8     },
+        { "5A"        , "goes"   , 5     },
+        { "A5"        , "griz"   , 42    },
+        { "C7"        , "chill"  , 16    },
+        { "F4"        , "nan"    , 3     },
+        { "4F"        , "now"    , 10    },
+        { "H1"        , "brow"   , 27    },
+        { "1H"        , "belt"   , 6     },
+        { "3G"        , "jo"     , 34    },
+        { "3G"        , "jot"    , 11    },
+        { "K1"        , "turn"   , 4     },
+        { "L4"        , "etude"  , 18    },
+        { "7J"        , "mud"    , 6     },
+        { "B4"        , "yo"     , 5     },
+        { "8K"        , "pet"    , 9     },
+        { "J6"        , "am"     , 6     },
     };
 
     for (const auto& isc : ts) {
-        std::cerr << "BEFORE:\n" << board << std::endl;
+        INFO("Playing " << isc.sqspec << " " << isc.root << " " << isc.score);
+        // std::cerr << "BEFORE:\n" << board << std::endl;
         auto&& [gmove, player, score, square, direction, length] = make_test_case_from_isc(board, isc);
         // auto maybe_move = make_move_isc_notation(board, square_spec, word, score);
         auto maybe_move = make_move(board, gmove);
@@ -274,6 +307,6 @@ TEST_CASE("ISC Notation")
         CHECK(move.square == square);
         CHECK(move.direction == direction);
         CHECK(move.length == length);
-        std::cerr << "AFTER:\n" << board << "\n" << std::endl;
+        // std::cerr << "AFTER:\n" << board << "\n" << std::endl;
     }
 }
