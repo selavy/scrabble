@@ -248,6 +248,7 @@ TEST_CASE("ISC Notation")
 {
     auto board = std::make_unique<Board>();
 
+    // clang-format off
     std::vector<IscMove> ts = {
         // square spec, word     , score
         { "H8"        , "see"    , 6     },
@@ -292,12 +293,69 @@ TEST_CASE("ISC Notation")
         { "8K"        , "pet"    , 9     },
         { "J6"        , "am"     , 6     },
     };
+    // clang-format on
 
     for (const auto& isc : ts) {
         INFO("Playing " << isc.sqspec << " " << isc.root << " " << isc.score);
         // std::cerr << "BEFORE:\n" << *board << std::endl;
         auto&& [gmove, player, score, square, direction, length] = make_test_case_from_isc(*board, isc);
         // auto maybe_move = make_move_isc_notation(*board, square_spec, word, score);
+        auto maybe_move = make_move(*board, gmove);
+        REQUIRE(static_cast<bool>(maybe_move) == true);
+        auto move = *maybe_move;
+        CHECK(move.player == player);
+        CHECK(move.score == score);
+        CHECK(move.square == square);
+        CHECK(move.direction == direction);
+        CHECK(move.length == length);
+        // std::cerr << "AFTER:\n" << *board << "\n" << std::endl;
+    }
+}
+
+TEST_CASE("ISC -- insidious v chloso20")
+{
+    auto board = std::make_unique<Board>();
+
+    // clang-format off
+    std::vector<std::string> ts = {
+        "H8 frith 30",
+        "G5 move 18",
+        "10B antherid 66",
+        "13H soaring 80",
+        "J12 yay 17",
+        "F4 dew 32",
+        "15D cOAxers 111",
+        "4B duked 22",
+        "C3 putz 30",
+        "11D oil 20",
+        "12C owe 30",
+        "13A jag 28",
+        "A13 jug 33",
+        "14F pa 28",
+        "H1 airbus 44",
+        "3H reorient 68",
+        "O1 ditties 27",
+        "12L qi 46",
+        "2J lean 16",
+        "N6 fava 33",
+        "D4 kea 20",
+        "M9 bo 14",
+        "J2 locution 12",
+        "K5 mon 22",
+        "14J ye 7"
+    };
+    // clang-format on
+
+    char spec[32];
+    char root[32];
+    for (const auto& s : ts) {
+        IscMove isc;
+        sscanf(s.c_str(), "%s %s %d", &spec[0], &root[0], &isc.score);
+        isc.sqspec = spec;
+        isc.root   = root;
+        INFO("Playing " << isc.sqspec << " " << isc.root << " " << isc.score);
+        // std::cerr << "BEFORE:\n" << *board << std::endl;
+        auto&& [gmove, player, score, square, direction, length] = make_test_case_from_isc(*board, isc);
         auto maybe_move = make_move(*board, gmove);
         REQUIRE(static_cast<bool>(maybe_move) == true);
         auto move = *maybe_move;

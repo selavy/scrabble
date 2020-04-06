@@ -274,10 +274,12 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept
         total_score += score * mult;
     }
 
+    int tiles_played = 0;
     for (const auto root : m.squares) {
         if (root == InvalidSquare) {
             break;
         }
+        ++tiles_played;
         const int start = m.direction == Direction::HORIZONTAL ? getcol(root) : Dim*getrow(root);
         const int step  = static_cast<int>(flip_direction(m.direction));
         const int stop  = start + Dim*step;
@@ -301,6 +303,10 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept
             DEBUG("THRU WORD: '%s' starting from root '%c' -- %d (mult=%d)",
                     word.c_str(), board[root], score, mult);
         }
+    }
+
+    if (tiles_played == 7) { // Bingo!
+        total_score += 50;
     }
 
     return total_score;
