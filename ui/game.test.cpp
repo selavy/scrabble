@@ -368,6 +368,16 @@ TEST_CASE("ISC -- insidious v chloso20")
     }
 }
 
+IscMove _parse_isc_string(std::string s) {
+    IscMove isc;
+    char spec[32];
+    char root[32];
+    sscanf(s.c_str(), "%s %s %d", &spec[0], &root[0], &isc.score);
+    isc.sqspec = spec;
+    isc.root   = root;
+    return isc;
+}
+
 TEST_CASE("ISC -- insidious v cleatier")
 {
     auto board = std::make_unique<Board>();
@@ -400,13 +410,54 @@ TEST_CASE("ISC -- insidious v cleatier")
     };
     // clang-format on
 
-    char spec[32];
-    char root[32];
     for (const auto& s : ts) {
-        IscMove isc;
-        sscanf(s.c_str(), "%s %s %d", &spec[0], &root[0], &isc.score);
-        isc.sqspec = spec;
-        isc.root   = root;
+        auto isc = _parse_isc_string(s);
+        INFO("Playing " << isc.sqspec << " " << isc.root << " " << isc.score);
+        // std::cerr << "BEFORE:\n" << *board << std::endl;
+        auto&& [gmove, player, score, square, direction, length] = make_test_case_from_isc(*board, isc);
+        auto maybe_move = make_move(*board, gmove);
+        REQUIRE(static_cast<bool>(maybe_move) == true);
+        auto move = *maybe_move;
+        CHECK(move.player == player);
+        CHECK(move.score == score);
+        CHECK(move.square == square);
+        CHECK(move.direction == direction);
+        CHECK(move.length == length);
+        // std::cerr << "AFTER:\n" << *board << "\n" << std::endl;
+    }
+}
+
+TEST_CASE("Find all words")
+{
+    auto board = std::make_unique<Board>();
+    // clang-format off
+    std::vector<std::string> ts = {
+        "8D areca 16",
+        "D7 fauvist 26",
+        "F6 zoea 33",
+        "10F lipoma 34",
+        "6F za 11",
+        "K5 outhear 40",
+        "12F dearest 79",
+        "9I jeed 41",
+        "C3 aioli 18",
+        "D1 karn 32",
+        "1A brokenlY 167",
+        "H12 ably 27",
+        "8K hedge 37",
+        "L1 wingy 37",
+        "3G footing 32",
+        "4F new 24",
+        "2K qi 22",
+        "14B vest 28",
+        "O1 hexamine 113",
+        "N8 guidons 22",
+        "B5 pAretic 73",
+    };
+    // clang-format on
+
+    for (const auto& s : ts) {
+        auto isc = _parse_isc_string(s);
         INFO("Playing " << isc.sqspec << " " << isc.root << " " << isc.score);
         // std::cerr << "BEFORE:\n" << *board << std::endl;
         auto&& [gmove, player, score, square, direction, length] = make_test_case_from_isc(*board, isc);

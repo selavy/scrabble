@@ -94,6 +94,8 @@ struct Word {
     Letters letters = {'\0'};  // null terminated c-string format and all caps
     int length = 0;
 
+    constexpr Word() noexcept = default;
+
     constexpr Word(const std::string& word) noexcept {
         assert(word.size() <= static_cast<std::size_t>(MaxWordLength));
         length = static_cast<int>(word.size());
@@ -117,6 +119,17 @@ struct Word {
     constexpr const char* c_str() const noexcept { return &letters[0]; }
     std::string str() const noexcept { return {&letters[0], &letters[length]}; }
 
+    void append(Tile c) {
+        assert(length <= MaxWordLength);
+        if ('A' <= c && c <= 'Z') {
+            letters[length++] = c;
+        } else if ('a' <= c && c <= 'z') {
+            letters[length++] = static_cast<char>('A' + (c - 'a'));
+        } else {
+            assert(0 && "invalid tile");
+        }
+    }
+
     constexpr std::size_t hash() const noexcept {
         uint64_t x1 = 0;
         uint64_t x2 = 0;
@@ -129,11 +142,13 @@ struct Word {
         return (x1 ^ x2) + 0x9e779b9 + (x1 << 6) + (x2 >> 2);
     }
 
-    bool operator==(Word other) const noexcept {
+    bool operator==(const Word& other) const noexcept {
         return memcmp(&this->letters[0], &other.letters[0], letters.size() * sizeof(char)) == 0;
     }
 
-    bool operator!=(Word other) const noexcept { return !(*this == other); }
+    bool operator!=(const Word& other) const noexcept { return !(*this == other); }
+
+    bool operator<(const Word& other) const noexcept { return strcmp(this->c_str(), other.c_str()) <= 0; }
 };
 
 std::ostream& operator<<(std::ostream& os, const Word& word) {
@@ -246,6 +261,49 @@ void play_move(Board& b, Move& m) noexcept {
     // }
 
     b.n_moves++;
+}
+
+// TODO: I think the max number of words formed on a turn is 15 + 1 = 16
+//       can at most form 1 word horizontally of length 15, then potentially
+//       could form 15 cross words for a total of 16?
+std::vector<Word> find_words(const Board& b, const Move& m) noexcept {
+    std::vector<Word> words;
+    auto& board = b.brd;
+
+    {  // root word score along `m.direction` direction
+        const int start = m.square;
+        const int step = static_cast<int>(m.direction);
+        const int stop = start + step * m.length;
+        Word word;
+        for (int sq = start; sq != stop; sq += step) {
+            word.append(board[sq]);
+        }
+        assert(word.size() >= MinWordLength);
+        words.emplace_back(std::move(word));
+    }
+
+    for (const auto root : m.squares) {
+        if (root == InvalidSquare) {
+            break;
+        }
+        const int start = m.direction == Direction::HORIZONTAL ? getcol(root) : Dim * getrow(root);
+        const int step = static_cast<int>(flip_direction(m.direction));
+        const int stop = start + Dim * step;
+        int sq = root - step;
+        while (sq >= start && board[sq] != Empty) {
+            sq -= step;
+        }
+        sq += step;
+        Word word;
+        for (; sq < stop && board[sq] != Empty; sq += step) {
+            word.append(board[sq]);
+        }
+        if (word.size() > 1) {
+            words.emplace_back(std::move(word));
+        }
+    }
+
+    return words;
 }
 
 int score_move(const Board& b, /*const*/ Move& m) noexcept {
