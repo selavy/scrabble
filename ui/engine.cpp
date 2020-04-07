@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <algorithm> // TEMP TEMP
+#include <memory> // TEMP TEMP
 
 #define INFO(fmt, ...) fprintf(stderr, "ENGINE DEBUG: " fmt "\n", ##__VA_ARGS__);
 #define ASIZE(x) (sizeof(x) / sizeof(x[0]))
@@ -88,6 +89,24 @@ void engine_init(Engine* e, wordchk_t wordchk, void* data)
     e->udata = data;
 }
 
+
+// TEMP TEMP
+std::unique_ptr<char[]> mask_buffer(uint32_t m) {
+    auto buf = std::make_unique<char[]>(27);
+    std::size_t bidx = 0;
+    for (int i = 0; i < 26; ++i) {
+        if ((m & mask(i)) != 0) {
+            buf[bidx++] = to_ext(i);
+        }
+    }
+    buf[bidx] = 0;
+    return buf;
+}
+
+#define MBUF(m) mask_buffer(m).get()
+#define MM(x, m) ((((x) & (m)) != 0) ? 1 : 0)
+// TEMP TEMP
+
 int engine_xchk(Engine* e, const EngineMove* m)
 {
     const int dir = m->direction;
@@ -97,10 +116,19 @@ int engine_xchk(Engine* e, const EngineMove* m)
     auto* squares = m->squares;
     auto* vals = e->vals;
     auto* chk = dir == HORZ ? e->hchk : e->vchk;
+    auto* hchk = e->hchk;
+    auto* vchk = e->vchk;
     for (int i = 0; i < ntiles; ++i) {
         const int sq   = squares[i];
         const int tile = tiles[i];
         const int tint = to_int(tile);
+        const uint32_t msk = mask(tint);
+        INFO("sq=%s chk[%d]=0x%04x=%s=%u hchk[%d]=0x%04x=%s=%u vchk[%d]=0x%04x=%s=%u",
+            SQ(sq),
+            sq,  chk[sq], MBUF( chk[sq]), MM( chk[sq], msk),
+            sq, hchk[sq], MBUF(hchk[sq]), MM(hchk[sq], msk),
+            sq, vchk[sq], MBUF(vchk[sq]), MM(vchk[sq], msk)
+        );
         if ((chk[sq] & mask(tint)) == 0) {
             return sq;
         }

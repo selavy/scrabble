@@ -673,6 +673,16 @@ GuiMove make_gui_move_from_isc(const Board& b, const IscMove& isc) {
     return result;
 }
 
+// precondition: `m` had been successfully applied to make_move() --
+// if make_move() didn't return successfully, then don't need to
+// call this.
+void undo_move(Board& b, const GuiMove& m) noexcept {
+    for (auto&& [tile, square] : m) {
+        b.brd[square] = Empty;
+    }
+    b.n_moves--;
+}
+
 std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
     // New words may be formed by:
     //  + adding one or more letters to a word or letters already on the board

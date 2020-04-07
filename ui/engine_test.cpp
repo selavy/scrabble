@@ -37,6 +37,7 @@ int main(int argc, char** argv) {
         "STAG",
         "STAGS",
         "SILLY",
+        "IT",
     };
     auto boardp = std::make_unique<Board>();
     auto enginep = std::make_unique<Engine>();
@@ -51,12 +52,17 @@ int main(int argc, char** argv) {
         "10H sag 14",
         "F8 trams 9",
         "4J silly 21",
-        "N4 yes", // TODO: this should fail right now
+        "N4 yes 8",
+    };
+    // played after all `isc_moves` have been played on board
+    std::vector<std::string> should_fail_moves = {
+        "K5 it", // no "TT" formed vertically
     };
 
     engine_init(engine, &is_word, &dict);
     for (auto isc_spec : isc_moves) {
         DEBUG("making move: '%s'", isc_spec.c_str());
+        std::cout << board << std::endl;
         auto isc_move = _parse_isc_string(isc_spec);
         auto gui_move = make_gui_move_from_isc(board, isc_move);
         auto maybe_move = make_move(board, gui_move);
@@ -77,9 +83,38 @@ int main(int argc, char** argv) {
         } else {
             printf("passed xchk! (%d)\n", sq);
         }
-
         engine_make_move(engine, &em);
 
+        printf("\n\n"); // TEMP TEMP
+    }
+
+    std::cout << board << std::endl;
+
+    for (auto isc_spec : should_fail_moves) {
+        DEBUG("making move: '%s'", isc_spec.c_str());
+        std::cout << board << std::endl;
+        auto isc_move = _parse_isc_string(isc_spec);
+        auto gui_move = make_gui_move_from_isc(board, isc_move);
+        auto maybe_move = make_move(board, gui_move);
+        assert(static_cast<bool>(maybe_move) == true);
+        auto move = *maybe_move;
+        std::cout << move << std::endl;
+
+        EngineMove em;
+        em.tiles   = &move.tiles[0];
+        em.squares = &move.squares[0];
+        em.ntiles  = static_cast<int>(gui_move.size());
+        em.direction = static_cast<int>(move.direction);
+
+        int sq = engine_xchk(engine, &em);
+        if (sq != 0) {
+            printf("PASSED: engine_xch: %s %d (expected xc failure)\n", SQ_(sq), sq);
+        } else {
+            printf("FAILED: passed xchk when not expected! (%d)\n", sq);
+            return 1;
+        }
+
+        undo_move(board, gui_move);
         printf("\n\n"); // TEMP TEMP
     }
 
