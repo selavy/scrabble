@@ -28,13 +28,18 @@ struct EngineMove
 };
 // clang-format on
 
-void engine_init(Engine* e, wordchk_t wordchk, void* data);
+extern void engine_init(Engine* e, wordchk_t wordchk, void* data);
 
 // tiles from [a-zA-Z] where lowercase = blank tile
 // precondition: `squares` is sorted
-void engine_make_move(Engine* e, const EngineMove* move);
+extern void engine_make_move(Engine* e, const EngineMove* move);
+
+
+// TEMP TEMP -- utility functions to delete
 
 // 0 = meets all xchecks, >0 is the first square that violated
-int engine_xchk(const Engine* e, const EngineMove* m); // TEMP TEMP
+extern int engine_xchk(const Engine* e, const EngineMove* m); // TEMP TEMP
 
-const char* SQ_(int sq) noexcept; // TEMP TEMP
+extern void engine_print_anchors(const Engine* e);
+
+extern const char* SQ_(int sq) noexcept;

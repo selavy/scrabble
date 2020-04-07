@@ -62,6 +62,7 @@ int main(int argc, char** argv) {
     engine_init(engine, &is_word, &dict);
     for (auto isc_spec : isc_moves) {
         DEBUG("making move: '%s'", isc_spec.c_str());
+        engine_print_anchors(engine);
         std::cout << board << std::endl;
         auto isc_move = _parse_isc_string(isc_spec);
         auto gui_move = make_gui_move_from_isc(board, isc_move);
@@ -88,8 +89,10 @@ int main(int argc, char** argv) {
         printf("\n\n"); // TEMP TEMP
     }
 
+    engine_print_anchors(engine);
     std::cout << board << std::endl;
 
+#if 1
     for (auto isc_spec : should_fail_moves) {
         DEBUG("making move: '%s'", isc_spec.c_str());
         std::cout << board << std::endl;
@@ -117,6 +120,7 @@ int main(int argc, char** argv) {
         undo_move(board, gui_move);
         printf("\n\n"); // TEMP TEMP
     }
+#endif
 
     printf("\nPASSED!\n");
 

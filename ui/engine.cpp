@@ -82,24 +82,24 @@ constexpr int colstart(int sq) noexcept { return getrow(sq) * DIM; }
 constexpr void setasq(uint64_t* asq, int sq) noexcept
 {
     assert(0 <= sq < 225);
-    const int m = sq / (8*64);
-    const int n = sq % (8*64);
+    const int m = sq / 64;
+    const int n = sq % 64;
     asq[m] |= static_cast<uint64_t>(1ull << n);
 }
 
 constexpr void clrasq(uint64_t* asq, int sq) noexcept
 {
     assert(0 <= sq < 225);
-    const int m = sq / (8*64);
-    const int n = sq % (8*64);
+    const int m = sq / 64;
+    const int n = sq % 64;
     asq[m] &= ~static_cast<uint64_t>(1ull << n);
 }
 
 constexpr int getasq(const uint64_t* asq, int sq) noexcept
 {
     assert(0 <= sq < 225);
-    const int m = sq / (8*64);
-    const int n = sq % (8*64);
+    const int m = sq / 64;
+    const int n = sq % 64;
     return (asq[m] & static_cast<uint64_t>(1ull << n)) != 0;
 }
 
@@ -255,7 +255,9 @@ void engine_make_move(Engine* e, const EngineMove* m)
             }
             hchk[before] = chk;
             INFO("new xcheck for %s = 0x%04x", SQ(before), chk);
+            setasq(vasq, before);
         }
+
         if (after < stop) {
             assert(getdim(step, after) == getdim(step, root));
             assert(buf[len+1] == '\0');
@@ -270,6 +272,9 @@ void engine_make_move(Engine* e, const EngineMove* m)
             hchk[after] = chk;
             INFO("new xcheck for %s = 0x%04x", SQ(after), chk);
         }
+
+        clrasq(hasq, root);
+        clrasq(vasq, root);
     }
 
     { // update horizontal cross-checks
@@ -289,6 +294,7 @@ void engine_make_move(Engine* e, const EngineMove* m)
         const int before = beg - step;
         const int after  = end + step;
         if (before >= start) {
+            assert(vals[before] == EMPTY);
             assert(getdim(step, before) == getdim(step, lsq));
             assert(getdim(step, before) == getdim(step, rsq));
             uint32_t chk = 0;
@@ -300,8 +306,10 @@ void engine_make_move(Engine* e, const EngineMove* m)
                 }
             }
             vchk[before] = chk;
+            setasq(hasq, before);
         }
         if (after < stop) {
+            assert(vals[after] == EMPTY);
             assert(getdim(step, after) == getdim(step, lsq));
             assert(getdim(step, after) == getdim(step, rsq));
             assert(buf[len+1] == '\0');
@@ -316,18 +324,60 @@ void engine_make_move(Engine* e, const EngineMove* m)
             vchk[after] = chk;
         }
     }
+}
+
+
+
+void engine_print_anchors(const Engine* e)
+{
+    auto* hasq = e->hasq;
+    auto* vasq = e->vasq;
+    auto getcc = [hasq, vasq](int row, int col) {
+        constexpr char T[4] = {
+            ' ', 'H', 'V', '*',
+        };
+        int vv = 0;
+        int idx = row*DIM + col;
+        if (getasq(hasq, idx) != 0) {
+            vv |= 1 << 0;
+        }
+        if (getasq(vasq, idx) != 0) {
+            vv |= 1 << 1;
+        }
+        return T[vv];
+    };
+
+    printf("     1   2   3   4   5   6   7   8   9   0   1   2   3   4   5  \n");
+    printf("   -------------------------------------------------------------\n");
+    for (int row = 0; row < DIM; ++row) {
+        printf("%c  | ", static_cast<char>('A' + row));
+        for (int col = 0; col < DIM - 1; ++col) {
+            printf("%c | ", getcc(row, col));
+        }
+        printf("%c", getcc(row, DIM-1));
+        printf(" |\n");
+        printf("   -------------------------------------------------------------\n");
+    }
+    printf("\n");
+
 
 #if 0
-    { // update anchors
-        const int lsq = squares[0];
-        const int hstart = horzstart(lsq);
-        const int hstop  = start + hstep * DIM;
-        if (lsq - hstep )
-        for (int i = 0; i < ntiles; ++i) {
-            const int sq = squares[i];
-            clrasq(hasq, sq);
-            clrasq(vasq, sq);
+    auto print_row = [&os](const char* r) {
+        for (int i = 0; i < Dim - 1; ++i) {
+            os << r[i] << " | ";
         }
+        os << r[Dim - 1];
+    };
+
+    const auto& b = board.brd;
+    os << "     1   2   3   4   5   6   7   8   9   0   1   2   3   4   5  \n";
+    os << "   -------------------------------------------------------------\n";
+    for (int row = 0; row < Dim; ++row) {
+        os << static_cast<char>('A' + row) << "  | ";
+        print_row(&b[Dim * row]);
+        os << " |\n";
+        os << "   -------------------------------------------------------------\n";
     }
+    return os;
 #endif
 }
