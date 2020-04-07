@@ -4,6 +4,7 @@
 #include <cstring>
 
 #define INFO(fmt, ...) fprintf(stderr, "ENGINE DEBUG: " fmt "\n", ##__VA_ARGS__);
+#define ASIZE(x) (sizeof(x) / sizeof(x[0]))
 
 // [1..26] => ['A'..'Z']
 constexpr uint32_t FULL_MASK = (1u << 26) - 1;
@@ -52,7 +53,7 @@ char to_int(char tile) {
 }
 
 char to_ext(char tile) {
-    return (tile - 1) + 'A';
+    return tile + 'A';
 }
 
 int flip_dir(int d) {
@@ -129,7 +130,7 @@ void engine_make_move(Engine* e, const EngineMove* m)
         const int start = rgetstart(root);
         const int stop = start + DIM * step;
         assert(vals[root] == EMPTY);
-        vals[root] = tile;
+        vals[root] = tint;
         int beg = root - step;
         int end = root + step;
         while (start <= beg  && vals[beg] != EMPTY) {
@@ -140,15 +141,18 @@ void engine_make_move(Engine* e, const EngineMove* m)
             end += step;
         }
         end -= step;
-        assert(vals[beg] != 0);
-        assert(vals[end] != 0);
+        assert(vals[beg] != EMPTY);
+        assert(vals[end] != EMPTY);
 
-        const int len = end - beg + 1;
-        for (int i = 0; i <= len; ++i) {
+        const int len = (end - beg) / step + 1;
+        INFO("len=%d beg=%s (%d) end=%s (%d)", len, SQ(beg), beg, SQ(end), end);
+        for (int i = 0; i < len; ++i) {
+            assert(i+1 < ASIZE(buf));
             buf[i+1] = to_ext(vals[beg+i]);
+            assert('A' <= buf[i+1] && buf[i+1] <= 'Z');
         }
-        buf[len] = '\0';
         buf[len+1] = '\0';
+        buf[len+2] = '\0';
 
         const int before = beg - step;
         const int after  = end + step;
@@ -163,7 +167,7 @@ void engine_make_move(Engine* e, const EngineMove* m)
                 buf[0] = c;
                 if (chkwrd(e->udata, buf) != 0) {
                     INFO("valid word: '%s' at square %s", buf, SQ(before));
-                    chk |= 1u << c;
+                    chk |= mask(to_int(c));
                 }
             }
             hchk[before] = chk;
@@ -171,12 +175,13 @@ void engine_make_move(Engine* e, const EngineMove* m)
         }
         if (after < stop) {
             assert(getdim(step, after) == getdim(step, root));
+            assert(buf[len+1] == '\0');
             uint32_t chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
-                buf[len] = c;
+                buf[len+1] = c;
                 if (chkwrd(e->udata, &buf[1]) != 0) {
                     INFO("valid word: '%s' at square %s", &buf[1], SQ(after));
-                    chk |= 1u << c;
+                    chk |= mask(to_int(c));
                 }
             }
             hchk[after] = chk;

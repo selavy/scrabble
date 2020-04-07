@@ -29,6 +29,7 @@ int main(int argc, char** argv) {
         "ZAG",
         "TAG",
         "BA",
+        "TRAM",
     };
     auto boardp = std::make_unique<Board>();
     auto enginep = std::make_unique<Engine>();
@@ -37,6 +38,9 @@ int main(int argc, char** argv) {
 
     std::vector<std::string> isc_moves = {
         "H7 zag 26",
+        "I6 bam 24",
+        "J5 tag 25",
+        "8F tram 6",
     };
 
     engine_init(engine, &is_word, &dict);
@@ -56,12 +60,15 @@ int main(int argc, char** argv) {
 
         int sq = engine_xchk(engine, &em);
         if (sq != 0) {
-            printf("result of engine_xch: %s %d\n", SQ_(sq), sq);
+            printf("FAILED: result of engine_xch: %s %d\n", SQ_(sq), sq);
+            return 1;
         } else {
             printf("passed xchk! (%d)\n", sq);
         }
 
         engine_make_move(engine, &em);
+
+        printf("\n\n"); // TEMP TEMP
     }
 
     return 0;
