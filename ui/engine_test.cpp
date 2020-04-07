@@ -54,9 +54,13 @@ int main(int argc, char** argv) {
         "4J silly 21",
         "N4 yes 8",
     };
+
     // played after all `isc_moves` have been played on board
+    // NOTE: the main word will NOT be checked so it doesn't need to be in the
+    // dictionary for this check
     std::vector<std::string> should_fail_moves = {
-        "K5 it", // no "TT" formed vertically
+        "K5 it",  // no "TT" formed vertically
+        "5M let", // no "LL" formed horizontally
     };
 
     engine_init(engine, &is_word, &dict);
