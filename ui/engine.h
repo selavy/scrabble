@@ -35,6 +35,6 @@ void engine_init(Engine* e, wordchk_t wordchk, void* data);
 void engine_make_move(Engine* e, const EngineMove* move);
 
 // 0 = meets all xchecks, >0 is the first square that violated
-int engine_xchk(Engine* e, const EngineMove* m); // TEMP TEMP
+int engine_xchk(const Engine* e, const EngineMove* m); // TEMP TEMP
 
 const char* SQ_(int sq); // TEMP TEMP

@@ -118,5 +118,7 @@ int main(int argc, char** argv) {
         printf("\n\n"); // TEMP TEMP
     }
 
+    printf("\nPASSED!\n");
+
     return 0;
 }

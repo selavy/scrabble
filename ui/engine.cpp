@@ -107,7 +107,7 @@ std::unique_ptr<char[]> mask_buffer(uint32_t m) {
 #define MM(x, m) ((((x) & (m)) != 0) ? 1 : 0)
 // TEMP TEMP
 
-int engine_xchk(Engine* e, const EngineMove* m)
+int engine_xchk(const Engine* e, const EngineMove* m)
 {
     const int dir = m->direction;
     const int ntiles = m->ntiles;
