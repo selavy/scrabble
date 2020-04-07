@@ -59,8 +59,11 @@ int main(int argc, char** argv) {
     // NOTE: the main word will NOT be checked so it doesn't need to be in the
     // dictionary for this check
     std::vector<std::string> should_fail_moves = {
-        "K5 it",  // no "TT" formed vertically
-        "5M let", // no "LL" formed horizontally
+        "K5 it",     // no "TT" formed vertically
+        "5M let",    // no "LL" formed horizontally
+        "9F rag",    // no "RA" formed horizontally
+        "11F man",   // no "ZAGSM" formed horizontally
+        "O6 OSSIFY", // no "SO" formed vertically
     };
 
     engine_init(engine, &is_word, &dict);
