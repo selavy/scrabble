@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <algorithm> // TEMP TEMP
 
 #define INFO(fmt, ...) fprintf(stderr, "ENGINE DEBUG: " fmt "\n", ##__VA_ARGS__);
 #define ASIZE(x) (sizeof(x) / sizeof(x[0]))
@@ -107,8 +108,37 @@ int engine_xchk(Engine* e, const EngineMove* m)
     return 0;
 }
 
+int findbeg(const char* vals, const int start, const int stop, const int step, const int root)
+{
+    assert(vals[root] != EMPTY);
+    int sq = root - step;
+    while (sq >= start && vals[sq] != EMPTY) {
+        sq -= step;
+    }
+    assert(vals[sq + step] != EMPTY);
+    return sq + step;
+}
+
+int findend(const char* vals, const int start, const int stop, const int step, const int root)
+{
+    assert(vals[root] != EMPTY);
+    int sq = root + step;
+    while (sq < stop && vals[sq] != EMPTY) {
+        sq += step;
+    }
+    assert(vals[sq - step] != EMPTY);
+    return sq - step;
+}
+
+int inclusive_length(int beg, int end, int step) {
+    assert(beg <= end);
+    return (end - beg) / step + 1;
+}
+
 void engine_make_move(Engine* e, const EngineMove* m)
 {
+    // NOTE(peter): everything in this function is named as if computing
+    // the horizontal cross-checks, but it is actually direction agnotistic.
     char buf[17];
     const int dir = m->direction;
     const int ntiles = m->ntiles;
@@ -120,35 +150,27 @@ void engine_make_move(Engine* e, const EngineMove* m)
     auto* vchk = dir == HORZ ? e->vchk : e->hchk;
     auto* hasq = dir == HORZ ? e->hasq : e->vasq;
     auto* vasq = dir == HORZ ? e->vasq : e->hasq;
-    auto* hgetstart = dir == HORZ ? &colstart : &rowstart;
-    auto* rgetstart = dir == HORZ ? &rowstart : &colstart;
+    auto* horzstart = dir == HORZ ? &colstart : &rowstart;
+    auto* vertstart = dir == HORZ ? &rowstart : &colstart;
     auto* chkwrd = e->wordchk;
+    assert(ntiles > 0);
+    assert(squares != NULL);
+    assert(tiles != NULL);
+    assert(std::is_sorted(squares, squares+ntiles));
     for (int tidx = 0; tidx < ntiles; ++tidx) {
         const int root = squares[tidx];
         const char tile = tiles[tidx];
         const char tint = to_int(tile);
-        const int start = rgetstart(root);
+        const int start = vertstart(root);
         const int stop = start + DIM * step;
         assert(vals[root] == EMPTY);
         vals[root] = tint;
-        int beg = root - step;
-        int end = root + step;
-        while (start <= beg  && vals[beg] != EMPTY) {
-            beg -= step;
-        }
-        beg += step;
-        while (end   <  stop && vals[end] != EMPTY) {
-            end += step;
-        }
-        end -= step;
-        assert(vals[beg] != EMPTY);
-        assert(vals[end] != EMPTY);
-
-        const int len = (end - beg) / step + 1;
+        const int beg = findbeg(vals, start, stop, step, root);
+        const int end = findend(vals, start, stop, step, root);
+        const int len = inclusive_length(beg, end, step);
         INFO("len=%d beg=%s (%d) end=%s (%d)", len, SQ(beg), beg, SQ(end), end);
         for (int i = 0; i < len; ++i) {
-            assert(i+1 < ASIZE(buf));
-            buf[i+1] = to_ext(vals[beg+i]);
+            buf[i+1] = to_ext(vals[beg + i*step]);
             assert('A' <= buf[i+1] && buf[i+1] <= 'Z');
         }
         buf[len+1] = '\0';
@@ -189,6 +211,50 @@ void engine_make_move(Engine* e, const EngineMove* m)
         }
     }
 
-    // TODO(peter): adjust the vchk for the beginning and ending of the root word
-
+    {
+        const int lsq   = squares[0];          // left-most square
+        const int rsq   = squares[ntiles - 1]; // left-most square
+        const int start = horzstart(lsq);
+        const int step  = dir;
+        const int stop  = start + step * DIM;
+        const int beg = findbeg(vals, start, stop, step, lsq);
+        const int end = findend(vals, start, stop, step, rsq);
+        const int len = inclusive_length(beg, end, step);
+        assert(getdim(step, lsq) == getdim(step, rsq)); // move must be on exactly 1 row or col
+        for (int i = 0; i < len; ++i) {
+            buf[i+1] = to_ext(vals[beg+i*step]);
+            assert('A' <= buf[i+1] && buf[i+1] <= 'Z');
+        }
+        buf[len+1] = '\0';
+        buf[len+2] = '\0';
+        const int before = beg - step;
+        const int after  = end + step;
+        if (before >= start) {
+            assert(getdim(step, before) == getdim(step, lsq));
+            assert(getdim(step, before) == getdim(step, rsq));
+            uint32_t chk = 0;
+            for (char c = 'A'; c <= 'Z'; ++c) {
+                buf[0] = c;
+                if (chkwrd(e->udata, buf) != 0) {
+                    INFO("valid word: '%s' at square %s", buf, SQ(before));
+                    chk |= mask(to_int(c));
+                }
+            }
+            vchk[before] = chk;
+        }
+        if (after < stop) {
+            assert(getdim(step, after) == getdim(step, lsq));
+            assert(getdim(step, after) == getdim(step, rsq));
+            assert(buf[len+1] == '\0');
+            uint32_t chk = 0;
+            for (char c = 'A'; c <= 'Z'; ++c) {
+                buf[len+1] = c;
+                if (chkwrd(e->udata, &buf[1]) != 0) {
+                    INFO("valid word: '%s' at square %s", &buf[1], SQ(after));
+                    chk |= mask(to_int(c));
+                }
+            }
+            vchk[after] = chk;
+        }
+    }
 }
