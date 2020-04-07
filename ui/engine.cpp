@@ -32,15 +32,16 @@ constexpr const char* const SquareNames[225] = {
     " O1", " O2", " O3", " O4", " O5", " O6", " O7", " O8", " O9", "O10", "O11", "O12", "O13", "O14", "O15",
 };
 
-const char* SQ(int sq) {
+constexpr const char* SQ(int sq) noexcept {
     if (0 <= sq && sq < 225) {
         return SquareNames[sq];
     }
     return "UNK";
 }
-const char* SQ_(int sq) { return SQ(sq); }
 
-char to_int(char tile) {
+const char* SQ_(int sq) noexcept { return SQ(sq); }
+
+constexpr char to_int(char tile) noexcept {
     if ('A' <= tile && tile <= 'Z') {
         return (tile - 'A');
     } else if ('a' <= tile && tile <= 'z') {
@@ -54,11 +55,11 @@ char to_int(char tile) {
     }
 }
 
-char to_ext(char tile) {
+constexpr char to_ext(char tile) noexcept {
     return tile + 'A';
 }
 
-int flip_dir(int d) {
+constexpr int flip_dir(int d) noexcept {
     switch (d) {
         case HORZ: return VERT;
         case VERT: return HORZ;
@@ -72,11 +73,35 @@ constexpr uint32_t mask(char tile) {
     return 1u << tile;
 }
 
-int getcol(int sq) { return sq % DIM; }
-int getrow(int sq) { return sq / DIM; }
-int getdim(int dir, int sq) { return dir == HORZ ? getrow(sq) : getcol(sq); } // TEMP TEMP
-int rowstart(int sq) { return getcol(sq); }
-int colstart(int sq) { return getrow(sq) * DIM; }
+constexpr int getcol(int sq) noexcept { return sq % DIM; }
+constexpr int getrow(int sq) noexcept { return sq / DIM; }
+constexpr int getdim(int dir, int sq) noexcept { return dir == HORZ ? getrow(sq) : getcol(sq); } // TEMP TEMP
+constexpr int rowstart(int sq) noexcept { return getcol(sq); }
+constexpr int colstart(int sq) noexcept { return getrow(sq) * DIM; }
+
+constexpr void setasq(uint64_t* asq, int sq) noexcept
+{
+    assert(0 <= sq < 225);
+    const int m = sq / (8*64);
+    const int n = sq % (8*64);
+    asq[m] |= static_cast<uint64_t>(1ull << n);
+}
+
+constexpr void clrasq(uint64_t* asq, int sq) noexcept
+{
+    assert(0 <= sq < 225);
+    const int m = sq / (8*64);
+    const int n = sq % (8*64);
+    asq[m] &= ~static_cast<uint64_t>(1ull << n);
+}
+
+constexpr int getasq(const uint64_t* asq, int sq) noexcept
+{
+    assert(0 <= sq < 225);
+    const int m = sq / (8*64);
+    const int n = sq % (8*64);
+    return (asq[m] & static_cast<uint64_t>(1ull << n)) != 0;
+}
 
 void engine_init(Engine* e, wordchk_t wordchk, void* data)
 {
@@ -168,11 +193,12 @@ void engine_make_move(Engine* e, const EngineMove* m)
     // NOTE(peter): everything in this function is named as if computing
     // the horizontal cross-checks, but it is actually direction agnotistic.
     char buf[17];
+    const auto* tiles = m->tiles;
+    const auto* squares = m->squares;
     const int dir = m->direction;
     const int ntiles = m->ntiles;
-    const int step = flip_dir(dir);
-    auto* tiles = m->tiles;
-    auto* squares = m->squares;
+    const int hstep = m->direction;
+    const int vstep = flip_dir(m->direction);
     auto* vals = e->vals;
     auto* hchk = dir == HORZ ? e->hchk : e->vchk;
     auto* vchk = dir == HORZ ? e->vchk : e->hchk;
@@ -181,11 +207,18 @@ void engine_make_move(Engine* e, const EngineMove* m)
     auto* horzstart = dir == HORZ ? &colstart : &rowstart;
     auto* vertstart = dir == HORZ ? &rowstart : &colstart;
     auto* chkwrd = e->wordchk;
+    const int lsq   = squares[0];          // left-most square
+    const int rsq   = squares[ntiles - 1]; // right-most square
+    const int hstart = horzstart(lsq);
+    const int hstop  = hstart + hstep * DIM;
     assert(ntiles > 0);
     assert(squares != NULL);
     assert(tiles != NULL);
     assert(std::is_sorted(squares, squares+ntiles));
+
+    // update vertical cross-checks
     for (int tidx = 0; tidx < ntiles; ++tidx) {
+        const int step = vstep;
         const int root = squares[tidx];
         const char tile = tiles[tidx];
         const char tint = to_int(tile);
@@ -239,12 +272,10 @@ void engine_make_move(Engine* e, const EngineMove* m)
         }
     }
 
-    {
-        const int lsq   = squares[0];          // left-most square
-        const int rsq   = squares[ntiles - 1]; // left-most square
-        const int start = horzstart(lsq);
-        const int step  = dir;
-        const int stop  = start + step * DIM;
+    { // update horizontal cross-checks
+        const int start = hstart;
+        const int step  = hstep;
+        const int stop  = hstop;
         const int beg = findbeg(vals, start, stop, step, lsq);
         const int end = findend(vals, start, stop, step, rsq);
         const int len = inclusive_length(beg, end, step);
@@ -285,4 +316,18 @@ void engine_make_move(Engine* e, const EngineMove* m)
             vchk[after] = chk;
         }
     }
+
+#if 0
+    { // update anchors
+        const int lsq = squares[0];
+        const int hstart = horzstart(lsq);
+        const int hstop  = start + hstep * DIM;
+        if (lsq - hstep )
+        for (int i = 0; i < ntiles; ++i) {
+            const int sq = squares[i];
+            clrasq(hasq, sq);
+            clrasq(vasq, sq);
+        }
+    }
+#endif
 }
