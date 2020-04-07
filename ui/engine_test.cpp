@@ -30,6 +30,13 @@ int main(int argc, char** argv) {
         "TAG",
         "BA",
         "TRAM",
+        "ZAGS",
+        "SAG",
+        "TAGS",
+        "TRAMS",
+        "STAG",
+        "STAGS",
+        "SILLY",
     };
     auto boardp = std::make_unique<Board>();
     auto enginep = std::make_unique<Engine>();
@@ -41,6 +48,10 @@ int main(int argc, char** argv) {
         "I6 bam 24",
         "J5 tag 25",
         "8F tram 6",
+        "10H sag 14",
+        "F8 trams 9",
+        "4J silly 21",
+        "N4 yes", // TODO: this should fail right now
     };
 
     engine_init(engine, &is_word, &dict);
@@ -51,6 +62,7 @@ int main(int argc, char** argv) {
         auto maybe_move = make_move(board, gui_move);
         assert(static_cast<bool>(maybe_move) == true);
         auto move = *maybe_move;
+        std::cout << move << std::endl;
 
         EngineMove em;
         em.tiles   = &move.tiles[0];
