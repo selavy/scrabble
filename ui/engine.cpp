@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <cinttypes> // TEMP TEMP
 #include <algorithm> // TEMP TEMP
 #include <memory> // TEMP TEMP
 
@@ -103,17 +104,72 @@ constexpr int getasq(const uint64_t* asq, int sq) noexcept
     return (asq[m] & static_cast<uint64_t>(1ull << n)) != 0;
 }
 
-void engine_init(Engine* e, wordchk_t wordchk, void* data)
+void engine_init(Engine* e, WordCheck word_check, void* word_check_data, LegalMove legal_move, void* legal_move_data)
 {
     memset(e->vals, EMPTY, sizeof(e->vals));
     memset(e->vchk, 0xffu, sizeof(e->vchk));
     memset(e->hchk, 0xffu, sizeof(e->hchk));
     memset(e->hasq, 0x00u, sizeof(e->hasq));
     memset(e->vasq, 0x00u, sizeof(e->vasq));
-    e->wordchk = wordchk;
-    e->udata = data;
+    const int H8 = 7*DIM + 7;
+    setasq(e->hasq, H8);
+    setasq(e->vasq, H8);
+    e->wordchk = word_check;
+    e->wordchk_data = word_check_data;
+    e->legalmv = legal_move;
+    e->legalmv_data = legal_move_data;
 }
 
+constexpr int lsb(uint64_t x) noexcept { return __builtin_ctzll(x); }
+constexpr uint64_t clearlsb(uint64_t x) noexcept { return x & (x - 1); }
+
+struct Word
+{
+    char* buf;
+    int   len;
+};
+
+// int left_part(const Engine* e, char* partial_word, Rack* rack, LegalMove legal_move, void* data)
+// {
+//     right_part(e, partial_word, rack, legal_move, data);
+// }
+
+// void extend_right(const Engine* e, Word* word, Rack* rack)
+
+void engine_find(const Engine* e, EngineRack rack)
+{
+    printf("--- BEGIN ENGINE FIND ---\n");
+    auto* hasq = e->hasq;
+    auto* vasq = e->vasq;
+    char buf[16];
+    Word word;
+    word.buf = buf;
+    word.len = 0;
+
+    for (int i = 0; i < 4; ++i) {
+        const int base = 64*i;
+        uint64_t hmsk = hasq[i];
+        printf("hmsk = 0x%016" PRIx64 "\n", hmsk);
+        while (hmsk > 0) {
+            int anchor = base + lsb(hmsk);
+            printf("HORIZONTAL ANCHOR: %s (%d)\n", SQ(anchor), anchor);
+            // extend_right(e, anchor, &word, &rack);
+            hmsk = clearlsb(hmsk);
+        }
+    }
+
+    for (int i = 0; i < 4; ++i) {
+        const int base = 64*i;
+        uint64_t vmsk = vasq[i];
+        printf("vmsk = 0x%016" PRIx64 "\n", vmsk);
+        while (vmsk > 0) {
+            int anchor = base + lsb(vmsk);
+            printf("VERTICAL ANCHOR: %s (%d)\n", SQ(anchor), anchor);
+            vmsk = clearlsb(vmsk);
+        }
+    }
+    printf("--- END ENGINE FIND ---\n");
+}
 
 // TEMP TEMP
 std::unique_ptr<char[]> mask_buffer(uint32_t m) {
@@ -148,12 +204,12 @@ int engine_xchk(const Engine* e, const EngineMove* m)
         const int tile = tiles[i];
         const int tint = to_int(tile);
         const uint32_t msk = mask(tint);
-        INFO("sq=%s chk[%d]=0x%04x=%s=%u hchk[%d]=0x%04x=%s=%u vchk[%d]=0x%04x=%s=%u",
-            SQ(sq),
-            sq,  chk[sq], MBUF( chk[sq]), MM( chk[sq], msk),
-            sq, hchk[sq], MBUF(hchk[sq]), MM(hchk[sq], msk),
-            sq, vchk[sq], MBUF(vchk[sq]), MM(vchk[sq], msk)
-        );
+        // INFO("sq=%s chk[%d]=0x%04x=%s=%u hchk[%d]=0x%04x=%s=%u vchk[%d]=0x%04x=%s=%u",
+        //     SQ(sq),
+        //     sq,  chk[sq], MBUF( chk[sq]), MM( chk[sq], msk),
+        //     sq, hchk[sq], MBUF(hchk[sq]), MM(hchk[sq], msk),
+        //     sq, vchk[sq], MBUF(vchk[sq]), MM(vchk[sq], msk)
+        // );
         if ((chk[sq] & mask(tint)) == 0) {
             return sq;
         }
@@ -229,7 +285,7 @@ void engine_make_move(Engine* e, const EngineMove* m)
         const int beg = findbeg(vals, start, stop, step, root);
         const int end = findend(vals, start, stop, step, root);
         const int len = inclusive_length(beg, end, step);
-        INFO("len=%d beg=%s (%d) end=%s (%d)", len, SQ(beg), beg, SQ(end), end);
+        // INFO("len=%d beg=%s (%d) end=%s (%d)", len, SQ(beg), beg, SQ(end), end);
         for (int i = 0; i < len; ++i) {
             buf[i+1] = to_ext(vals[beg + i*step]);
             assert('A' <= buf[i+1] && buf[i+1] <= 'Z');
@@ -240,21 +296,21 @@ void engine_make_move(Engine* e, const EngineMove* m)
         const int before = beg - step;
         const int after  = end + step;
 
-        INFO("root=%s before=%s after=%s start=%s stop=%s",
-                SQ(root), SQ(before), SQ(after), SQ(start), SQ(stop));
+        // INFO("root=%s before=%s after=%s start=%s stop=%s",
+        //         SQ(root), SQ(before), SQ(after), SQ(start), SQ(stop));
 
         if (before >= start) {
             assert(getdim(step, before) == getdim(step, root));
             uint32_t chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[0] = c;
-                if (chkwrd(e->udata, buf) != 0) {
-                    INFO("valid word: '%s' at square %s", buf, SQ(before));
+                if (chkwrd(e->wordchk_data, buf) != 0) {
+                    // INFO("valid word: '%s' at square %s", buf, SQ(before));
                     chk |= mask(to_int(c));
                 }
             }
             hchk[before] = chk;
-            INFO("new xcheck for %s = 0x%04x", SQ(before), chk);
+            // INFO("new xcheck for %s = 0x%04x", SQ(before), chk);
             setasq(vasq, before);
         }
 
@@ -264,13 +320,13 @@ void engine_make_move(Engine* e, const EngineMove* m)
             uint32_t chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[len+1] = c;
-                if (chkwrd(e->udata, &buf[1]) != 0) {
-                    INFO("valid word: '%s' at square %s", &buf[1], SQ(after));
+                if (chkwrd(e->wordchk_data, &buf[1]) != 0) {
+                    // INFO("valid word: '%s' at square %s", &buf[1], SQ(after));
                     chk |= mask(to_int(c));
                 }
             }
             hchk[after] = chk;
-            INFO("new xcheck for %s = 0x%04x", SQ(after), chk);
+            // INFO("new xcheck for %s = 0x%04x", SQ(after), chk);
         }
 
         clrasq(hasq, root);
@@ -300,8 +356,8 @@ void engine_make_move(Engine* e, const EngineMove* m)
             uint32_t chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[0] = c;
-                if (chkwrd(e->udata, buf) != 0) {
-                    INFO("valid word: '%s' at square %s", buf, SQ(before));
+                if (chkwrd(e->wordchk_data, buf) != 0) {
+                    // INFO("valid word: '%s' at square %s", buf, SQ(before));
                     chk |= mask(to_int(c));
                 }
             }
@@ -316,8 +372,8 @@ void engine_make_move(Engine* e, const EngineMove* m)
             uint32_t chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[len+1] = c;
-                if (chkwrd(e->udata, &buf[1]) != 0) {
-                    INFO("valid word: '%s' at square %s", &buf[1], SQ(after));
+                if (chkwrd(e->wordchk_data, &buf[1]) != 0) {
+                    // INFO("valid word: '%s' at square %s", &buf[1], SQ(after));
                     chk |= mask(to_int(c));
                 }
             }
@@ -325,8 +381,6 @@ void engine_make_move(Engine* e, const EngineMove* m)
         }
     }
 }
-
-
 
 void engine_print_anchors(const Engine* e)
 {

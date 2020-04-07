@@ -23,6 +23,7 @@
 
 #define AsSquare(x) static_cast<int>(x)
 #define DEBUG(fmt, ...) fprintf(stderr, "DEBUG: " fmt "\n", ##__VA_ARGS__);
+#define ERROR(fmt, ...) fprintf(stderr, "ERROR: " fmt "\n", ##__VA_ARGS__);
 
 using Dict = std::unordered_set<std::string>;
 
@@ -497,7 +498,7 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept {
             const int mult = get_letter_multiplier(b, sq);
             m.root_word += letter;
             score += value * mult;
-            DEBUG("ROOT: '%c' -- val=%d mult=%d", letter, value, mult)
+            // DEBUG("ROOT: '%c' -- val=%d mult=%d", letter, value, mult)
         }
         assert(m.root_word.size() >= MinWordLength);
         const int mult = get_word_multiplier(m.squares);
@@ -530,7 +531,7 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept {
         if (word.size() > 1) {
             const int mult = double_word_squares[root] * triple_word_squares[root];
             total_score += score * mult;
-            DEBUG("THRU WORD: '%s' starting from root '%c' -- %d (mult=%d)", word.c_str(), board[root], score, mult);
+            // DEBUG("THRU WORD: '%s' starting from root '%c' -- %d (mult=%d)", word.c_str(), board[root], score, mult);
         }
     }
 
@@ -601,7 +602,7 @@ bool rack_has_tiles(const Rack& rack, const GuiMove& move) {
         }
         movefreq[tile]++;
         if (movefreq[tile] > rackfreq[tile]) {
-            DEBUG("error: attempt to play '%c', which not enough of in rack (%d)", tile, rackfreq[tile]);
+            ERROR("error: attempt to play '%c', which not enough of in rack (%d)", tile, rackfreq[tile]);
             return false;
         }
     }
@@ -628,7 +629,7 @@ std::optional<Move> make_move_isc_notation(const Board& b, std::string sqspec, s
     const int mdim = direction == Direction::HORIZONTAL ? row : col;
     const int stop = start + step * std::min(Dim, mdim + result.length);
     if (start + step * result.length >= stop) {
-        DEBUG("error: word to long to fit: '%s' starting at %s", word.c_str(), SquareNames[start]);
+        ERROR("error: word to long to fit: '%s' starting at %s", word.c_str(), SquareNames[start]);
         return std::nullopt;
     }
 
@@ -641,7 +642,7 @@ std::optional<Move> make_move_isc_notation(const Board& b, std::string sqspec, s
             result.squares[tiles] = sq;
             ++tiles;
         } else if (board[sq] != word[i]) {
-            DEBUG("error: tried to play letter '%c' on %s that is occupied by %c", word[i], SquareNames[sq], board[sq]);
+            ERROR("error: tried to play letter '%c' on %s that is occupied by %c", word[i], SquareNames[sq], board[sq]);
             return std::nullopt;
         }
     }
@@ -696,7 +697,7 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
     auto& board = b.brd;
 
     if (!(1 <= m.size() && m.size() <= NumTilesRack)) {
-        DEBUG("error: invalid number of tiles: %zu", m.size());
+        ERROR("error: invalid number of tiles: %zu", m.size());
         return std::nullopt;
     }
 
@@ -720,14 +721,14 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
     const auto tiles_end = tiles.begin() + n_tiles;
 
     if (!all_unique(squares_begin, squares_end)) {
-        DEBUG("error: squares are not unique");
+        ERROR("error: squares are not unique");
         return std::nullopt;
     }
 
     bool same_row = all_same(squares_begin, squares_end, getrow);
     bool same_col = all_same(squares_begin, squares_end, getcol);
     if (!same_row && !same_col) {
-        DEBUG("error: squares are not all on the same row or column");
+        ERROR("error: squares are not all on the same row or column");
         return std::nullopt;
     }
     assert((same_row || same_col) || (same_row && same_col && m.size() == 1));
@@ -751,7 +752,7 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
         return false;
     });
     if (!h8_played && !adjacent_to_played_square) {
-        DEBUG("error: play not adjacent to any played tiles");
+        ERROR("error: play not adjacent to any played tiles");
         return std::nullopt;
     }
 
@@ -762,7 +763,7 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
             for (int j = i - 1; j >= 0; --j) {
                 board[square] = Empty;
             }
-            DEBUG("error: square not available: %s (%d)", SquareNames[square], square);
+            ERROR("error: square not available: %s (%d)", SquareNames[square], square);
             return std::nullopt;
         }
         board[square] = tile;
@@ -829,17 +830,17 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
             horz_stop += Right;
         }
         assert(horz_start < horz_stop);
-        DEBUG("horz=[%d, %d) [%s, %s]", horz_start, horz_stop, SquareNames[horz_start], SquareNames[horz_stop + Left]);
+        // DEBUG("horz=[%d, %d) [%s, %s]", horz_start, horz_stop, SquareNames[horz_start], SquareNames[horz_stop + Left]);
 
         if (last_tile_sq >= horz_stop) {
-            DEBUG("error: tiles are not contiguous horizontally: last_tile=%d horz_stop=%d", last_tile_sq, horz_stop);
+            ERROR("error: tiles are not contiguous horizontally: last_tile=%d horz_stop=%d", last_tile_sq, horz_stop);
             return _undo_move_and_return_null();
         }
 
         result.square = horz_start;
         result.direction = Direction::HORIZONTAL;
         result.length = horz_stop - horz_start;
-        DEBUG("HORIZONTAL LENGTH: [%d, %d) -> %d", horz_start, horz_stop, result.length);
+        // DEBUG("HORIZONTAL LENGTH: [%d, %d) -> %d", horz_start, horz_stop, result.length);
     }
 
     if (same_col) {
@@ -857,15 +858,15 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
             vert_stop += Down;
         }
         assert(vert_start < vert_stop);
-        DEBUG("vert=[%d, %d) [%s, %s]", vert_start, vert_stop, SquareNames[vert_start], SquareNames[vert_stop + Up]);
+        // DEBUG("vert=[%d, %d) [%s, %s]", vert_start, vert_stop, SquareNames[vert_start], SquareNames[vert_stop + Up]);
 
         if (last_tile_sq >= vert_stop) {
-            DEBUG("error: tiles are not contiguous vertically");
+            ERROR("error: tiles are not contiguous vertically");
             return _undo_move_and_return_null();
         }
 
         int length = (vert_stop - vert_start) / Dim;
-        DEBUG("VERTICAL LENGTH: [%d, %d) -> %d", vert_start, vert_stop, length);
+        // DEBUG("VERTICAL LENGTH: [%d, %d) -> %d", vert_start, vert_stop, length);
         if (length >= result.length) {
             result.square = vert_start;
             result.direction = Direction::VERTICAL;
