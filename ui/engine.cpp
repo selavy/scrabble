@@ -12,6 +12,7 @@
 // [1..26] => ['A'..'Z']
 constexpr uint32_t FULL_MASK = (1u << 26) - 1;
 constexpr char     EMPTY = 26;
+constexpr int      BLANK = 26;
 constexpr int      DIM = 15;
 constexpr int      HORZ = 1;
 constexpr int      VERT = DIM;
@@ -32,6 +33,12 @@ constexpr const char* const SquareNames[225] = {
     " N1", " N2", " N3", " N4", " N5", " N6", " N7", " N8", " N9", "N10", "N11", "N12", "N13", "N14", "N15",
     " O1", " O2", " O3", " O4", " O5", " O6", " O7", " O8", " O9", "O10", "O11", "O12", "O13", "O14", "O15",
 };
+
+constexpr int SQIX(char row, int col) noexcept {
+    int r = row - 'A';
+    int c = col - 1;
+    return r*DIM + c;
+}
 
 constexpr const char* SQ(int sq) noexcept {
     if (0 <= sq && sq < 225) {
@@ -57,7 +64,11 @@ constexpr char to_int(char tile) noexcept {
 }
 
 constexpr char to_ext(char tile) noexcept {
-    return tile + 'A';
+    if (tile == BLANK) {
+        return tile + '?';
+    } else {
+        return tile + 'A';
+    }
 }
 
 constexpr int flip_dir(int d) noexcept {
@@ -134,7 +145,84 @@ struct Word
 //     right_part(e, partial_word, rack, legal_move, data);
 // }
 
-// void extend_right(const Engine* e, Word* word, Rack* rack)
+#define ISWORD(word) (e->wordchk(e->wordchk_data, word) != 0)
+#define ONLEGAL(word, sq, dir) e->legalmv(e->legalmv_data, word, sq, dir)
+
+const char* print_rack(const EngineRack* r)
+{
+    static char buf[8];
+    memset(buf, 0, sizeof(buf));
+    std::size_t bidx = 0;
+    for (int tile = 0; tile < 26; ++tile) {
+        for (int i = 0; i < r->tiles[tile]; ++i) {
+            buf[bidx++] = to_ext(tile);
+        }
+    }
+    for (int i = 0; i < r->tiles[BLANK]; ++i) {
+        buf[bidx++] = '?';
+    }
+    buf[bidx] = 0;
+    return buf;
+}
+
+// TODO: need to determine the left most square
+void extend_right(const Engine* e, const int anchor, int sq, Word* word, EngineRack* r)
+{
+    if (anchor == SQIX('H', 6)) {
+        INFO("extend_right: word=%.*s (len=%d) sq=%s (%d) rack=%s", word->len, word->buf, word->len, SQ(sq), sq, print_rack(r));
+    }
+
+    auto* rack = r->tiles;
+    const auto* xchk = e->hchk;
+    const int start = colstart(sq);
+    const int step = HORZ;
+    const int stop  = start + step*DIM;
+    const int nextsq = sq + step;
+    if (e->vals[sq] == EMPTY) {
+        if (word->len > 0) {
+            word->buf[word->len] = 0;
+            if (ISWORD(word->buf)) {
+                ONLEGAL(word->buf, anchor, HORZ);
+            }
+        }
+
+        if (nextsq >= stop) { // hit end of board
+            return;
+        }
+
+        for (int tile = 0; tile < 26; ++tile) {
+            if (rack[tile] == 0) {              // don't have tile
+                continue;
+            }
+            if ((xchk[sq] & mask(tile)) == 0) { // fails cross-check
+                continue;
+            }
+            rack[tile]--;
+            word->buf[word->len++] = to_ext(tile);
+            assert(word->len <= DIM);
+            extend_right(e, anchor, nextsq, word, r);
+            word->len--;
+            rack[tile]++;
+        }
+
+        // TODO: handle blanks
+        // if (rack[BLANK] > 0) {
+        //     // ...
+        // }
+
+    } else {
+        word->buf[word->len++] = to_ext(e->vals[sq]);
+        if (nextsq < stop) {
+            extend_right(e, anchor, nextsq, word, r);
+        } else {  // hit end of board
+            word->buf[word->len] = 0;
+            if (ISWORD(word->buf)) {
+                ONLEGAL(word->buf, anchor, HORZ);
+            }
+        }
+        word->len--;
+    }
+}
 
 void engine_find(const Engine* e, EngineRack rack)
 {
@@ -149,25 +237,25 @@ void engine_find(const Engine* e, EngineRack rack)
     for (int i = 0; i < 4; ++i) {
         const int base = 64*i;
         uint64_t hmsk = hasq[i];
-        printf("hmsk = 0x%016" PRIx64 "\n", hmsk);
+        // printf("hmsk = 0x%016" PRIx64 "\n", hmsk);
         while (hmsk > 0) {
             int anchor = base + lsb(hmsk);
             printf("HORIZONTAL ANCHOR: %s (%d)\n", SQ(anchor), anchor);
-            // extend_right(e, anchor, &word, &rack);
+            extend_right(e, anchor, anchor, &word, &rack);
             hmsk = clearlsb(hmsk);
         }
     }
 
-    for (int i = 0; i < 4; ++i) {
-        const int base = 64*i;
-        uint64_t vmsk = vasq[i];
-        printf("vmsk = 0x%016" PRIx64 "\n", vmsk);
-        while (vmsk > 0) {
-            int anchor = base + lsb(vmsk);
-            printf("VERTICAL ANCHOR: %s (%d)\n", SQ(anchor), anchor);
-            vmsk = clearlsb(vmsk);
-        }
-    }
+    // for (int i = 0; i < 4; ++i) {
+    //     const int base = 64*i;
+    //     uint64_t vmsk = vasq[i];
+    //     // printf("vmsk = 0x%016" PRIx64 "\n", vmsk);
+    //     while (vmsk > 0) {
+    //         int anchor = base + lsb(vmsk);
+    //         printf("VERTICAL ANCHOR: %s (%d)\n", SQ(anchor), anchor);
+    //         vmsk = clearlsb(vmsk);
+    //     }
+    // }
     printf("--- END ENGINE FIND ---\n");
 }
 

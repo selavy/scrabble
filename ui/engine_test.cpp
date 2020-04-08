@@ -6,6 +6,165 @@
 
 using Dict = std::unordered_set<std::string>;
 
+struct EngineTrie
+{
+    struct Node {
+        char                value    = ' '; // TEMP TEMP
+        bool                terminal = false;
+        std::map<char, int> children;
+
+    };
+
+    EngineTrie() {
+        nodes_.emplace_back();
+    }
+    void insert(const char* word);
+    bool is_word(const char* word) const;
+    bool is_word(const std::string& w) const { return is_word(w.c_str()); }
+    std::vector<char> children(const char* prefix) const;
+    void print(std::ostream& os) const;
+    void print_(std::ostream& os, int curr, std::string& word) const;
+
+    std::vector<Node> nodes_;
+};
+
+std::ostream& operator<<(std::ostream& os, const EngineTrie& t) {
+    t.print(os);
+    return os;
+}
+
+void EngineTrie::print(std::ostream& os) const {
+    std::string word;
+    print_(os, 0, word);
+}
+
+void EngineTrie::print_(std::ostream& os, int curr, std::string& word) const {
+    if (nodes_[curr].terminal) {
+        os << "\"" << word << "\"\n";
+    }
+    for (auto [ch, child] : nodes_[curr].children) {
+        word += ch;
+        print_(os, child, word);
+        word.pop_back();
+    }
+}
+
+void EngineTrie::insert(const char* word) {
+    int curr = 0;
+    const char* c = word;
+    while (*c != '\0') {
+        assert(curr < nodes_.size());
+        auto& node = nodes_[curr];
+        auto it = node.children.find(*c);
+        if (it != node.children.end()) {
+            curr = it->second;
+        } else {
+            int next = static_cast<int>(nodes_.size());
+            nodes_.emplace_back();
+            nodes_.back().value = *c; // TEMP TEMP
+            nodes_[curr].children[*c] = next;
+            curr = next;
+        }
+        ++c;
+    }
+    nodes_[curr].terminal = true;
+}
+
+bool EngineTrie::is_word(const char* word) const {
+    int curr = 0;
+    const char* c = word;
+    while (*c != '\0') {
+        assert(curr < nodes_.size());
+        auto& node = nodes_[curr];
+        auto it = node.children.find(*c);
+        if (it == node.children.end()) {
+            return false;
+        }
+        curr = it->second;
+        ++c;
+    }
+    return nodes_[curr].terminal;
+}
+
+std::vector<char> EngineTrie::children(const char* prefix) const {
+    std::vector<char> result;
+    int curr = 0;
+    const char* c = prefix;
+    while (*c != '\0') {
+        assert(curr < nodes_.size());
+        auto& node = nodes_[curr];
+        auto it = node.children.find(*c);
+        if (it == node.children.end()) {
+            return result;
+        }
+        curr = it->second;
+        ++c;
+    }
+    for (auto [tile, children] : nodes_[curr].children) {
+        result.push_back(tile);
+    }
+    return result;
+}
+
+void trie_tests()
+{
+    std::vector<std::string> words = {
+        "AM",
+        "BA",
+        "BAM",
+        "IT",
+        "SAG",
+        "SILLY",
+        "STAG",
+        "STAGS",
+        "TAG",
+        "TAGS",
+        "TRAM",
+        "TRAMS",
+        "TRAIN",
+        "TRAINS",
+        "TRAP",
+        "TRR",
+        "ZA",
+        "ZAG",
+        "ZAGS",
+    };
+    EngineTrie trie;
+    for (const auto& word : words) {
+        trie.insert(word.c_str());
+    }
+    trie.print(std::cout);
+
+    for (const auto& word : words) {
+        assert(trie.is_word(word));
+    }
+
+    std::vector<std::string> not_words = {
+        "AMZ",
+        "BAZZ",
+        "ZBAM",
+        "ITZ",
+        "SAGX",
+        "SILLYA",
+        "STA",
+        "ZAGSX",
+    };
+
+    for (const auto& word : not_words) {
+        assert(!trie.is_word(word));
+    }
+
+    auto result = trie.children("TRA");
+    std::cout << "Children of prefix \"TRA\"\n";
+    for (auto c : result) {
+        std::cout << c << " ";
+    }
+    std::cout << "\n";
+    assert(std::find(result.begin(), result.end(), 'I') != result.end());
+    assert(std::find(result.begin(), result.end(), 'M') != result.end());
+    assert(std::find(result.begin(), result.end(), 'P') != result.end());
+}
+
 int is_word(void* data, const char* word) {
     auto& dict = *reinterpret_cast<Dict*>(data);
     return dict.count(word);
@@ -219,6 +378,7 @@ void find_tests()
 
 int main(int argc, char** argv) {
     // crosscheck_tests();
-    find_tests();
+    // find_tests();
+    trie_tests();
     return 0;
 }
