@@ -175,8 +175,7 @@ const char* print_rack(const EngineRack* r)
     return buf;
 }
 
-// TODO: need to determine the left most square
-void extend_right(const Engine* e, const int anchor, int sq, Word* word, EngineRack* r, const Word leftp, int right_part_length)
+void extend_right(const Engine* e, const int anchor, int sq, Word* word, EngineRack* r, int right_part_length, const Word leftp)
 {
     word->buf[word->len] = 0;
     const Edges edges_ = e->prefix_edges(e->prefix_edges_data, word->buf);
@@ -216,7 +215,7 @@ void extend_right(const Engine* e, const int anchor, int sq, Word* word, EngineR
             word->buf[word->len]   = 0;
             // INFO("\tPLAYING TILE: %c ON %s -- %s xchk=%s", *tile, SQ(sq), word->buf, MBUF(xchk[sq]));
             assert(word->len <= DIM);
-            extend_right(e, anchor, nextsq, word, r, leftp, right_part_length + 1);
+            extend_right(e, anchor, nextsq, word, r, right_part_length + 1, leftp);
             word->len--;
             word->buf[word->len] = 0;
             rack[tint]++;
@@ -231,7 +230,7 @@ void extend_right(const Engine* e, const int anchor, int sq, Word* word, EngineR
         word->buf[word->len] = 0; // TEMP TEMP
         // INFO("\tADDED ALREADY PLAYED TILE: %c -> %s", to_ext(e->vals[sq]), word->buf);
         if (nextsq < stop) {
-            extend_right(e, anchor, nextsq, word, r, leftp, right_part_length + 1);
+            extend_right(e, anchor, nextsq, word, r, right_part_length + 1, leftp);
         } else if ((word->len > right_part_length + 1) && terminal) {  // hit end of board with a valid word
             assert(word->buf[word->len] == 0);
             ONLEGAL(word->buf, anchor, HORZ);
@@ -258,7 +257,7 @@ void left_part(const Engine* e, const int anchor, int sq, int limit, Word* word,
 
     assert(e->vals[sq] == EMPTY);
     // assert((anchor - sq) == strlen(word->buf));
-    extend_right(e, sq, anchor, word, r, *word, 0);
+    extend_right(e, sq, anchor, word, r, 0, *word);
     if (limit == 0) {
         return;
     }
