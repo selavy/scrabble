@@ -385,8 +385,8 @@ void find_tests()
         // move           , rack before move
         { "H7  zag     26", "DGZTAAT" },
         { "I6  bam     24", "IMETRAB" },
-        // { "J5  tag     25", "GTAADTS" },
-        // { "8F  tram     6", "TTRRENI" },
+        { "J5  tag     25", "GTAADTS" },
+        { "8F  tram     6", "TTRRENI" },
         // { "K5  od      16", "T?SDAOD" },
         // { "L4  arenite 76", "EAITNER" },
         // { "10B pEdants 81", "SPDNA?T" },

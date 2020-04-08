@@ -460,7 +460,10 @@ void engine_make_move(Engine* e, const EngineMove* m)
             }
             hchk[after] = chk;
 
-            setasq(hasq, after);
+            // TODO(peter): revisit -- this can't be correct
+            if (vals[after - hstep] == EMPTY) {
+                setasq(hasq, after);
+            }
             // setasq(vasq, after);
         }
 
@@ -516,6 +519,11 @@ void engine_make_move(Engine* e, const EngineMove* m)
             vchk[after] = chk;
             // setasq(hasq, after);
             // setasq(vasq, after);
+        }
+
+        if (end + hstep < stop) {
+            printf("CLEARING %s", SQ(end + hstep));
+            clrasq(hasq, end + hstep);
         }
     }
 }
