@@ -138,11 +138,9 @@ void engine_init(Engine* e)
     memset(e->vals, EMPTY, sizeof(e->vals));
     memset(e->vchk, 0xffu, sizeof(e->vchk));
     memset(e->hchk, 0xffu, sizeof(e->hchk));
-    memset(e->hasq, 0x00u, sizeof(e->hasq));
-    memset(e->vasq, 0x00u, sizeof(e->vasq));
+    memset(e->asqs, 0x00u, sizeof(e->asqs));
     const int H8 = 7*DIM + 7;
-    setasq(e->hasq, H8);
-    // setasq(e->vasq, H8);
+    setasq(e->asqs, H8);
 }
 
 constexpr int lsb(uint64_t x) noexcept { return __builtin_ctzll(x); }
@@ -332,8 +330,7 @@ void extend_right_on_existing_left_part(const Engine* e, EngineRack* r, int anch
 void engine_find(const Engine* e, EngineRack rack)
 {
     printf("--- BEGIN ENGINE FIND --- rack = %s\n", print_rack(&rack));
-    auto* hasq = e->hasq;
-    auto* vasq = e->vasq;
+    auto* asqs = e->asqs;
     auto* vals = e->vals;
     char buf[16];
     Word word;
@@ -342,15 +339,15 @@ void engine_find(const Engine* e, EngineRack rack)
     word.buf[0] = 0;
     for (int i = 0; i < 4; ++i) {
         const int base = 64*i;
-        uint64_t hmsk = hasq[i];
-        while (hmsk > 0) {
-            int anchor = base + lsb(hmsk);
+        uint64_t msk = asqs[i];
+        while (msk > 0) {
+            int anchor = base + lsb(msk);
             // printf("HORIZONTAL ANCHOR: %s (%d)\n", SQ(anchor), anchor);
             const int start = colstart(anchor);
             const int step  = HORZ;
             int limit = 0; // max left part potential length
             for (int sq = anchor - step; sq >= start; sq -= step) {
-                if (getasq(hasq, sq) != 0) {
+                if (getasq(asqs, sq) != 0) {
                     break;
                 }
                 if (vals[sq] != EMPTY) {
@@ -359,26 +356,15 @@ void engine_find(const Engine* e, EngineRack rack)
                 ++limit;
             }
             assert((anchor - step * limit) >= start);
-            assert(((anchor - step * limit) == start) || (getasq(hasq, anchor - step * limit) != 0));
+            assert(((anchor - step * limit) == start) || (getasq(asqs, anchor - step * limit) != 0));
             if (anchor - step >= start && vals[anchor - step] != EMPTY) {
                 extend_right_on_existing_left_part(e, &rack, anchor, &word);
             } else {
                 left_part(e, anchor, anchor - step, limit, &word, &rack);
             }
-            hmsk = clearlsb(hmsk);
+            msk = clearlsb(msk);
         }
     }
-
-    // for (int i = 0; i < 4; ++i) {
-    //     const int base = 64*i;
-    //     uint64_t vmsk = vasq[i];
-    //     // printf("vmsk = 0x%016" PRIx64 "\n", vmsk);
-    //     while (vmsk > 0) {
-    //         int anchor = base + lsb(vmsk);
-    //         printf("VERTICAL ANCHOR: %s (%d)\n", SQ(anchor), anchor);
-    //         vmsk = clearlsb(vmsk);
-    //     }
-    // }
     printf("--- END ENGINE FIND ---\n");
 }
 
@@ -452,8 +438,7 @@ void engine_make_move(Engine* e, const EngineMove* m)
     auto* vals = e->vals;
     auto* hchk = dir == HORZ ? e->hchk : e->vchk;
     auto* vchk = dir == HORZ ? e->vchk : e->hchk;
-    auto* hasq = dir == HORZ ? e->hasq : e->vasq;
-    auto* vasq = dir == HORZ ? e->vasq : e->hasq;
+    auto* asqs = e->asqs;
     auto* horzstart = dir == HORZ ? &colstart : &rowstart;
     auto* vertstart = dir == HORZ ? &rowstart : &colstart;
     auto* chkwrd = e->wordchk;
@@ -489,6 +474,7 @@ void engine_make_move(Engine* e, const EngineMove* m)
         const int after  = end + step;
         if (before >= start) {
             assert(getdim(step, before) == getdim(step, root));
+            // TODO(peter): switch to using prefix call to get children
             uint32_t chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[0] = c;
@@ -497,13 +483,13 @@ void engine_make_move(Engine* e, const EngineMove* m)
                 }
             }
             hchk[before] = chk;
-            setasq(hasq, before);
-            // setasq(vasq, before);
+            setasq(asqs, before);
         }
 
         if (after < stop) {
             assert(getdim(step, after) == getdim(step, root));
             assert(buf[len+1] == '\0');
+            // TODO(peter): switch to using prefix call to get children
             uint32_t chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[len+1] = c;
@@ -513,12 +499,10 @@ void engine_make_move(Engine* e, const EngineMove* m)
             }
             hchk[after] = chk;
 
-            setasq(hasq, after);
-            // setasq(vasq, after);
+            setasq(asqs, after);
         }
 
-        clrasq(hasq, root);
-        clrasq(vasq, root);
+        clrasq(asqs, root);
     }
 
     { // update horizontal cross-checks
@@ -541,62 +525,43 @@ void engine_make_move(Engine* e, const EngineMove* m)
             assert(vals[before] == EMPTY);
             assert(getdim(step, before) == getdim(step, lsq));
             assert(getdim(step, before) == getdim(step, rsq));
+            // TODO(peter): switch to using prefix call to get children
             uint32_t chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[0] = c;
                 if (chkwrd(e->wordchk_data, buf) != 0) {
-                    // INFO("valid word: '%s' at square %s", buf, SQ(before));
                     chk |= mask(to_int(c));
                 }
             }
             vchk[before] = chk;
-            setasq(hasq, before);
-            // setasq(vasq, before);
+            setasq(asqs, before);
         }
         if (after < stop) {
             assert(vals[after] == EMPTY);
             assert(getdim(step, after) == getdim(step, lsq));
             assert(getdim(step, after) == getdim(step, rsq));
             assert(buf[len+1] == '\0');
+            // TODO(peter): switch to using prefix call to get children
             uint32_t chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[len+1] = c;
                 if (chkwrd(e->wordchk_data, &buf[1]) != 0) {
-                    // INFO("valid word: '%s' at square %s", &buf[1], SQ(after));
                     chk |= mask(to_int(c));
                 }
             }
             vchk[after] = chk;
-            setasq(hasq, after);
-            // setasq(vasq, after);
+            setasq(asqs, after);
         }
-
-        // if (end + hstep < stop) {
-        //     printf("CLEARING %s", SQ(end + hstep));
-        //     clrasq(hasq, end + hstep);
-        // }
     }
 }
 
 void engine_print_anchors(const Engine* e)
 {
-    auto* hasq = e->hasq;
-    auto* vasq = e->vasq;
+    auto* asqs = e->asqs;
     auto* vals = e->vals;
-    auto getcc = [hasq, vasq, vals](int row, int col) {
-        constexpr char T[4] = {
-            ' ', 'h', 'v', '*',
-        };
-        int vv = 0;
+    auto getcc = [asqs, vals](int row, int col) {
         int idx = row*DIM + col;
-        if (getasq(hasq, idx) != 0) {
-            vv |= 1 << 0;
-        }
-        if (getasq(vasq, idx) != 0) {
-            vv |= 1 << 1;
-        }
-        assert(vv == 0 || vals[idx] == EMPTY);
-        return (vv != 0 || vals[idx] == EMPTY) ? T[vv] : to_ext(vals[idx]);
+        return getasq(asqs, idx) != 0 ? '*' : to_ext(vals[idx]);
     };
 
     printf("     1   2   3   4   5   6   7   8   9   0   1   2   3   4   5  \n");
@@ -611,25 +576,4 @@ void engine_print_anchors(const Engine* e)
         printf("   -------------------------------------------------------------\n");
     }
     printf("\n");
-
-
-#if 0
-    auto print_row = [&os](const char* r) {
-        for (int i = 0; i < Dim - 1; ++i) {
-            os << r[i] << " | ";
-        }
-        os << r[Dim - 1];
-    };
-
-    const auto& b = board.brd;
-    os << "     1   2   3   4   5   6   7   8   9   0   1   2   3   4   5  \n";
-    os << "   -------------------------------------------------------------\n";
-    for (int row = 0; row < Dim; ++row) {
-        os << static_cast<char>('A' + row) << "  | ";
-        print_row(&b[Dim * row]);
-        os << " |\n";
-        os << "   -------------------------------------------------------------\n";
-    }
-    return os;
-#endif
 }

@@ -17,8 +17,7 @@ struct Engine
     char     vals[225]; // TODO(peter): maybe remove and pass in from UI?
     uint32_t hchk[225];
     uint32_t vchk[225];
-    uint64_t hasq[4];
-    uint64_t vasq[4];
+    uint64_t asqs[4];
 
     // TODO: shouldn't need wordchk now that have prefix edges -- just check if terminal node instead
     WordCheck   wordchk;
