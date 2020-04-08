@@ -208,9 +208,9 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
     const bool  terminal = edges_.terminal;
     const auto* xchk = dir == HORZ ? e->hchk : e->vchk;
     const int start = dir == HORZ ? colstart(sq) : rowstart(sq);
-    const int step = dir;
-    const int stop  = start + step * DIM;
-    const int nextsq = sq + step;
+    const int stride = dir;
+    const int stop  = start + stride * DIM;
+    const int nextsq = sq + stride;
     auto* rack = r->tiles;
 
 #if 0
@@ -224,7 +224,7 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
     if (e->vals[sq] == EMPTY) {
         if (right_part_length > 0 && terminal) {
             assert(word->buf[word->len] == 0);
-            printf("!!! LEGAL MOVE(1): anchor=%s sq=%s dir=HORZ word=\"%s\"\n", SQ(anchor), SQ(sq - step), word->buf);
+            printf("!!! LEGAL MOVE(1): anchor=%s sq=%s dir=HORZ word=\"%s\"\n", SQ(anchor), SQ(sq - stride), word->buf);
             // ONLEGAL(word->buf, anchor, HORZ);
         }
         if (nextsq >= stop) { // hit end of board
@@ -277,12 +277,12 @@ void left_part(const Engine* e, int dir, int anchor, int sq, int limit, Word* wo
     const bool terminal = edges_.terminal;
     const auto* xchk = dir == HORZ ? e->hchk : e->vchk;
     const int start = dir == HORZ ? colstart(sq) : rowstart(sq);
-    const int step = dir;
-    const int stop  = start + step * DIM;
+    const int stride = dir;
+    const int stop  = start + stride * DIM;
     auto* rack = r->tiles;
     assert(e->vals[sq] == EMPTY);
-    assert((((anchor - sq) / step) - 1) == strlen(word->buf));
-    extend_right(e, dir, sq + step, anchor, word, r, /*right_part_length*/0, *word);
+    assert((((anchor - sq) / stride) - 1) == strlen(word->buf));
+    extend_right(e, dir, sq + stride, anchor, word, r, /*right_part_length*/0, *word);
     if (limit == 0) {
         return;
     }
@@ -296,7 +296,7 @@ void left_part(const Engine* e, int dir, int anchor, int sq, int limit, Word* wo
         word->buf[word->len++] = *tile;
         word->buf[word->len]   = 0;     // TODO: hoist this out of loop
         assert(sq >= start);
-        left_part(e, dir, anchor, sq - step, limit - 1, word, r);
+        left_part(e, dir, anchor, sq - stride, limit - 1, word, r);
         word->len--;
         word->buf[word->len] = 0;       // TODO: hoist this out of loop
         rack[tint]++;
@@ -307,21 +307,21 @@ void extend_right_on_existing_left_part(const Engine* e, int dir, EngineRack* r,
 {
     const auto* vals = e->vals;
     const int start = dir == HORZ ? colstart(anchor) : rowstart(anchor);
-    const int step = dir;
-    int sq = anchor - step;
+    const int stride = dir;
+    int sq = anchor - stride;
     assert(sq >= start);
     assert(vals[sq] != EMPTY);
     // TODO: more efficient way to extend backwards? maybe make the buffer (DIM+1)*2 so we can start
     //       in the middle?
     while (sq >= start && vals[sq] != EMPTY) {
         word->buf[word->len++] = to_ext(vals[sq]);
-        sq -= step;
+        sq -= stride;
     }
     word->buf[word->len] = 0;
     revbuf(word->buf, word->len);
     INFO("extending existing left part: '%s'", word->buf);
     // TODO(peter): calculate where left most square
-    extend_right(e, dir, anchor - step * word->len, anchor, word, r, 0, *word);
+    extend_right(e, dir, anchor - stride * word->len, anchor, word, r, 0, *word);
     word->len = 0;
 }
 
@@ -343,10 +343,10 @@ void engine_find(const Engine* e, EngineRack rack)
         while (msk > 0) {
             int anchor = base + lsb(msk);
             for (int i = 0; i < ASIZE(dirs); ++i) {
-                const int step  = dirs[i]; // HORZ;
+                const int stride  = dirs[i]; // HORZ;
                 const int start = dirs[i] == HORZ ? colstart(anchor) : rowstart(anchor);
                 int limit = 0; // max left part potential length
-                for (int sq = anchor - step; sq >= start; sq -= step) {
+                for (int sq = anchor - stride; sq >= start; sq -= stride) {
                     if (getasq(asqs, sq) != 0) {
                         break;
                     }
@@ -355,13 +355,13 @@ void engine_find(const Engine* e, EngineRack rack)
                     }
                     ++limit;
                 }
-                const int left_most_poss_sq = anchor - step * limit;
+                const int left_most_poss_sq = anchor - stride * limit;
                 assert(left_most_poss_sq >= start);
                 assert((left_most_poss_sq == start) || (getasq(asqs, left_most_poss_sq) != 0));
-                if (anchor - step >= start && vals[anchor - step] != EMPTY) {
-                    extend_right_on_existing_left_part(e, step, &rack, anchor, &word);
+                if (anchor - stride >= start && vals[anchor - stride] != EMPTY) {
+                    extend_right_on_existing_left_part(e, stride, &rack, anchor, &word);
                 } else {
-                    left_part(e, step, anchor, anchor - step, limit, &word, &rack);
+                    left_part(e, stride, anchor, anchor - stride, limit, &word, &rack);
                 }
             }
 
@@ -375,7 +375,7 @@ int engine_xchk(const Engine* e, const EngineMove* m)
 {
     const int dir = m->direction;
     const int ntiles = m->ntiles;
-    const int step = flip_dir(dir);
+    const int stride = flip_dir(dir);
     auto* tiles = m->tiles;
     auto* squares = m->squares;
     auto* vals = e->vals;
@@ -400,31 +400,31 @@ int engine_xchk(const Engine* e, const EngineMove* m)
     return 0;
 }
 
-int findbeg(const char* vals, const int start, const int stop, const int step, const int root)
+int findbeg(const char* vals, const int start, const int stop, const int stride, const int root)
 {
     assert(vals[root] != EMPTY);
-    int sq = root - step;
+    int sq = root - stride;
     while (sq >= start && vals[sq] != EMPTY) {
-        sq -= step;
+        sq -= stride;
     }
-    assert(vals[sq + step] != EMPTY);
-    return sq + step;
+    assert(vals[sq + stride] != EMPTY);
+    return sq + stride;
 }
 
-int findend(const char* vals, const int start, const int stop, const int step, const int root)
+int findend(const char* vals, const int start, const int stop, const int stride, const int root)
 {
     assert(vals[root] != EMPTY);
-    int sq = root + step;
+    int sq = root + stride;
     while (sq < stop && vals[sq] != EMPTY) {
-        sq += step;
+        sq += stride;
     }
-    assert(vals[sq - step] != EMPTY);
-    return sq - step;
+    assert(vals[sq - stride] != EMPTY);
+    return sq - stride;
 }
 
-int inclusive_length(int beg, int end, int step) {
+int inclusive_length(int beg, int end, int stride) {
     assert(beg <= end);
-    return (end - beg) / step + 1;
+    return (end - beg) / stride + 1;
 }
 
 void engine_make_move(Engine* e, const EngineMove* m)
@@ -436,8 +436,8 @@ void engine_make_move(Engine* e, const EngineMove* m)
     const auto* squares = m->squares;
     const int dir = m->direction;
     const int ntiles = m->ntiles;
-    const int hstep = m->direction;
-    const int vstep = flip_dir(m->direction);
+    const int hstride = m->direction;
+    const int vstride = flip_dir(m->direction);
     auto* vals = e->vals;
     auto* hchk = dir == HORZ ? e->hchk : e->vchk;
     auto* vchk = dir == HORZ ? e->vchk : e->hchk;
@@ -448,7 +448,7 @@ void engine_make_move(Engine* e, const EngineMove* m)
     const int lsq   = squares[0];          // left-most square
     const int rsq   = squares[ntiles - 1]; // right-most square
     const int hstart = horzstart(lsq);
-    const int hstop  = hstart + hstep * DIM;
+    const int hstop  = hstart + hstride * DIM;
     assert(ntiles > 0);
     assert(squares != NULL);
     assert(tiles != NULL);
@@ -456,27 +456,27 @@ void engine_make_move(Engine* e, const EngineMove* m)
 
     // update vertical cross-checks
     for (int tidx = 0; tidx < ntiles; ++tidx) {
-        const int step = vstep;
+        const int stride = vstride;
         const int root = squares[tidx];
         const char tile = tiles[tidx];
         const char tint = to_int(tile);
         const int start = vertstart(root);
-        const int stop = start + DIM * step;
+        const int stop = start + DIM * stride;
         assert(vals[root] == EMPTY);
         vals[root] = tint;
-        const int beg = findbeg(vals, start, stop, step, root);
-        const int end = findend(vals, start, stop, step, root);
-        const int len = inclusive_length(beg, end, step);
+        const int beg = findbeg(vals, start, stop, stride, root);
+        const int end = findend(vals, start, stop, stride, root);
+        const int len = inclusive_length(beg, end, stride);
         for (int i = 0; i < len; ++i) {
-            buf[i+1] = to_ext(vals[beg + i*step]);
+            buf[i+1] = to_ext(vals[beg + i*stride]);
             assert('A' <= buf[i+1] && buf[i+1] <= 'Z');
         }
         buf[len+1] = '\0';
         buf[len+2] = '\0';
-        const int before = beg - step;
-        const int after  = end + step;
+        const int before = beg - stride;
+        const int after  = end + stride;
         if (before >= start) {
-            assert(getdim(step, before) == getdim(step, root));
+            assert(getdim(stride, before) == getdim(stride, root));
             // TODO(peter): switch to using prefix call to get children
             uint32_t chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
@@ -490,7 +490,7 @@ void engine_make_move(Engine* e, const EngineMove* m)
         }
 
         if (after < stop) {
-            assert(getdim(step, after) == getdim(step, root));
+            assert(getdim(stride, after) == getdim(stride, root));
             assert(buf[len+1] == '\0');
             // TODO(peter): switch to using prefix call to get children
             uint32_t chk = 0;
@@ -510,24 +510,24 @@ void engine_make_move(Engine* e, const EngineMove* m)
 
     { // update horizontal cross-checks
         const int start = hstart;
-        const int step  = hstep;
+        const int stride  = hstride;
         const int stop  = hstop;
-        const int beg = findbeg(vals, start, stop, step, lsq);
-        const int end = findend(vals, start, stop, step, rsq);
-        const int len = inclusive_length(beg, end, step);
-        assert(getdim(step, lsq) == getdim(step, rsq)); // move must be on exactly 1 row or col
+        const int beg = findbeg(vals, start, stop, stride, lsq);
+        const int end = findend(vals, start, stop, stride, rsq);
+        const int len = inclusive_length(beg, end, stride);
+        assert(getdim(stride, lsq) == getdim(stride, rsq)); // move must be on exactly 1 row or col
         for (int i = 0; i < len; ++i) {
-            buf[i+1] = to_ext(vals[beg+i*step]);
+            buf[i+1] = to_ext(vals[beg+i*stride]);
             assert('A' <= buf[i+1] && buf[i+1] <= 'Z');
         }
         buf[len+1] = '\0';
         buf[len+2] = '\0';
-        const int before = beg - step;
-        const int after  = end + step;
+        const int before = beg - stride;
+        const int after  = end + stride;
         if (before >= start) {
             assert(vals[before] == EMPTY);
-            assert(getdim(step, before) == getdim(step, lsq));
-            assert(getdim(step, before) == getdim(step, rsq));
+            assert(getdim(stride, before) == getdim(stride, lsq));
+            assert(getdim(stride, before) == getdim(stride, rsq));
             // TODO(peter): switch to using prefix call to get children
             uint32_t chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
@@ -541,8 +541,8 @@ void engine_make_move(Engine* e, const EngineMove* m)
         }
         if (after < stop) {
             assert(vals[after] == EMPTY);
-            assert(getdim(step, after) == getdim(step, lsq));
-            assert(getdim(step, after) == getdim(step, rsq));
+            assert(getdim(stride, after) == getdim(stride, lsq));
+            assert(getdim(stride, after) == getdim(stride, rsq));
             assert(buf[len+1] == '\0');
             // TODO(peter): switch to using prefix call to get children
             uint32_t chk = 0;
