@@ -15,6 +15,7 @@ typedef Edges (*PrefixEdges)(void* data, const char* prefix);
 struct Engine
 {
     char     vals[225]; // TODO(peter): maybe remove and pass in from UI?
+    // TODO(peter): don't need separate h vs v cross checks
     uint32_t hchk[225];
     uint32_t vchk[225];
     uint64_t asqs[4];

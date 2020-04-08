@@ -402,7 +402,6 @@ void find_tests()
 
     for (auto [isc_spec, rack_spec] : isc_moves) {
         const auto rack = make_engine_rack(rack_spec);
-        DEBUG("making move: '%s'", isc_spec.c_str());
         engine_print_anchors(engine);
         // std::cout << board << std::endl;
         engine_find(engine, rack);
@@ -412,7 +411,7 @@ void find_tests()
         auto maybe_move = make_move(board, gui_move);
         assert(static_cast<bool>(maybe_move) == true);
         auto move = *maybe_move;
-        std::cout << move << std::endl;
+        std::cout << "\n" << move << std::endl;
 
         EngineMove em;
         em.tiles   = &move.tiles[0];
@@ -430,7 +429,7 @@ void find_tests()
 
 int main(int argc, char** argv) {
     // trie_tests();
-    // crosscheck_tests();
+    crosscheck_tests();
     find_tests();
     return 0;
 }

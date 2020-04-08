@@ -34,6 +34,15 @@ constexpr const char* const SquareNames[225] = {
     " O1", " O2", " O3", " O4", " O5", " O6", " O7", " O8", " O9", "O10", "O11", "O12", "O13", "O14", "O15",
 };
 
+constexpr const char* const DIR(int dir) noexcept {
+    if (dir == HORZ) {
+        return "HORZ";
+    } else if (dir == VERT) {
+        return "VERT";
+    } else {
+        return "UNKNOWN";
+    }
+}
 
 /*constexpr*/ int SQIX(char row, int col) noexcept {
     int r = row - 'A';
@@ -206,25 +215,26 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
     const Edges edges_ = e->prefix_edges(e->prefix_edges_data, word->buf);
     const char* edges = edges_.edges;
     const bool  terminal = edges_.terminal;
-    const auto* xchk = dir == HORZ ? e->hchk : e->vchk;
+    const auto* hchk = e->hchk;
+    const auto* vchk = e->vchk;
     const int start = dir == HORZ ? colstart(sq) : rowstart(sq);
     const int stride = dir;
     const int stop  = start + stride * DIM;
     const int nextsq = sq + stride;
     auto* rack = r->tiles;
 
-#if 0
-    if (strcmp(leftp.buf, "ZAG") == 0) {
-        // if (anchor == SQIX('I', 7)) {
-        INFO("extend_right: word=\"%s\" left_part=\"%s\" sq=%s (%d) rack=%s edges=%s terminal=%s xchk=%s",
-                word->buf, leftp.buf, SQ(sq), sq, print_rack(r), edges, (terminal?"TRUE":"FALSE"), MBUF(xchk[sq]));
+#if 1
+    // if (strcmp(leftp.buf, "ZAG") == 0) {
+    if (anchor == SQIX('G', 8) || anchor == SQIX('F', 8) || anchor == SQIX('E', 8)) {
+        INFO("extend_right: word=\"%s\" left_part=\"%s\" sq=%s anchor=%s rack=%s edges=%s terminal=%s hchk=%s vchk=%s",
+                word->buf, leftp.buf, SQ(sq), SQ(anchor), print_rack(r), edges, (terminal?"TRUE":"FALSE"), MBUF(hchk[sq]), MBUF(vchk[sq]));
     }
 #endif
 
     if (e->vals[sq] == EMPTY) {
         if (right_part_length > 0 && terminal) {
             assert(word->buf[word->len] == 0);
-            printf("!!! LEGAL MOVE(1): anchor=%s sq=%s dir=HORZ word=\"%s\"\n", SQ(anchor), SQ(sq - stride), word->buf);
+            printf("!!! LEGAL MOVE(1): anchor=%s sq=%s dir=%s word=\"%s\"\n", SQ(anchor), SQ(sq - stride), DIR(dir), word->buf);
             // ONLEGAL(word->buf, anchor, HORZ);
         }
         if (nextsq >= stop) { // hit end of board
@@ -235,13 +245,16 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
             if (rack[tint] == 0) {              // have tile?
                 continue;
             }
-            if ((xchk[sq] & mask(tint)) == 0) { // meets cross-check?
+            if ((hchk[sq] & mask(tint)) == 0) { // meets horizontal cross-check?
+                continue;
+            }
+            if ((vchk[sq] & mask(tint)) == 0) { // meets vertical cross-check?
                 continue;
             }
             rack[tint]--;
             word->buf[word->len++] = *tile;
             word->buf[word->len]   = 0;
-            // INFO("\tPLAYING TILE: %c ON %s -- %s xchk=%s", *tile, SQ(sq), word->buf, MBUF(xchk[sq]));
+            INFO("\tPLAYING TILE: %c ON %s -- %s", *tile, SQ(sq), word->buf);
             assert(word->len <= DIM);
             extend_right(e, dir, anchor, nextsq, word, r, right_part_length + 1, leftp);
             word->len--;
@@ -256,13 +269,13 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
     } else if (*edges != 0 || terminal) {
         word->buf[word->len++] = to_ext(e->vals[sq]);
         word->buf[word->len] = 0; // TEMP TEMP
-        // INFO("\tADDED ALREADY PLAYED TILE: %c -> %s", to_ext(e->vals[sq]), word->buf);
+        INFO("\tADDED ALREADY PLAYED TILE: %c -> %s", to_ext(e->vals[sq]), word->buf);
         if (nextsq < stop) {
             extend_right(e, dir, anchor, nextsq, word, r, right_part_length, leftp);
-        } else if ((right_part_length > 0) && terminal) {  // hit end of board with a valid word
+        } else if (/*(right_part_length > 0 || leftp.len > 0)*/ (word->len > 0) && terminal) {  // hit end of board with a valid word
             assert(word->buf[word->len] == 0);
             // ONLEGAL(word->buf, anchor, HORZ);
-            printf("!!! LEGAL MOVE(2): anchor=%s sq=%s dir=HORZ word=\"%s\"\n", SQ(anchor), SQ(sq), word->buf);
+            printf("!!! LEGAL MOVE(2): anchor=%s sq=%s dir=%s word=\"%s\"\n", SQ(anchor), SQ(sq - stride), DIR(dir), word->buf);
         }
         word->len--;
     }
@@ -319,8 +332,6 @@ void extend_right_on_existing_left_part(const Engine* e, int dir, EngineRack* r,
     }
     word->buf[word->len] = 0;
     revbuf(word->buf, word->len);
-    INFO("extending existing left part: '%s'", word->buf);
-    // TODO(peter): calculate where left most square
     extend_right(e, dir, anchor - stride * word->len, anchor, word, r, 0, *word);
     word->len = 0;
 }
@@ -343,7 +354,7 @@ void engine_find(const Engine* e, EngineRack rack)
         while (msk > 0) {
             int anchor = base + lsb(msk);
             for (int i = 0; i < ASIZE(dirs); ++i) {
-                const int stride  = dirs[i]; // HORZ;
+                const int stride  = dirs[i];
                 const int start = dirs[i] == HORZ ? colstart(anchor) : rowstart(anchor);
                 int limit = 0; // max left part potential length
                 for (int sq = anchor - stride; sq >= start; sq -= stride) {
@@ -379,7 +390,6 @@ int engine_xchk(const Engine* e, const EngineMove* m)
     auto* tiles = m->tiles;
     auto* squares = m->squares;
     auto* vals = e->vals;
-    auto* chk = dir == HORZ ? e->hchk : e->vchk;
     auto* hchk = e->hchk;
     auto* vchk = e->vchk;
     for (int i = 0; i < ntiles; ++i) {
@@ -393,7 +403,10 @@ int engine_xchk(const Engine* e, const EngineMove* m)
         //     sq, hchk[sq], MBUF(hchk[sq]), MM(hchk[sq], msk),
         //     sq, vchk[sq], MBUF(vchk[sq]), MM(vchk[sq], msk)
         // );
-        if ((chk[sq] & mask(tint)) == 0) {
+        if ((hchk[sq] & mask(tint)) == 0) {
+            return sq;
+        }
+        if ((vchk[sq] & mask(tint)) == 0) {
             return sq;
         }
     }
