@@ -186,6 +186,20 @@ void revbuf(char* buf, int length)
     }
 }
 
+// Definitions:
+//   + "Left Part"  -- prefix that goes BEFORE the anchor square, it may be empty
+//   + "Right Part" -- rest of word, which must start at the anchor square
+//
+// Therefore:
+//   + Potential left part is the minimum of the distance (going left) to the edge
+//     of the board or the next left anchor extending to the current anchor
+//   + All squares within the potential left part have trivial cross-checks
+//   + Anchor square must be filled in to be a legal word
+//
+// Additional Notes:
+//   + Everything in this file is specified from the standpoint of generating horizontal
+//     moves. For vertical moves, we can just conceptually rotate the board.
+
 void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, EngineRack* r, int right_part_length, Word leftp)
 {
     word->buf[word->len] = 0;
@@ -195,7 +209,7 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
     const auto* xchk = dir == HORZ ? e->hchk : e->vchk;
     const int start = dir == HORZ ? colstart(sq) : rowstart(sq);
     const int step = dir;
-    const int stop  = start + step*DIM;
+    const int stop  = start + step * DIM;
     const int nextsq = sq + step;
     auto* rack = r->tiles;
 
@@ -210,7 +224,7 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
     if (e->vals[sq] == EMPTY) {
         if (right_part_length > 0 && terminal) {
             assert(word->buf[word->len] == 0);
-            printf("!!! LEGAL MOVE(1): anchor=%s sq=%s dir=HORZ word=\"%s\"\n", SQ(anchor), SQ(sq-step), word->buf);
+            printf("!!! LEGAL MOVE(1): anchor=%s sq=%s dir=HORZ word=\"%s\"\n", SQ(anchor), SQ(sq - step), word->buf);
             // ONLEGAL(word->buf, anchor, HORZ);
         }
         if (nextsq >= stop) { // hit end of board
@@ -254,16 +268,6 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
     }
 }
 
-// definitions:
-// "Left Part"  -- prefix that goes BEFORE the anchor square, it may be empty
-// "Right Part" -- rest of word, which must start at the anchor square
-//
-// Therefore:
-//   + potential left part is the minimum of the distance (going left) to the edge
-//     of the board or the next left anchor extending to the current anchor
-//   + all squares within the potential left part have trivial cross-checks
-//   + anchor square must be filled in to be a legal word
-
 // TODO: remove `sq` parameter, can calculate it from sq = anchor - strlen(word->buf) - 1 (see line 278 assertion below)
 void left_part(const Engine* e, int dir, int anchor, int sq, int limit, Word* word, EngineRack* r)
 {
@@ -274,7 +278,7 @@ void left_part(const Engine* e, int dir, int anchor, int sq, int limit, Word* wo
     const auto* xchk = dir == HORZ ? e->hchk : e->vchk;
     const int start = dir == HORZ ? colstart(sq) : rowstart(sq);
     const int step = dir;
-    const int stop  = start + step*DIM;
+    const int stop  = start + step * DIM;
     auto* rack = r->tiles;
     assert(e->vals[sq] == EMPTY);
     assert((((anchor - sq) / step) - 1) == strlen(word->buf));
