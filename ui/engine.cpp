@@ -296,22 +296,15 @@ void engine_find(const Engine* e, EngineRack rack)
     for (int i = 0; i < 4; ++i) {
         const int base = 64*i;
         uint64_t hmsk = hasq[i];
-        // printf("hmsk = 0x%016" PRIx64 "\n", hmsk);
         while (hmsk > 0) {
             int anchor = base + lsb(hmsk);
-            printf("HORIZONTAL ANCHOR: %s (%d)\n", SQ(anchor), anchor);
-            // extend_right(e, anchor, anchor, &word, &rack);
-
-            if (anchor == SQIX('I', 7)) {
-                printf("my breakpoint spot!\n");
-            }
-
+            // printf("HORIZONTAL ANCHOR: %s (%d)\n", SQ(anchor), anchor);
             const int start = colstart(anchor);
             const int step  = HORZ;
             int limit = 0;
             for (int sq = anchor - step; sq >= start; sq -= step) {
                 if (getasq(hasq, sq) != 0) {
-                    INFO("anchor=%s has a left-most anchor at %s: limit=%d", SQ(anchor), SQ(sq), limit);
+                    // INFO("anchor=%s has a left-most anchor at %s: limit=%d", SQ(anchor), SQ(sq), limit);
                     break;
                 }
                 ++limit;
