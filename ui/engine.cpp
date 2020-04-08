@@ -277,7 +277,7 @@ void left_part(const Engine* e, int dir, int anchor, int sq, int limit, Word* wo
     const int stop  = start + step*DIM;
     auto* rack = r->tiles;
     assert(e->vals[sq] == EMPTY);
-    assert((anchor - sq - 1) == strlen(word->buf));
+    assert((((anchor - sq) / step) - 1) == strlen(word->buf));
     extend_right(e, dir, sq + step, anchor, word, r, /*right_part_length*/0, *word);
     if (limit == 0) {
         return;
@@ -323,6 +323,8 @@ void extend_right_on_existing_left_part(const Engine* e, int dir, EngineRack* r,
 
 void engine_find(const Engine* e, EngineRack rack)
 {
+    constexpr int dirs[] = { HORZ /*, VERT */ };
+
     printf("--- BEGIN ENGINE FIND --- rack = %s\n", print_rack(&rack));
     auto* asqs = e->asqs;
     auto* vals = e->vals;
@@ -337,9 +339,9 @@ void engine_find(const Engine* e, EngineRack rack)
         while (msk > 0) {
             int anchor = base + lsb(msk);
 
-            { // generate horizontal moves
+            for (int i = 0; i < ASIZE(dirs); ++i) {
                 const int start = colstart(anchor);
-                const int step  = HORZ;
+                const int step  = dirs[i]; // HORZ;
                 int limit = 0; // max left part potential length
                 for (int sq = anchor - step; sq >= start; sq -= step) {
                     if (getasq(asqs, sq) != 0) {
