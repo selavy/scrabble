@@ -175,6 +175,19 @@ const char* print_rack(const EngineRack* r)
     return buf;
 }
 
+void revbuf(char* buf, int length)
+{
+    char* p1 = &buf[0];
+    char* p2 = &buf[length - 1];
+    while (p1 < p2) {
+        char t = *p1;
+        *p1 = *p2;
+        *p2 = t;
+        ++p1;
+        --p2;
+    }
+}
+
 void extend_right(const Engine* e, const int anchor, int sq, Word* word, EngineRack* r, int right_part_length, const Word leftp)
 {
     word->buf[word->len] = 0;
@@ -188,13 +201,14 @@ void extend_right(const Engine* e, const int anchor, int sq, Word* word, EngineR
     const int nextsq = sq + step;
     auto* rack = r->tiles;
 
-    // // if (anchor == SQIX('I', 7)) {
-    //     INFO("extend_right: word=\"%s\" left_part=\"%s\" sq=%s (%d) rack=%s edges=%s terminal=%s xchk=%s",
-    //             word->buf, leftp.buf, SQ(sq), sq, print_rack(r), edges, (terminal?"TRUE":"FALSE"), MBUF(xchk[sq]));
-    // // }
+    if (strcmp(leftp.buf, "ZAG") == 0) {
+        // if (anchor == SQIX('I', 7)) {
+        INFO("extend_right: word=\"%s\" left_part=\"%s\" sq=%s (%d) rack=%s edges=%s terminal=%s xchk=%s",
+                word->buf, leftp.buf, SQ(sq), sq, print_rack(r), edges, (terminal?"TRUE":"FALSE"), MBUF(xchk[sq]));
+    }
 
     if (e->vals[sq] == EMPTY) {
-        if (/*word->len*/ right_part_length > 0 && terminal) {
+        if (right_part_length > 0 && terminal) {
             assert(word->buf[word->len] == 0);
             printf("!!! LEGAL MOVE: anchor=%s sq=%s dir=HORZ word=\"%s\"\n", SQ(anchor), SQ(sq), word->buf);
             // ONLEGAL(word->buf, anchor, HORZ);
@@ -230,17 +244,30 @@ void extend_right(const Engine* e, const int anchor, int sq, Word* word, EngineR
         word->buf[word->len] = 0; // TEMP TEMP
         // INFO("\tADDED ALREADY PLAYED TILE: %c -> %s", to_ext(e->vals[sq]), word->buf);
         if (nextsq < stop) {
-            extend_right(e, anchor, nextsq, word, r, right_part_length + 1, leftp);
-        } else if ((word->len > right_part_length + 1) && terminal) {  // hit end of board with a valid word
+            extend_right(e, anchor, nextsq, word, r, right_part_length, leftp);
+        } else if ((right_part_length > 0) && terminal) {  // hit end of board with a valid word
             assert(word->buf[word->len] == 0);
-            ONLEGAL(word->buf, anchor, HORZ);
+            // ONLEGAL(word->buf, anchor, HORZ);
+            printf("!!! LEGAL MOVE: anchor=%s sq=%s dir=HORZ word=\"%s\"\n", SQ(anchor), SQ(sq), word->buf);
         }
         word->len--;
     }
 }
 
+// definitions:
+// "Left Part"  -- prefix that goes BEFORE the anchor square, it may be empty
+// "Right Part" -- rest of word, which must start at the anchor square
+//
+// Therefore:
+//   + potential left part is the minimum of the distance (going left) to the edge
+//     of the board or the next left anchor extending to the current anchor
+//   + all squares within the potential left part have trivial cross-checks
+//   + anchor square must be filled in to be a legal word
+
 void left_part(const Engine* e, const int anchor, int sq, int limit, Word* word, EngineRack* r)
 {
+    // sq is where next letter in potential left part will go
+
     word->buf[word->len] = 0; // TEMP?
     const Edges edges_ = e->prefix_edges(e->prefix_edges_data, word->buf);
     const char* edges = edges_.edges;
@@ -249,7 +276,6 @@ void left_part(const Engine* e, const int anchor, int sq, int limit, Word* word,
     const int start = colstart(sq);
     const int step = HORZ;
     const int stop  = start + step*DIM;
-    const int nextsq = sq - step;
     auto* rack = r->tiles;
 
     // INFO("left_part: word=\"%s\" @ %s lmt=%d anchor=%s rack=%s edges=%s",
@@ -257,7 +283,7 @@ void left_part(const Engine* e, const int anchor, int sq, int limit, Word* word,
 
     assert(e->vals[sq] == EMPTY);
     // assert((anchor - sq) == strlen(word->buf));
-    extend_right(e, sq, anchor, word, r, 0, *word);
+    extend_right(e, anchor, anchor, word, r, /*right_part_length*/0, *word);
     if (limit == 0) {
         return;
     }
@@ -270,16 +296,37 @@ void left_part(const Engine* e, const int anchor, int sq, int limit, Word* word,
         if (rack[tint] == 0) {              // have tile?
             continue;
         }
-        assert(xchk[nextsq] == ANYTILE); // see section 3.3.1 Placing Left Parts
+        assert(xchk[sq] == ANYTILE); // see section 3.3.1 Placing Left Parts
         rack[tint]--;
         word->buf[word->len++] = *tile;
         word->buf[word->len]   = 0;     // TODO: hoist this out of loop
-        assert(nextsq >= start);
-        left_part(e, anchor, nextsq, limit - 1, word, r);
+        assert(sq >= start);
+        left_part(e, anchor, sq - step, limit - 1, word, r);
         word->len--;
         word->buf[word->len] = 0;       // TODO: hoist this out of loop
         rack[tint]++;
     }
+}
+
+void extend_right_on_existing_left_part(const Engine* e, EngineRack* r, int anchor, Word* word)
+{
+    const auto* vals = e->vals;
+    const int start = colstart(anchor);
+    const int step = HORZ;
+    int sq = anchor - step;
+    assert(sq >= start);
+    assert(vals[sq] != EMPTY);
+    // TODO: more efficient way to extend backwards? maybe make the buffer (DIM+1)*2 so we can start
+    //       in the middle?
+    while (sq >= start && vals[sq] != EMPTY) {
+        word->buf[word->len++] = to_ext(vals[sq]);
+        sq -= step;
+    }
+    word->buf[word->len] = 0;
+    revbuf(word->buf, word->len);
+    INFO("extending existing left part: '%s'", word->buf);
+    extend_right(e, anchor, /*sq*/anchor, word, r, 0, *word);
+    word->len = 0;
 }
 
 void engine_find(const Engine* e, EngineRack rack)
@@ -287,6 +334,7 @@ void engine_find(const Engine* e, EngineRack rack)
     printf("--- BEGIN ENGINE FIND --- rack = %s\n", print_rack(&rack));
     auto* hasq = e->hasq;
     auto* vasq = e->vasq;
+    auto* vals = e->vals;
     char buf[16];
     Word word;
     word.buf = buf;
@@ -300,17 +348,23 @@ void engine_find(const Engine* e, EngineRack rack)
             // printf("HORIZONTAL ANCHOR: %s (%d)\n", SQ(anchor), anchor);
             const int start = colstart(anchor);
             const int step  = HORZ;
-            int limit = 0;
+            int limit = 0; // max left part potential length
             for (int sq = anchor - step; sq >= start; sq -= step) {
                 if (getasq(hasq, sq) != 0) {
-                    // INFO("anchor=%s has a left-most anchor at %s: limit=%d", SQ(anchor), SQ(sq), limit);
+                    break;
+                }
+                if (vals[sq] != EMPTY) {
                     break;
                 }
                 ++limit;
             }
             assert((anchor - step * limit) >= start);
             assert(((anchor - step * limit) == start) || (getasq(hasq, anchor - step * limit) != 0));
-            left_part(e, anchor, anchor, limit, &word, &rack);
+            if (anchor - step >= start && vals[anchor - step] != EMPTY) {
+                extend_right_on_existing_left_part(e, &rack, anchor, &word);
+            } else {
+                left_part(e, anchor, anchor - step, limit, &word, &rack);
+            }
             hmsk = clearlsb(hmsk);
         }
     }
@@ -459,10 +513,7 @@ void engine_make_move(Engine* e, const EngineMove* m)
             }
             hchk[after] = chk;
 
-            // TODO(peter): revisit -- this can't be correct
-            if (vals[after - hstep] == EMPTY) {
-                setasq(hasq, after);
-            }
+            setasq(hasq, after);
             // setasq(vasq, after);
         }
 
@@ -516,14 +567,14 @@ void engine_make_move(Engine* e, const EngineMove* m)
                 }
             }
             vchk[after] = chk;
-            // setasq(hasq, after);
+            setasq(hasq, after);
             // setasq(vasq, after);
         }
 
-        if (end + hstep < stop) {
-            printf("CLEARING %s", SQ(end + hstep));
-            clrasq(hasq, end + hstep);
-        }
+        // if (end + hstep < stop) {
+        //     printf("CLEARING %s", SQ(end + hstep));
+        //     clrasq(hasq, end + hstep);
+        // }
     }
 }
 
