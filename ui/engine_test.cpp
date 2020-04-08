@@ -162,15 +162,32 @@ void trie_tests()
         assert(!trie.is_word(word));
     }
 
-    auto result = trie.children("TRA");
-    std::cout << "Children of prefix \"TRA\"\n";
-    for (auto c : result) {
-        std::cout << c << " ";
+    { // works from a prefix
+        auto result = trie.children("TRA");
+        std::cout << "Children of prefix \"TRA\"\n";
+        for (auto c : result) {
+            std::cout << c << " ";
+        }
+        std::cout << "\n";
+        assert(std::find(result.begin(), result.end(), 'I') != result.end());
+        assert(std::find(result.begin(), result.end(), 'M') != result.end());
+        assert(std::find(result.begin(), result.end(), 'P') != result.end());
     }
-    std::cout << "\n";
-    assert(std::find(result.begin(), result.end(), 'I') != result.end());
-    assert(std::find(result.begin(), result.end(), 'M') != result.end());
-    assert(std::find(result.begin(), result.end(), 'P') != result.end());
+
+    { // works at root
+        auto result = trie.children("");
+        std::cout << "Children of prefix \"\"\n";
+        for (auto c : result) {
+            std::cout << c << " ";
+        }
+        std::cout << "\n";
+        assert(std::find(result.begin(), result.end(), 'A') != result.end());
+        assert(std::find(result.begin(), result.end(), 'B') != result.end());
+        assert(std::find(result.begin(), result.end(), 'I') != result.end());
+        assert(std::find(result.begin(), result.end(), 'S') != result.end());
+        assert(std::find(result.begin(), result.end(), 'T') != result.end());
+        assert(std::find(result.begin(), result.end(), 'Z') != result.end());
+    }
 }
 
 int is_word(void* data, const char* word) {
@@ -331,6 +348,7 @@ Edges get_prefix_edges(void* data, const char* prefix) {
         edges.edges[i++] = ch;
     }
     edges.edges[i] = 0;
+    // printf(" -- get_prefix_edges(\"%s\") = %s term=%s\n", prefix, edges.edges, edges.terminal?"TRUE":"FALSE");
     return edges;
 }
 
@@ -386,8 +404,7 @@ void find_tests()
         const auto rack = make_engine_rack(rack_spec);
         DEBUG("making move: '%s'", isc_spec.c_str());
         engine_print_anchors(engine);
-        std::cout << board << std::endl;
-        engine_print_anchors(engine);
+        // std::cout << board << std::endl;
         engine_find(engine, rack);
 
         auto isc_move = _parse_isc_string(isc_spec);
@@ -407,8 +424,8 @@ void find_tests()
         printf("\n\n"); // TEMP TEMP
     }
 
-    engine_print_anchors(engine);
-    std::cout << board << std::endl;
+    // engine_print_anchors(engine);
+    // std::cout << board << std::endl;
 }
 
 int main(int argc, char** argv) {
