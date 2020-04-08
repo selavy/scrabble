@@ -186,7 +186,7 @@ void revbuf(char* buf, int length)
     }
 }
 
-void extend_right(const Engine* e, const int anchor, int sq, Word* word, EngineRack* r, int right_part_length, const Word leftp)
+void extend_right(const Engine* e, int anchor, int sq, Word* word, EngineRack* r, int right_part_length, Word leftp)
 {
     word->buf[word->len] = 0;
     const Edges edges_ = e->prefix_edges(e->prefix_edges_data, word->buf);
@@ -208,7 +208,7 @@ void extend_right(const Engine* e, const int anchor, int sq, Word* word, EngineR
     if (e->vals[sq] == EMPTY) {
         if (right_part_length > 0 && terminal) {
             assert(word->buf[word->len] == 0);
-            printf("!!! LEGAL MOVE: anchor=%s sq=%s dir=HORZ word=\"%s\"\n", SQ(anchor), SQ(sq), word->buf);
+            printf("!!! LEGAL MOVE(1): anchor=%s sq=%s dir=HORZ word=\"%s\"\n", SQ(anchor), SQ(sq-step), word->buf);
             // ONLEGAL(word->buf, anchor, HORZ);
         }
         if (nextsq >= stop) { // hit end of board
@@ -246,7 +246,7 @@ void extend_right(const Engine* e, const int anchor, int sq, Word* word, EngineR
         } else if ((right_part_length > 0) && terminal) {  // hit end of board with a valid word
             assert(word->buf[word->len] == 0);
             // ONLEGAL(word->buf, anchor, HORZ);
-            printf("!!! LEGAL MOVE: anchor=%s sq=%s dir=HORZ word=\"%s\"\n", SQ(anchor), SQ(sq), word->buf);
+            printf("!!! LEGAL MOVE(2): anchor=%s sq=%s dir=HORZ word=\"%s\"\n", SQ(anchor), SQ(sq), word->buf);
         }
         word->len--;
     }
@@ -262,10 +262,9 @@ void extend_right(const Engine* e, const int anchor, int sq, Word* word, EngineR
 //   + all squares within the potential left part have trivial cross-checks
 //   + anchor square must be filled in to be a legal word
 
-void left_part(const Engine* e, const int anchor, int sq, int limit, Word* word, EngineRack* r)
+// TODO: remove `sq` parameter, can calculate it from sq = anchor - strlen(word->buf) - 1 (see line 278 assertion below)
+void left_part(const Engine* e, int anchor, int sq, int limit, Word* word, EngineRack* r)
 {
-    // sq is where next letter in potential left part will go
-
     word->buf[word->len] = 0; // TEMP?
     const Edges edges_ = e->prefix_edges(e->prefix_edges_data, word->buf);
     const char* edges = edges_.edges;
@@ -275,20 +274,12 @@ void left_part(const Engine* e, const int anchor, int sq, int limit, Word* word,
     const int step = HORZ;
     const int stop  = start + step*DIM;
     auto* rack = r->tiles;
-
-    // INFO("left_part: word=\"%s\" @ %s lmt=%d anchor=%s rack=%s edges=%s",
-    //         word->buf, SQ(sq), limit, SQ(anchor), print_rack(r), edges);
-
     assert(e->vals[sq] == EMPTY);
-    // assert((anchor - sq) == strlen(word->buf));
-    extend_right(e, anchor, anchor, word, r, /*right_part_length*/0, *word);
+    assert((anchor - sq - 1) == strlen(word->buf));
+    extend_right(e, sq + step, anchor, word, r, /*right_part_length*/0, *word);
     if (limit == 0) {
         return;
     }
-
-    // INFO("left_part (after extend_right): word=%s (len=%d) anchor=%s sq=%s rack=%s edges=%s",
-    //         word->buf, word->len, SQ(anchor), SQ(sq), print_rack(r), edges);
-
     for (const char* tile = edges; *tile != 0; ++tile) {
         const char tint = to_int(*tile);
         if (rack[tint] == 0) {              // have tile?
@@ -561,7 +552,7 @@ void engine_print_anchors(const Engine* e)
     auto* vals = e->vals;
     auto getcc = [asqs, vals](int row, int col) {
         int idx = row*DIM + col;
-        return getasq(asqs, idx) != 0 ? '*' : to_ext(vals[idx]);
+        return getasq(asqs, idx) != 0 ? '*' : (vals[idx] == EMPTY ? ' ' : to_ext(vals[idx]));
     };
 
     printf("     1   2   3   4   5   6   7   8   9   0   1   2   3   4   5  \n");
