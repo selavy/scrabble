@@ -124,7 +124,7 @@ void engine_init(Engine* e)
     memset(e->vasq, 0x00u, sizeof(e->vasq));
     const int H8 = 7*DIM + 7;
     setasq(e->hasq, H8);
-    setasq(e->vasq, H8);
+    // setasq(e->vasq, H8);
 }
 
 constexpr int lsb(uint64_t x) noexcept { return __builtin_ctzll(x); }
@@ -176,10 +176,10 @@ void extend_right(const Engine* e, const int anchor, int sq, Word* word, EngineR
     const int stop  = start + step*DIM;
     const int nextsq = sq + step;
 
-    // if (anchor == SQIX('H', 6)) {
-    //     INFO("extend_right: word=%s (len=%d) sq=%s (%d) rack=%s edges=%s terminal=%s",
-    //             word->buf, word->len, SQ(sq), sq, print_rack(r), edges, (terminal?"TRUE":"FALSE"));
-    // }
+    if (anchor == SQIX('I', 7)) {
+        INFO("extend_right: word=%s (len=%d) sq=%s (%d) rack=%s edges=%s terminal=%s",
+                word->buf, word->len, SQ(sq), sq, print_rack(r), edges, (terminal?"TRUE":"FALSE"));
+    }
 
     if (e->vals[sq] == EMPTY) {
         if (word->len > 0 && terminal) {
@@ -373,33 +373,26 @@ void engine_make_move(Engine* e, const EngineMove* m)
         const int beg = findbeg(vals, start, stop, step, root);
         const int end = findend(vals, start, stop, step, root);
         const int len = inclusive_length(beg, end, step);
-        // INFO("len=%d beg=%s (%d) end=%s (%d)", len, SQ(beg), beg, SQ(end), end);
         for (int i = 0; i < len; ++i) {
             buf[i+1] = to_ext(vals[beg + i*step]);
             assert('A' <= buf[i+1] && buf[i+1] <= 'Z');
         }
         buf[len+1] = '\0';
         buf[len+2] = '\0';
-
         const int before = beg - step;
         const int after  = end + step;
-
-        // INFO("root=%s before=%s after=%s start=%s stop=%s",
-        //         SQ(root), SQ(before), SQ(after), SQ(start), SQ(stop));
-
         if (before >= start) {
             assert(getdim(step, before) == getdim(step, root));
             uint32_t chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[0] = c;
                 if (chkwrd(e->wordchk_data, buf) != 0) {
-                    // INFO("valid word: '%s' at square %s", buf, SQ(before));
                     chk |= mask(to_int(c));
                 }
             }
             hchk[before] = chk;
-            // INFO("new xcheck for %s = 0x%04x", SQ(before), chk);
-            setasq(vasq, before);
+            setasq(hasq, before);
+            // setasq(vasq, before);
         }
 
         if (after < stop) {
@@ -409,12 +402,13 @@ void engine_make_move(Engine* e, const EngineMove* m)
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[len+1] = c;
                 if (chkwrd(e->wordchk_data, &buf[1]) != 0) {
-                    // INFO("valid word: '%s' at square %s", &buf[1], SQ(after));
                     chk |= mask(to_int(c));
                 }
             }
             hchk[after] = chk;
-            // INFO("new xcheck for %s = 0x%04x", SQ(after), chk);
+
+            setasq(hasq, after);
+            // setasq(vasq, after);
         }
 
         clrasq(hasq, root);
@@ -451,6 +445,7 @@ void engine_make_move(Engine* e, const EngineMove* m)
             }
             vchk[before] = chk;
             setasq(hasq, before);
+            // setasq(vasq, before);
         }
         if (after < stop) {
             assert(vals[after] == EMPTY);
@@ -466,6 +461,8 @@ void engine_make_move(Engine* e, const EngineMove* m)
                 }
             }
             vchk[after] = chk;
+            // setasq(hasq, after);
+            // setasq(vasq, after);
         }
     }
 }
@@ -474,9 +471,10 @@ void engine_print_anchors(const Engine* e)
 {
     auto* hasq = e->hasq;
     auto* vasq = e->vasq;
-    auto getcc = [hasq, vasq](int row, int col) {
+    auto* vals = e->vals;
+    auto getcc = [hasq, vasq, vals](int row, int col) {
         constexpr char T[4] = {
-            ' ', 'H', 'V', '*',
+            ' ', 'h', 'v', '*',
         };
         int vv = 0;
         int idx = row*DIM + col;
@@ -486,7 +484,8 @@ void engine_print_anchors(const Engine* e)
         if (getasq(vasq, idx) != 0) {
             vv |= 1 << 1;
         }
-        return T[vv];
+        assert(vv == 0 || vals[idx] == EMPTY);
+        return (vv != 0 || vals[idx] == EMPTY) ? T[vv] : to_ext(vals[idx]);
     };
 
     printf("     1   2   3   4   5   6   7   8   9   0   1   2   3   4   5  \n");

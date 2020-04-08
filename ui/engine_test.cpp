@@ -385,7 +385,7 @@ void find_tests()
     for (auto [isc_spec, rack_spec] : isc_moves) {
         const auto rack = make_engine_rack(rack_spec);
         DEBUG("making move: '%s'", isc_spec.c_str());
-        // engine_print_anchors(engine);
+        engine_print_anchors(engine);
         std::cout << board << std::endl;
         engine_print_anchors(engine);
         engine_find(engine, rack);
@@ -407,7 +407,7 @@ void find_tests()
         printf("\n\n"); // TEMP TEMP
     }
 
-    // engine_print_anchors(engine);
+    engine_print_anchors(engine);
     std::cout << board << std::endl;
 }
 
