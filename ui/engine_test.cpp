@@ -19,9 +19,15 @@ struct EngineTrie
         nodes_.emplace_back();
     }
     void insert(const char* word);
+    void insert(const std::string& w) { insert(w.c_str()); }
     bool is_word(const char* word) const;
     bool is_word(const std::string& w) const { return is_word(w.c_str()); }
-    std::vector<char> children(const char* prefix) const;
+    std::vector<char> children(const char* prefix) const
+    {
+        [[maybe_unused]] bool unused;
+        return children(prefix, unused);
+    }
+    std::vector<char> children(const char* prefix, bool& is_terminal) const;
     void print(std::ostream& os) const;
     void print_(std::ostream& os, int curr, std::string& word) const;
 
@@ -86,7 +92,7 @@ bool EngineTrie::is_word(const char* word) const {
     return nodes_[curr].terminal;
 }
 
-std::vector<char> EngineTrie::children(const char* prefix) const {
+std::vector<char> EngineTrie::children(const char* prefix, bool& is_terminal) const {
     std::vector<char> result;
     int curr = 0;
     const char* c = prefix;
@@ -95,6 +101,7 @@ std::vector<char> EngineTrie::children(const char* prefix) const {
         auto& node = nodes_[curr];
         auto it = node.children.find(*c);
         if (it == node.children.end()) {
+            is_terminal = false;
             return result;
         }
         curr = it->second;
@@ -103,6 +110,7 @@ std::vector<char> EngineTrie::children(const char* prefix) const {
     for (auto [tile, children] : nodes_[curr].children) {
         result.push_back(tile);
     }
+    is_terminal = nodes_[curr].terminal;
     return result;
 }
 
@@ -241,7 +249,10 @@ void crosscheck_tests()
         "O6 OSSIFY", // no "SO" formed vertically
     };
 
-    engine_init(engine, /*check_word*/&is_word, &dict, /*legal_move*/NULL, NULL);
+    engine->wordchk = &is_word;
+    engine->wordchk_data = &dict;
+    engine_init(engine);
+
     for (auto isc_spec : isc_moves) {
         DEBUG("making move: '%s'", isc_spec.c_str());
         engine_print_anchors(engine);
@@ -311,29 +322,46 @@ void on_legal_move(void* data, const char* word, int sq, int dir) {
     printf("FOUND LEGAL MOVE: %s at %s (%d) dir=%d\n", word, SQ_(sq), sq, dir);
 }
 
+Edges get_prefix_edges(void* data, const char* prefix) {
+    Edges edges;
+    auto trie = reinterpret_cast<EngineTrie*>(data);
+    auto es = trie->children(prefix, edges.terminal);
+    std::size_t i = 0;
+    for (auto ch : es) {
+        edges.edges[i++] = ch;
+    }
+    edges.edges[i] = 0;
+    return edges;
+}
+
 void find_tests()
 {
     Dict dict = {
         "AM",
-        "BAM",
-        "ZA",
-        "ZAG",
-        "TAG",
         "BA",
-        "TRAM",
-        "ZAGS",
+        "BAM",
+        "IT",
         "SAG",
-        "TAGS",
-        "TRAMS",
+        "SILLY",
         "STAG",
         "STAGS",
-        "SILLY",
-        "IT",
+        "TAGS",
+        "TAG",
+        "TRAM",
+        "TRAMS",
+        "ZA",
+        "ZAG",
+        "ZAGS",
     };
+    EngineTrie trie;
     auto boardp = std::make_unique<Board>();
     auto enginep = std::make_unique<Engine>();
     auto& board = *boardp;
     auto* engine = enginep.get();
+
+    for (const auto& word : dict) {
+        trie.insert(word);
+    }
 
     std::vector<std::pair<std::string, std::string>> isc_moves = {
         // move           , rack before move
@@ -346,7 +374,14 @@ void find_tests()
         // { "10B pEdants 81", "SPDNA?T" },
     };
 
-    engine_init(engine, &is_word, &dict, &on_legal_move, NULL);
+    engine->wordchk = &is_word;
+    engine->wordchk_data = &dict;
+    engine->on_legal_move = &on_legal_move;
+    engine->on_legal_move_data = NULL;
+    engine->prefix_edges = &get_prefix_edges;
+    engine->prefix_edges_data = &trie;
+    engine_init(engine);
+
     for (auto [isc_spec, rack_spec] : isc_moves) {
         const auto rack = make_engine_rack(rack_spec);
         DEBUG("making move: '%s'", isc_spec.c_str());
@@ -377,8 +412,8 @@ void find_tests()
 }
 
 int main(int argc, char** argv) {
+    // trie_tests();
     // crosscheck_tests();
-    // find_tests();
-    trie_tests();
+    find_tests();
     return 0;
 }

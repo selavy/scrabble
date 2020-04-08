@@ -115,7 +115,7 @@ constexpr int getasq(const uint64_t* asq, int sq) noexcept
     return (asq[m] & static_cast<uint64_t>(1ull << n)) != 0;
 }
 
-void engine_init(Engine* e, WordCheck word_check, void* word_check_data, LegalMove legal_move, void* legal_move_data)
+void engine_init(Engine* e)
 {
     memset(e->vals, EMPTY, sizeof(e->vals));
     memset(e->vchk, 0xffu, sizeof(e->vchk));
@@ -125,10 +125,6 @@ void engine_init(Engine* e, WordCheck word_check, void* word_check_data, LegalMo
     const int H8 = 7*DIM + 7;
     setasq(e->hasq, H8);
     setasq(e->vasq, H8);
-    e->wordchk = word_check;
-    e->wordchk_data = word_check_data;
-    e->legalmv = legal_move;
-    e->legalmv_data = legal_move_data;
 }
 
 constexpr int lsb(uint64_t x) noexcept { return __builtin_ctzll(x); }
@@ -146,7 +142,7 @@ struct Word
 // }
 
 #define ISWORD(word) (e->wordchk(e->wordchk_data, word) != 0)
-#define ONLEGAL(word, sq, dir) e->legalmv(e->legalmv_data, word, sq, dir)
+#define ONLEGAL(word, sq, dir) e->on_legal_move(e->on_legal_move_data, word, sq, dir)
 
 const char* print_rack(const EngineRack* r)
 {
@@ -155,6 +151,7 @@ const char* print_rack(const EngineRack* r)
     std::size_t bidx = 0;
     for (int tile = 0; tile < 26; ++tile) {
         for (int i = 0; i < r->tiles[tile]; ++i) {
+            assert(bidx < 8);
             buf[bidx++] = to_ext(tile);
         }
     }
@@ -168,57 +165,60 @@ const char* print_rack(const EngineRack* r)
 // TODO: need to determine the left most square
 void extend_right(const Engine* e, const int anchor, int sq, Word* word, EngineRack* r)
 {
-    if (anchor == SQIX('H', 6)) {
-        INFO("extend_right: word=%.*s (len=%d) sq=%s (%d) rack=%s", word->len, word->buf, word->len, SQ(sq), sq, print_rack(r));
-    }
-
+    word->buf[word->len] = 0;
+    const Edges edges_ = e->prefix_edges(e->prefix_edges_data, word->buf);
+    const char* edges = edges_.edges;
+    const bool  terminal = edges_.terminal;
     auto* rack = r->tiles;
     const auto* xchk = e->hchk;
     const int start = colstart(sq);
     const int step = HORZ;
     const int stop  = start + step*DIM;
     const int nextsq = sq + step;
-    if (e->vals[sq] == EMPTY) {
-        if (word->len > 0) {
-            word->buf[word->len] = 0;
-            if (ISWORD(word->buf)) {
-                ONLEGAL(word->buf, anchor, HORZ);
-            }
-        }
 
+    // if (anchor == SQIX('H', 6)) {
+    //     INFO("extend_right: word=%s (len=%d) sq=%s (%d) rack=%s edges=%s terminal=%s",
+    //             word->buf, word->len, SQ(sq), sq, print_rack(r), edges, (terminal?"TRUE":"FALSE"));
+    // }
+
+    if (e->vals[sq] == EMPTY) {
+        if (word->len > 0 && terminal) {
+            assert(word->buf[word->len] == 0);
+            ONLEGAL(word->buf, anchor, HORZ);
+        }
         if (nextsq >= stop) { // hit end of board
             return;
         }
-
-        for (int tile = 0; tile < 26; ++tile) {
-            if (rack[tile] == 0) {              // don't have tile
+        for (const char* tile = edges; *tile != 0; ++tile) {
+            const char tint = to_int(*tile);
+            if (rack[tint] == 0) {              // have tile?
                 continue;
             }
-            if ((xchk[sq] & mask(tile)) == 0) { // fails cross-check
+            if ((xchk[sq] & mask(tint)) == 0) { // meets cross-check?
                 continue;
             }
-            rack[tile]--;
-            word->buf[word->len++] = to_ext(tile);
+            rack[tint]--;
+            word->buf[word->len++] = *tile;
+            INFO("\tPLAYING TILE: %c -- %.*s", *tile, word->len, word->buf);
             assert(word->len <= DIM);
             extend_right(e, anchor, nextsq, word, r);
             word->len--;
-            rack[tile]++;
+            rack[tint]++;
         }
 
         // TODO: handle blanks
         // if (rack[BLANK] > 0) {
         //     // ...
         // }
-
     } else {
         word->buf[word->len++] = to_ext(e->vals[sq]);
+        word->buf[word->len] = 0; // TEMP TEMP
+        INFO("\tADDED ALREADY PLAYED TILE: %c -> %s", to_ext(e->vals[sq]), word->buf);
         if (nextsq < stop) {
             extend_right(e, anchor, nextsq, word, r);
-        } else {  // hit end of board
-            word->buf[word->len] = 0;
-            if (ISWORD(word->buf)) {
-                ONLEGAL(word->buf, anchor, HORZ);
-            }
+        } else if (terminal) {  // hit end of board with a valid word
+            assert(word->buf[word->len] == 0);
+            ONLEGAL(word->buf, anchor, HORZ);
         }
         word->len--;
     }
@@ -226,7 +226,7 @@ void extend_right(const Engine* e, const int anchor, int sq, Word* word, EngineR
 
 void engine_find(const Engine* e, EngineRack rack)
 {
-    printf("--- BEGIN ENGINE FIND ---\n");
+    printf("--- BEGIN ENGINE FIND --- rack = %s\n", print_rack(&rack));
     auto* hasq = e->hasq;
     auto* vasq = e->vasq;
     char buf[16];

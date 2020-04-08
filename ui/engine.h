@@ -3,11 +3,15 @@
 #include <cstdint>
 #include <array>
 
-
-typedef int (*WordCheck)(void* data, const char* word);
-typedef void (*LegalMove)(void* data, const char* word, int sq, int dir);
-
 // clang-format off
+
+// edges in ['A', 'Z'] with 0 marking final
+struct Edges { bool terminal; char edges[27]; }; // TODO: better name
+
+typedef int   (*WordCheck  )(void* data, const char* word);
+typedef void  (*OnLegalMove)(void* data, const char* word, int sq, int dir);
+typedef Edges (*PrefixEdges)(void* data, const char* prefix);
+
 struct Engine
 {
     char     vals[225]; // TODO(peter): maybe remove and pass in from UI?
@@ -16,10 +20,13 @@ struct Engine
     uint64_t hasq[4];
     uint64_t vasq[4];
 
-    WordCheck wordchk;
-    void*     wordchk_data;
-    LegalMove legalmv;
-    void*     legalmv_data;
+    // TODO: shouldn't need wordchk now that have prefix edges -- just check if terminal node instead
+    WordCheck   wordchk;
+    void*       wordchk_data;
+    OnLegalMove on_legal_move;
+    void*       on_legal_move_data;
+    PrefixEdges prefix_edges;
+    void*       prefix_edges_data;
 };
 
 struct EngineMove
@@ -36,7 +43,9 @@ struct EngineRack
 };
 // clang-format on
 
-extern void engine_init(Engine* e, WordCheck word_check, void* word_check_data, LegalMove legal_move, void* legal_move_data);
+// must set wordchk, legalmv, getedges and corresponding data
+// pointers yourself
+extern void engine_init(Engine* e);
 
 // tiles from [a-zA-Z] where lowercase = blank tile
 // precondition: `squares` is sorted
