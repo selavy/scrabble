@@ -323,7 +323,7 @@ void extend_right_on_existing_left_part(const Engine* e, int dir, EngineRack* r,
 
 void engine_find(const Engine* e, EngineRack rack)
 {
-    constexpr int dirs[] = { HORZ /*, VERT */ };
+    constexpr int dirs[] = { HORZ, VERT };
 
     printf("--- BEGIN ENGINE FIND --- rack = %s\n", print_rack(&rack));
     auto* asqs = e->asqs;
@@ -338,10 +338,9 @@ void engine_find(const Engine* e, EngineRack rack)
         uint64_t msk = asqs[i];
         while (msk > 0) {
             int anchor = base + lsb(msk);
-
             for (int i = 0; i < ASIZE(dirs); ++i) {
-                const int start = colstart(anchor);
                 const int step  = dirs[i]; // HORZ;
+                const int start = dirs[i] == HORZ ? colstart(anchor) : rowstart(anchor);
                 int limit = 0; // max left part potential length
                 for (int sq = anchor - step; sq >= start; sq -= step) {
                     if (getasq(asqs, sq) != 0) {
@@ -352,12 +351,13 @@ void engine_find(const Engine* e, EngineRack rack)
                     }
                     ++limit;
                 }
-                assert((anchor - step * limit) >= start);
-                assert(((anchor - step * limit) == start) || (getasq(asqs, anchor - step * limit) != 0));
+                const int left_most_poss_sq = anchor - step * limit;
+                assert(left_most_poss_sq >= start);
+                assert((left_most_poss_sq == start) || (getasq(asqs, left_most_poss_sq) != 0));
                 if (anchor - step >= start && vals[anchor - step] != EMPTY) {
-                    extend_right_on_existing_left_part(e, HORZ, &rack, anchor, &word);
+                    extend_right_on_existing_left_part(e, step, &rack, anchor, &word);
                 } else {
-                    left_part(e, HORZ, anchor, anchor - step, limit, &word, &rack);
+                    left_part(e, step, anchor, anchor - step, limit, &word, &rack);
                 }
             }
 
