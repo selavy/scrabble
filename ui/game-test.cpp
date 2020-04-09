@@ -256,13 +256,13 @@ bool replay_game(std::ifstream& ifs, const EngineTrie& dict)
                 fmt::print(stderr, "Played root word: \"{}\" is not in dictionary\n", move.root_word);
                 return false;
             }
-            fmt::print(stdout, "Root-word formed: \"{}\"\n", move.root_word);
+            // fmt::print(stdout, "Root-word formed: \"{}\"\n", move.root_word);
             for (const auto& word : move.words_formed) {
                 if (!dict.is_word(word)) {
                     fmt::print(stderr, "Cross-word formed: \"{}\" is not in dictionary\n", word);
                     return false;
                 }
-                fmt::print(stdout, "Cross-word formed: \"{}\"\n", word);
+                // fmt::print(stdout, "Cross-word formed: \"{}\"\n", word);
             }
         }
 
@@ -282,13 +282,13 @@ bool replay_game(std::ifstream& ifs, const EngineTrie& dict)
                 undo_move(*board_copy, gui_move2);
                 actual_move_in_legal_moves_list |= gui_move2 == gui_move;
             }
-            if (!actual_move_in_legal_moves_list) {
-                std::cout << "ACTUAL MOVE: " << isc_spec << " " << gui_move << std::endl;
-                std::cout << "GENERATED MOVES:\n";
-                for (auto mm : lm.isc_specs) {
-                    std::cout << mm << "\n";
-                }
-            }
+            // if (!actual_move_in_legal_moves_list) {
+            //     std::cout << "ACTUAL MOVE: " << isc_spec << " " << gui_move << std::endl;
+            //     std::cout << "GENERATED MOVES:\n";
+            //     for (auto mm : lm.isc_specs) {
+            //         std::cout << mm << "\n";
+            //     }
+            // }
             assert(actual_move_in_legal_moves_list == true);
         }
 
