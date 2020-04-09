@@ -437,8 +437,17 @@ void find_tests()
         "BAD",
         "BADE",
         "BAM",
+        "CHIP",
         "IT",
+        "JIB",
+        "JIBE",
+        "JIBES",
+        "MINI",
         "OD",
+        "OH",
+        "OHS",
+        "QAT",
+        "QI",
         "PEDANTS",
         "SAG",
         "SILLY",
@@ -447,6 +456,7 @@ void find_tests()
         "TAGS",
         "TAG",
         "TO",
+        "TOECLIP",
         "TOR",
         "TRAM",
         "TRAMS",
@@ -472,9 +482,13 @@ void find_tests()
         { "K5  od      16", "T?SDAOD" },
         { "L4  arenite 76", "EAITNER" },
         { "10B pEdants 81", "SPDNA?T" },
-        // TODO: the issue is that forms horizontal crossword "YE", which
-        //       uses the E-blank from pEdants
         { "9C  yo      20", "POOTLYI" },
+        { "8K  jib     12", "LBSCJHA" },
+        { "N6  toeclip 78", "IECOLTP" },
+        { "O6  ohs     67", "SHCAOVL" },
+        { "F6  qat     32", "AIEMNQL" },
+        { "12K chip    22", "CHVIALG" },
+        { "G3  mini    20", "LLEIINM" },
     };
 
     engine->on_legal_move = &on_legal_move;
@@ -526,6 +540,8 @@ void find_tests()
 
     // engine_print_anchors(engine);
     std::cout << board << std::endl;
+
+    printf("\n\nPassed!\n");
 }
 
 int main(int argc, char** argv) {
