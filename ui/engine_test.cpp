@@ -431,11 +431,14 @@ void find_tests()
 {
     Dict dict = {
         "AM",
+        "ARENITE",
         "BA",
         "BAD",
+        "BADE",
         "BAM",
         "IT",
         "OD",
+        "PEDANTS",
         "SAG",
         "SILLY",
         "STAG",
@@ -443,8 +446,10 @@ void find_tests()
         "TAGS",
         "TAG",
         "TO",
+        "TOR",
         "TRAM",
         "TRAMS",
+        "YO",
         "ZA",
         "ZAG",
         "ZAGS",
@@ -463,8 +468,9 @@ void find_tests()
         { "J5  tag     25", "GTAADTS" },
         { "8F  tram     6", "TTRRENI" },
         { "K5  od      16", "T?SDAOD" },
-        // { "L4  arenite 76", "EAITNER" },
-        // { "10B pEdants 81", "SPDNA?T" },
+        { "L4  arenite 76", "EAITNER" },
+        { "10B pEdants 81", "SPDNA?T" },
+        { "9C  yo      20", "POOTLYI" },
     };
 
     engine->on_legal_move = &on_legal_move;
