@@ -334,66 +334,22 @@ bool replay_gcg(std::ifstream& ifs, const EngineTrie& dict)
                 return false;
             }
 
-            std::cout << "GCG MOVE: " << gcg_move << std::endl; // TEMP TEMP
+            std::cout << gcg_move << std::endl;
             EngineRack rack = make_engine_rack(gcg_move.rack);
             auto board_copy = std::make_unique<Board>(board);
             auto maybe_gui_move = make_gui_move_from_gcg(board, gcg_move);
             assert(static_cast<bool>(maybe_gui_move) == true);
             auto gui_move       = *maybe_gui_move;
-            std::cout << "\t\t" << gcg_move << " -> " << gui_move << std::endl; // TEMP TEMP
+            // std::cout << "\t\t" << gcg_move << " -> " << gui_move << std::endl; // TEMP TEMP
             auto maybe_move     = make_move(board, gui_move);
             assert(static_cast<bool>(maybe_move) == true);
             auto move           = *maybe_move;
             assert(move.score == gcg_move.score);
-            std::cout << "\t\t" << gcg_move << " -> " << move << std::endl; // TEMP TEMP
+            // std::cout << "\t\t" << gcg_move << " -> " << move << std::endl; // TEMP TEMP
 
-            { // check played words
-                if (!dict.is_word(move.root_word)) {
-                    fmt::print(stderr, "Played root word: \"{}\" is not in dictionary\n", move.root_word);
-                    return false;
-                }
-                // fmt::print(stdout, "Root-word formed: \"{}\"\n", move.root_word);
-                for (const auto& word : move.words_formed) {
-                    if (!dict.is_word(word)) {
-                        fmt::print(stderr, "Cross-word formed: \"{}\" is not in dictionary\n", word);
-                        return false;
-                    }
-                    // fmt::print(stdout, "Cross-word formed: \"{}\"\n", word);
-                }
+            if (!verify_and_make_move(lm, engine, move, gui_move, rack, *board_copy)) {
+                return false;
             }
-
-            // let engine generate moves
-            lm.isc_specs.clear();
-            engine_find(engine, rack);
-
-            { // verify that all moves reported as legal are in fact legal
-                // std::cout << "RACK: " << rack_spec << "\n";
-                bool actual_move_in_legal_moves_list = false;
-                for (auto isc_spec2 : lm.isc_specs) {
-                    auto isc_move2 = _parse_isc_string(isc_spec2);
-                    auto gui_move2 = make_gui_move_from_isc(*board_copy, isc_move2);
-                    // std::cout << "CHECKING: " << isc_spec2 << " " << gui_move2 << std::endl;
-                    auto maybe_move2 = make_move(*board_copy, gui_move2);
-                    assert(static_cast<bool>(maybe_move2) == true);
-                    undo_move(*board_copy, gui_move2);
-                    actual_move_in_legal_moves_list |= gui_move2 == gui_move;
-                }
-                // if (!actual_move_in_legal_moves_list) {
-                //     std::cout << "ACTUAL MOVE: " << isc_spec << " " << gui_move << std::endl;
-                //     std::cout << "GENERATED MOVES:\n";
-                //     for (auto mm : lm.isc_specs) {
-                //         std::cout << mm << "\n";
-                //     }
-                // }
-                assert(actual_move_in_legal_moves_list == true);
-            }
-
-            EngineMove em;
-            em.tiles   = &move.tiles[0];
-            em.squares = &move.squares[0];
-            em.ntiles  = static_cast<int>(gui_move.size());
-            em.direction = static_cast<int>(move.direction);
-            engine_make_move(engine, &em);
         }
         else {
             fmt::print(stderr, "error: malformed line: \"{}\"\n", line);
