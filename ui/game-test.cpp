@@ -1,19 +1,21 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <optional>
-#include <cassert>
-#include <algorithm>
-#include <fmt/format.h>
-#include <cxxopts.hpp>
-#include <re2/re2.h>
 #include "game.h"
+
+#include <fmt/format.h>
+#include <re2/re2.h>
+
+#include <algorithm>
+#include <cassert>
+#include <cxxopts.hpp>
+#include <fstream>
+#include <iostream>
+#include <optional>
+#include <string>
+
 #include "engine.h"
 
-std::optional<EngineTrie> load_dictionary(std::string path)
-{
+std::optional<EngineTrie> load_dictionary(std::string path) {
     EngineTrie dict;
-    std::string   word;
+    std::string word;
     std::ifstream ifs{path};
     if (!ifs) {
         std::cerr << "error: unable to open input file\n";
@@ -46,8 +48,7 @@ std::optional<EngineTrie> load_dictionary(std::string path)
     return dict;
 }
 
-EngineRack make_engine_rack(const std::string& s)
-{
+EngineRack make_engine_rack(const std::string& s) {
     EngineRack r;
     memset(&r, 0, sizeof(r));
     for (char c : s) {
@@ -67,8 +68,7 @@ EngineRack make_engine_rack(const std::string& s)
     return r;
 }
 
-std::ostream& operator<<(std::ostream& os, const EngineRack& rack)
-{
+std::ostream& operator<<(std::ostream& os, const EngineRack& rack) {
     auto to_ext = [](char tile) -> char {
         if (0 <= tile && tile < 26) {
             return tile + 'A';
@@ -102,28 +102,21 @@ re2::RE2 header_regex(R"(\s*\[(\w+) \"(.*)\"]\s*)");
 re2::RE2 empty_line_regex(R"(\s+)");
 re2::RE2 change_line_regex(R"(\s*"?CHANGE\s+(\d+)\"?\s*)");
 
+bool is_empty_line(const std::string& line) { return line.empty() || re2::RE2::FullMatch(line, empty_line_regex); }
 
-bool is_empty_line(const std::string& line)
-{
-    return line.empty() || re2::RE2::FullMatch(line, empty_line_regex);
-}
-
-struct LegalMoves
-{
+struct LegalMoves {
     std::vector<std::string> isc_specs;
-    const EngineTrie*        trie;
+    const EngineTrie* trie;
 
-    static void on_legal_move(void* data, const char* word, int lsq, int rsq, int dir) noexcept
-    {
+    static void on_legal_move(void* data, const char* word, int lsq, int rsq, int dir) noexcept {
         auto* self = reinterpret_cast<LegalMoves*>(data);
         self->on_legal_move_(word, lsq, rsq, dir);
     }
 
-    static std::string mk_isc_spec(std::string word, int sq, int dir)
-    {
+    static std::string mk_isc_spec(std::string word, int sq, int dir) {
         std::string result;
         char row = (sq / 15) + 'A';
-        int  col = (sq % 15) +  1;
+        int col = (sq % 15) + 1;
         if (dir == 1) {
             result += row;
             result += std::to_string(col);
@@ -146,9 +139,9 @@ struct LegalMoves
         return result;
     }
 
-    void on_legal_move_(const char* word, int lsq, int rsq, int dir)
-    {
-        bool terminal = false;;
+    void on_legal_move_(const char* word, int lsq, int rsq, int dir) {
+        bool terminal = false;
+        ;
         auto es = trie->children(word, terminal);
         assert(terminal == true);
         isc_specs.push_back(LegalMoves::mk_isc_spec(word, lsq, dir));
@@ -159,8 +152,7 @@ struct LegalMoves
         return self->get_prefix_edges_(prefix);
     }
 
-    Edges get_prefix_edges_(const char* prefix)
-    {
+    Edges get_prefix_edges_(const char* prefix) {
         Edges edges;
         auto es = trie->children(prefix, edges.terminal);
         std::size_t i = 0;
@@ -178,7 +170,7 @@ IscMove _parse_isc_string(const std::string& s) {
     char root[32];
     sscanf(s.c_str(), "%s %s %d", &spec[0], &root[0], &isc.score);
     isc.sqspec = spec;
-    isc.root   = root;
+    isc.root = root;
     return isc;
 }
 
@@ -187,8 +179,7 @@ bool startswith(const std::string& line, const char* prefix) {
 }
 
 // handle windows as well as *nix style line endings
-std::ifstream& safe_getline(std::ifstream& ifs, std::string& line)
-{
+std::ifstream& safe_getline(std::ifstream& ifs, std::string& line) {
     std::getline(ifs, line);
     if (!line.empty() && *line.rbegin() == '\r') {
         line.pop_back();
@@ -196,25 +187,32 @@ std::ifstream& safe_getline(std::ifstream& ifs, std::string& line)
     return ifs;
 }
 
-struct GcgFinal
-{
+struct GcgFinal {
     std::string nick;
     std::string tiles;
-    int         score;
-    int         total;
+    int score;
+    int total;
 };
 
-std::ostream& operator<<(std::ostream& os, const GcgFinal& m)
-{
+std::ostream& operator<<(std::ostream& os, const GcgFinal& m) {
     os << m.nick << " " << m.tiles << " " << m.score << " " << m.total;
     return os;
 }
 
-bool verify_and_make_move(LegalMoves& lm, Engine* engine, const Move& move, const GuiMove& gui_move, EngineRack rack, Board& board_copy)
-{
+template <class MoveT>
+bool scores_match(const Move& my_move, const MoveT& file_move) {
+    if (my_move.score != file_move.score) {
+        fmt::print(stderr, "scoring for move incorrect. expected={} received={}\n", file_move.score, my_move.score);
+        return false;
+    }
+    return true;
+}
+
+bool verify_and_make_move(LegalMoves& lm, Engine* engine, const Move& move, const GuiMove& gui_move, EngineRack rack,
+                          Board& board_copy) {
     auto& dict = *lm.trie;
 
-    { // check played words
+    {  // check played words
         if (!dict.is_word(move.root_word)) {
             fmt::print(stderr, "Played root word: \"{}\" is not in dictionary\n", move.root_word);
             return false;
@@ -233,7 +231,7 @@ bool verify_and_make_move(LegalMoves& lm, Engine* engine, const Move& move, cons
     lm.isc_specs.clear();
     engine_find(engine, rack);
 
-    { // verify that all moves reported as legal are in fact legal
+    {  // verify that all moves reported as legal are in fact legal
         bool actual_move_in_legal_moves_list = false;
         for (auto isc_spec2 : lm.isc_specs) {
             auto isc_move2 = _parse_isc_string(isc_spec2);
@@ -247,17 +245,16 @@ bool verify_and_make_move(LegalMoves& lm, Engine* engine, const Move& move, cons
     }
 
     EngineMove em;
-    em.tiles   = &move.tiles[0];
+    em.tiles = &move.tiles[0];
     em.squares = &move.squares[0];
-    em.ntiles  = static_cast<int>(gui_move.size());
+    em.ntiles = static_cast<int>(gui_move.size());
     em.direction = static_cast<int>(move.direction);
     engine_make_move(engine, &em);
 
     return true;
 }
 
-bool replay_gcg(std::ifstream& ifs, const EngineTrie& dict)
-{
+bool replay_gcg(std::ifstream& ifs, const EngineTrie& dict) {
     // GCG regex
     re2::RE2 pragma_player_regex(R"(#player(\d)\s+(\w+).*)");
     re2::RE2 gcg_move_regex(R"(>(\w+):\s+([A-Z\?]+) (\w+)\s+([A-Za-z\.]+)\s+([+-]?\d+) ([+-]?\d+))");
@@ -266,7 +263,7 @@ bool replay_gcg(std::ifstream& ifs, const EngineTrie& dict)
     assert(gcg_move_regex.ok());
     assert(gcg_final_move_regex.ok());
 
-    fmt::print(stdout, "parsing gcg file\n"); // TEMP TEMP
+    fmt::print(stdout, "parsing gcg file\n");  // TEMP TEMP
 
     auto boardp = std::make_unique<Board>();
     auto enginep = std::make_unique<Engine>();
@@ -289,12 +286,12 @@ bool replay_gcg(std::ifstream& ifs, const EngineTrie& dict)
             continue;
         }
 
-        if (line[0] == '#') { // pragma
-            // TODO(peter): instead just split line by whitespace and store in a std::map<std::string, std::vector<std::string>>;
+        if (line[0] == '#') {  // pragma
+            // TODO(peter): instead just split line by whitespace and store in a std::map<std::string,
+            // std::vector<std::string>>;
             if (startswith(line, "#character-encoding")) {
                 continue;
-            }
-            else if (startswith(line, "#player")) {
+            } else if (startswith(line, "#player")) {
                 int player_number = -1;
                 std::string nick;
                 if (!re2::RE2::FullMatch(line, pragma_player_regex, &player_number, &nick)) {
@@ -308,50 +305,45 @@ bool replay_gcg(std::ifstream& ifs, const EngineTrie& dict)
                 // TODO: check if nick already set
                 nicks[player_number - 1] = nick;
                 continue;
-            }
-            else {
+            } else {
                 // ignoring other pragmas
                 fmt::print(stderr, "warning: skipping unknown pragma: \"{}\"\n", line);
                 continue;
             }
-        }
-        else if (line[0] == '>') {
+        } else if (line[0] == '>') {
             // player nicknames must be specified before game moves
             if (std::any_of(std::begin(nicks), std::end(nicks), [](const std::string& nick) { return nick.empty(); })) {
                 fmt::print(stderr, "error: player nicknames not specified\n");
                 return false;
             }
-
             GcgFinal gcg_final;
-            if (re2::RE2::FullMatch(line, gcg_final_move_regex, &gcg_final.nick, &gcg_final.tiles, &gcg_final.score, &gcg_final.total)) {
+            if (re2::RE2::FullMatch(line, gcg_final_move_regex, &gcg_final.nick, &gcg_final.tiles, &gcg_final.score,
+                                    &gcg_final.total)) {
                 fmt::print(stderr, "info: skipping final move: \"{}\"\n", line);
                 continue;
             }
-
             GcgMove gcg_move;
-            if (!re2::RE2::FullMatch(line, gcg_move_regex, &gcg_move.nick, &gcg_move.rack, &gcg_move.sq, &gcg_move.tiles, &gcg_move.score, &gcg_move.total)) {
+            if (!re2::RE2::FullMatch(line, gcg_move_regex, &gcg_move.nick, &gcg_move.rack, &gcg_move.sq,
+                                     &gcg_move.tiles, &gcg_move.score, &gcg_move.total)) {
                 fmt::print(stderr, "error: malformed GCG move line: \"{}\"\n", line);
                 return false;
             }
-
-            std::cout << gcg_move << std::endl;
+            std::cout << gcg_move << "\n";
             EngineRack rack = make_engine_rack(gcg_move.rack);
             auto board_copy = std::make_unique<Board>(board);
             auto maybe_gui_move = make_gui_move_from_gcg(board, gcg_move);
             assert(static_cast<bool>(maybe_gui_move) == true);
-            auto gui_move       = *maybe_gui_move;
-            // std::cout << "\t\t" << gcg_move << " -> " << gui_move << std::endl; // TEMP TEMP
-            auto maybe_move     = make_move(board, gui_move);
+            auto gui_move = *maybe_gui_move;
+            auto maybe_move = make_move(board, gui_move);
             assert(static_cast<bool>(maybe_move) == true);
-            auto move           = *maybe_move;
-            assert(move.score == gcg_move.score);
-            // std::cout << "\t\t" << gcg_move << " -> " << move << std::endl; // TEMP TEMP
-
+            auto move = *maybe_move;
+            if (!scores_match(move, gcg_move)) {
+                return false;
+            }
             if (!verify_and_make_move(lm, engine, move, gui_move, rack, *board_copy)) {
                 return false;
             }
-        }
-        else {
+        } else {
             fmt::print(stderr, "error: malformed line: \"{}\"\n", line);
             return false;
         }
@@ -360,8 +352,7 @@ bool replay_gcg(std::ifstream& ifs, const EngineTrie& dict)
     return true;
 }
 
-bool replay_game(std::ifstream& ifs, const EngineTrie& dict)
-{
+bool replay_game(std::ifstream& ifs, const EngineTrie& dict) {
     assert(isc_regex.ok());
     assert(move_line_regex.ok());
     assert(header_regex.ok());
@@ -400,21 +391,17 @@ bool replay_game(std::ifstream& ifs, const EngineTrie& dict)
             // fmt::print(stdout, "Skipping blank line: \"{}\"\n", line);
             continue;
         }
-
         int change_num_tiles = 0;
         if (re2::RE2::FullMatch(line, change_line_regex, &change_num_tiles)) {
             fmt::print(stdout, "Change {} tiles\n", change_num_tiles);
             continue;
         }
-
         std::string rack_spec;
         std::string isc_spec;
         if (!re2::RE2::FullMatch(line, move_line_regex, &rack_spec, &isc_spec)) {
             fmt::print(stderr, "error: invalid move: \"{}\"\n", line);
             return false;
         }
-        fmt::print(stdout, "[{}] {}\n", rack_spec, isc_spec);
-
         EngineRack rack = make_engine_rack(rack_spec);
         IscMove isc_move;
         isc_move.score = -1;
@@ -423,15 +410,15 @@ bool replay_game(std::ifstream& ifs, const EngineTrie& dict)
             fmt::print(stderr, "error: invalid ISC move: \"{}\"\n", isc_spec);
             return false;
         }
-
+        fmt::print(stdout, "[{}] {}\n", rack_spec, isc_spec);
         auto board_copy = std::make_unique<Board>(board);
         auto gui_move = make_gui_move_from_isc(board, isc_move);
         auto maybe_move = make_move(board, gui_move);
         assert(static_cast<bool>(maybe_move) == true);
         auto move = *maybe_move;
-        std::cout << isc_move << "=?=\n" << move << std::endl;
-        assert(move.score == isc_move.score);
-
+        if (!scores_match(move, isc_move)) {
+            return false;
+        }
         if (!verify_and_make_move(lm, engine, move, gui_move, rack, *board_copy)) {
             return false;
         }
@@ -440,14 +427,11 @@ bool replay_game(std::ifstream& ifs, const EngineTrie& dict)
     return true;
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     cxxopts::Options options("game-test", "replay through official scrabble games to test engine");
-    options.add_options()
-        ("d,dict",  "dictionary file to use", cxxopts::value<std::string>(), "DICT")
-        ("f,input", "input game file",        cxxopts::value<std::string>(), "FILE")
-        ;
-    options.parse_positional({ "dict", "input", "too many positional arguments" });
+    options.add_options()("d,dict", "dictionary file to use", cxxopts::value<std::string>(), "DICT")(
+        "f,input", "input game file", cxxopts::value<std::string>(), "FILE");
+    options.parse_positional({"dict", "input", "too many positional arguments"});
     auto args = options.parse(argc, argv);
 
     if (args.count("help")) {
@@ -464,7 +448,7 @@ int main(int argc, char** argv)
     }
 
     auto gamefile = args["input"].as<std::string>();
-    auto dictfile = args["dict" ].as<std::string>();
+    auto dictfile = args["dict"].as<std::string>();
     fmt::print(stdout, "Game File: \"{}\"\n", gamefile);
     fmt::print(stdout, "Dict File: \"{}\"\n", dictfile);
 
@@ -477,7 +461,7 @@ int main(int argc, char** argv)
     }
     const auto& dict = *maybe_dict;
 #else
-    EngineTrie dict; // TEMP TEMP
+    EngineTrie dict;  // TEMP TEMP
 #endif
 
     fmt::print(stdout, "Replaying \"{}\"\n", gamefile);
