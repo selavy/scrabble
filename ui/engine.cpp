@@ -161,8 +161,6 @@ struct Word
     int   len;
 };
 
-#define ONLEGAL(word, sq, dir) e->on_legal_move(e->on_legal_move_data, word, sq, dir)
-
 const char* print_rack(const EngineRack* r)
 {
     static char buf[8];
@@ -213,29 +211,18 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
     word->buf[word->len] = 0;
     const Edges edges_ = e->prefix_edges(e->prefix_edges_data, word->buf);
     const char* edges = edges_.edges;
-    const bool  terminal = edges_.terminal;
-    const auto* hchk = e->hchk;
-    const auto* vchk = e->vchk;
-    const auto* xchk = dir == HORZ ? hchk : vchk;
+    const bool terminal = edges_.terminal;
+    const auto* xchk = dir == HORZ ? e->hchk : e->vchk;
     const int start = dir == HORZ ? colstart(sq) : rowstart(sq);
     const int stride = dir;
     const int stop  = start + stride * DIM;
     const int nextsq = sq + stride;
     auto* rack = r->tiles;
 
-#if 0
-    // if (strcmp(leftp.buf, "ZAG") == 0) {
-    if (anchor == SQIX('G', 8) || anchor == SQIX('F', 8) || anchor == SQIX('E', 8)) {
-        INFO("extend_right: word=\"%s\" left_part=\"%s\" sq=%s anchor=%s rack=%s edges=%s terminal=%s hchk=%s vchk=%s",
-                word->buf, leftp.buf, SQ(sq), SQ(anchor), print_rack(r), edges, (terminal?"TRUE":"FALSE"), MBUF(hchk[sq]), MBUF(vchk[sq]));
-    }
-#endif
-
     if (e->vals[sq] == EMPTY) {
         if (right_part_length > 0 && terminal) {
             assert(word->buf[word->len] == 0);
-            printf("!!! LEGAL MOVE(1): anchor=%s sq=%s dir=%s word=\"%s\"\n", SQ(anchor), SQ(sq - stride), DIR(dir), word->buf);
-            // ONLEGAL(word->buf, anchor, HORZ);
+            e->on_legal_move(e->on_legal_move_data, word->buf, anchor, sq - stride, dir);
         }
         if (nextsq >= stop) { // hit end of board
             return;
@@ -245,21 +232,12 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
             if (rack[tint] == 0) {              // have tile?
                 continue;
             }
-
-            // TEMP TEMP
             if ((xchk[sq] & mask(tint)) == 0) {
-                continue;
-            }
-            // if ((hchk[sq] & mask(tint)) == 0) { // meets horizontal cross-check?
-            //     continue;
-            // }
-            if ((vchk[sq] & mask(tint)) == 0) { // meets vertical cross-check?
                 continue;
             }
             rack[tint]--;
             word->buf[word->len++] = *tile;
             word->buf[word->len]   = 0;
-            // INFO("\tPLAYING TILE: %c ON %s -- %s", *tile, SQ(sq), word->buf);
             assert(word->len <= DIM);
             extend_right(e, dir, anchor, nextsq, word, r, right_part_length + 1, leftp);
             word->len--;
@@ -274,13 +252,11 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
     } else if (*edges != 0 || terminal) {
         word->buf[word->len++] = to_ext(e->vals[sq]);
         word->buf[word->len] = 0; // TEMP TEMP
-        // INFO("\tADDED ALREADY PLAYED TILE: %c -> %s", to_ext(e->vals[sq]), word->buf);
         if (nextsq < stop) {
             extend_right(e, dir, anchor, nextsq, word, r, right_part_length, leftp);
         } else if ((right_part_length > 0 || leftp.len > 0) /*(word->len > 0)*/ && terminal) {  // hit end of board with a valid word
             assert(word->buf[word->len] == 0);
-            // ONLEGAL(word->buf, anchor, HORZ);
-            printf("!!! LEGAL MOVE(2): anchor=%s sq=%s dir=%s word=\"%s\"\n", SQ(anchor), SQ(sq - stride), DIR(dir), word->buf);
+            e->on_legal_move(e->on_legal_move_data, word->buf, anchor, sq - stride, dir);
         }
         word->len--;
     }
@@ -397,6 +373,7 @@ int engine_xchk(const Engine* e, const EngineMove* m)
     auto* vals = e->vals;
     auto* hchk = e->hchk;
     auto* vchk = e->vchk;
+    auto* xchk = dir == HORZ ? hchk : vchk;
     for (int i = 0; i < ntiles; ++i) {
         const int sq   = squares[i];
         const int tile = tiles[i];
@@ -408,10 +385,7 @@ int engine_xchk(const Engine* e, const EngineMove* m)
         //     sq, hchk[sq], MBUF(hchk[sq]), MM(hchk[sq], msk),
         //     sq, vchk[sq], MBUF(vchk[sq]), MM(vchk[sq], msk)
         // );
-        if ((hchk[sq] & mask(tint)) == 0) {
-            return sq;
-        }
-        if ((vchk[sq] & mask(tint)) == 0) {
+        if ((xchk[sq] & mask(tint)) == 0) {
             return sq;
         }
     }

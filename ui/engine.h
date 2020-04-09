@@ -8,13 +8,13 @@
 // edges in ['A', 'Z'] with 0 marking final
 struct Edges { bool terminal; char edges[27]; }; // TODO: better name
 
-typedef void  (*OnLegalMove)(void* data, const char* word, int sq, int dir);
+// TODO(peter): don't need rsq
+typedef void  (*OnLegalMove)(void* data, const char* word, int lsq, int rsq, int dir);
 typedef Edges (*PrefixEdges)(void* data, const char* prefix);
 
 struct Engine
 {
     char     vals[225]; // TODO(peter): maybe remove and pass in from UI?
-    // TODO(peter): don't need separate h vs v cross checks
     uint32_t hchk[225];
     uint32_t vchk[225];
     uint64_t asqs[4];

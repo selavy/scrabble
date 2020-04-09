@@ -220,13 +220,28 @@ EngineRack make_engine_rack(const std::string& s)
     return r;
 }
 
-void on_legal_move(void* data, const char* word, int sq, int dir) {
-    printf("FOUND LEGAL MOVE: %s at %s (%d) dir=%d\n", word, SQ_(sq), sq, dir);
+const char *GetDirName(int dir)
+{
+    if (dir == 1) {
+        return "HORZ";
+    } else if (dir == 10) {
+        return "VERT";
+    } else {
+        return "UNKN";
+    }
+}
+
+void on_legal_move(void* data, const char* word, int lsq, int rsq, int dir) {
+    printf("FOUND LEGAL MOVE: %s at [%s, %s] dir=%s\n", word, SQ_(lsq), SQ_(rsq), GetDirName(dir));
+    auto trie = reinterpret_cast<EngineTrie*>(data);
+    bool terminal = false;;
+    auto es = trie->children(word, terminal);
+    assert(terminal == true);
 }
 
 Edges get_prefix_edges(void* data, const char* prefix) {
     Edges edges;
-    auto trie = reinterpret_cast<EngineTrie*>(data);
+    auto* trie = reinterpret_cast<EngineTrie*>(data);
     auto es = trie->children(prefix, edges.terminal);
     std::size_t i = 0;
     for (auto ch : es) {
@@ -290,7 +305,7 @@ void crosscheck_tests()
     };
 
     engine->on_legal_move = &on_legal_move;
-    engine->on_legal_move_data = NULL;
+    engine->on_legal_move_data = &trie;
     engine->prefix_edges = &get_prefix_edges;
     engine->prefix_edges_data = &trie;
     engine_init(engine);
@@ -401,7 +416,7 @@ void find_tests()
     };
 
     engine->on_legal_move = &on_legal_move;
-    engine->on_legal_move_data = NULL;
+    engine->on_legal_move_data = &trie;
     engine->prefix_edges = &get_prefix_edges;
     engine->prefix_edges_data = &trie;
     engine_init(engine);
