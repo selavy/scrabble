@@ -234,12 +234,12 @@ void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineR
     if (e->vals[sq] == EMPTY) {
         if (right_part_length > 0 && terminal) {
             // TODO(peter): there has to be a better way!
-            assert(SQ_H8 == SQIX('H', 8));
-            if (e->vals[SQ_H8] != EMPTY || range_contains_square(lsq, stride, word->len, SQ_H8)) {
-                if (strcmp(word->buf, "TAG") == 0) {
-                    INFO("ADDING WORD: \"%s\" [%s,%s] e->vals[H8]=%c range_contains=%d",
-                            word->buf, SQ(lsq), SQ(rsq), to_ext(e->vals[SQ_H8]), range_contains_square(lsq, stride, word->len, SQ_H8));
-                }
+            if (1) {
+            // if (e->vals[SQ_H8] != EMPTY || range_contains_square(lsq, stride, word->len, SQ_H8)) {
+                // if (strcmp(word->buf, "TAG") == 0) {
+                //     INFO("ADDING WORD: \"%s\" [%s,%s] e->vals[H8]=%c range_contains=%d",
+                //             word->buf, SQ(lsq), SQ(rsq), to_ext(e->vals[SQ_H8]), range_contains_square(lsq, stride, word->len, SQ_H8));
+                // }
                 assert(word->buf[word->len] == 0);
                 e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, dir);
             }
@@ -276,8 +276,8 @@ void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineR
             extend_right(e, dir, lsq, nextsq, word, r, right_part_length, leftp);
         } else if ((right_part_length > 0 || leftp.len > 0) && terminal) {  // hit end of board with a valid word
             // TODO(peter): there has to be a better way!
-            assert(SQ_H8 == SQIX('H', 8));
-            if (e->vals[SQ_H8] != EMPTY || range_contains_square(lsq, stride, word->len, SQ_H8)) {
+            if (1) {
+            // if (e->vals[SQ_H8] != EMPTY || range_contains_square(lsq, stride, word->len, SQ_H8)) {
                 assert(word->buf[word->len] == 0);
                 e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, dir);
             }
