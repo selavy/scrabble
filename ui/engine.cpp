@@ -231,6 +231,7 @@ int range_contains_square(int start, int stride, int length, int sq)
 struct SolveState
 {
     const Engine* e;
+    const uint32_t* xchk;
     EngineRack* r;
     int anchor;
     int start;
@@ -324,23 +325,25 @@ Word save_lpart(const Word* w) {
     return result;
 }
 
-// TODO: pass in a "tiles_used" parameter so can get rid of right_part_length?
 // TODO: remove `sq` parameter, can calculate it from sq = anchor - strlen(word->buf) - 1 (see line 278 assertion below)
-void left_part(const SolveState* ss, const Engine* e, int dir, int anchor, int sq, int limit, Word* word, EngineRack* r, int anchor_orig)
+void left_part(const SolveState* ss, int sq, int limit, Word* word)
 {
     word->buf[word->len] = 0; // TEMP?
+
+    const auto* e = ss->e;
     const Edges edges_ = e->prefix_edges(e->prefix_edges_data, word->buf);
     const char* edges = edges_.edges;
     const bool terminal = edges_.terminal;
-    const auto* xchk = dir == HORZ ? e->hchk : e->vchk;
-    const int start = dir == HORZ ? colstart(sq) : rowstart(sq);
-    const int stride = dir;
-    const int stop  = start + stride * DIM;
-    auto* rack = r->tiles;
+    const auto* xchk = ss->xchk;
+    const int anchor = ss->anchor;
+    const int start  = ss->start;
+    const int stride = ss->stride;
+    const int stop   = ss->stop;
+    auto* rack = ss->r->tiles;
     // assert(e->vals[sq] == EMPTY);
     assert((((anchor - sq) / stride) - 1) == strlen(word->buf));
 
-    extend_right(ss, e, dir, sq + stride, anchor, word, r, /*right_part_length*/0, save_lpart(word), anchor_orig);
+    extend_right(ss, e, stride, sq + stride, anchor, word, ss->r, /*right_part_length*/0, save_lpart(word), ss->anchor);
 
     if (limit == 0) {
         return;
@@ -356,7 +359,7 @@ void left_part(const SolveState* ss, const Engine* e, int dir, int anchor, int s
         word->buf[word->len++] = *tile; // TODO: hoist incr of len
         word->buf[word->len]   = 0;     // TODO: hoist this out of loop
         assert(sq >= start);
-        left_part(ss, e, dir, anchor, sq - stride, limit - 1, word, r, anchor_orig); // try to expand the left part more to the left
+        left_part(ss, sq - stride, limit - 1, word); // try to expand the left part more to the left
         word->len--;                    // TODO: hoist out of loop
         word->buf[word->len] = 0;       // TODO: hoist this out of loop
         rack[tint]++;
@@ -368,7 +371,7 @@ void left_part(const SolveState* ss, const Engine* e, int dir, int anchor, int s
             word->buf[word->len++] = 'a' + (*tile - 'A'); // TODO: hoist len incr out of loop
             word->buf[word->len]   = 0;           // TODO: hoist this out of loop
             assert(sq >= start);
-            left_part(ss, e, dir, anchor, sq - stride, limit - 1, word, r, anchor_orig); // try to expand the left part more to the left
+            left_part(ss, sq - stride, limit - 1, word); // try to expand the left part more to the left
             word->len--;                    // TODO: hoist out of loop
             word->buf[word->len] = 0;       // TODO: hoist this out of loop
             rack[BLANK]++;                  // TODO: hoist out of loop
@@ -426,6 +429,7 @@ void engine_find(const Engine* e, EngineRack rack)
                 ss.start  = start;
                 ss.stride = stride;
                 ss.stop   = start + DIM * stride;
+                ss.xchk   = dirs[i] == HORZ ? e->hchk : e->vchk;
 
                 if (anchor - stride >= start && vals[anchor - stride] != EMPTY) {
                     extend_right_on_existing_left_part(&ss, anchor, &word);
@@ -447,7 +451,7 @@ void engine_find(const Engine* e, EngineRack rack)
                                 (getasq(asqs, left_most_poss_sq) != 0) ||
                                 (vals[left_most_poss_sq] == EMPTY)
                            ));
-                    left_part(&ss, e, stride, anchor, anchor - stride, limit, &word, &rack, anchor);
+                    left_part(&ss, anchor - stride, limit, &word);
                 }
             }
 
