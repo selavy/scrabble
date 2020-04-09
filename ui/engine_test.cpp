@@ -221,6 +221,8 @@ EngineRack make_engine_rack(const std::string& s)
     for (char c : s) {
         if (c == '?') {
             r.tiles[26]++;
+        } else if (c == ' ') {
+            continue;
         } else {
             assert('A' <= c && c <= 'Z');
             r.tiles[c - 'A']++;
@@ -434,12 +436,17 @@ void find_tests()
         "AM",
         "ARENITE",
         "AT",
+        "AVOW",
+        "AVOWS",
+        "AX",
+        "AYE",
         "BA",
         "BAD",
         "BADE",
         "BAM",
         "CHIP",
         "CHIPS",
+        "ER",
         "EYE",
         "FE",
         "GAFFER",
@@ -448,15 +455,21 @@ void find_tests()
         "JIB",
         "JIBE",
         "JIBES",
+        "KINDLER",
         "MINI",
         "OD",
+        "ODA",
         "OH",
         "OHS",
         "OVEN",
+        "OW",
+        "OY",
         "NOD",
+        "NU",
         "QAT",
         "QI",
         "PEDANTS",
+        "RE",
         "REQUITE",
         "SAG",
         "SILLY",
@@ -470,7 +483,12 @@ void find_tests()
         "TOR",
         "TRAM",
         "TRAMS",
+        "US",
+        "VAIN",
+        "VOW",
         "WELLIE",
+        "WOKE",
+        "XU",
         "YO",
         "YE",
         "ZA",
@@ -506,16 +524,17 @@ void find_tests()
         { "G3  mini    20", "LLEIINM" },
         { "8A  oven    34", "VNAOLGE" },
         { "4C  wellie  20", "LLWEERE" },
-        //--------------------------------------------
-        // TODO:
-        // working on adding insidious vs CF589
-        // failing on sire from O12 for some reason
-        // probably related to bounds checking is my
-        // first guess
-        //-------------------------------------------
         { "O12 sire    28", "IRI?RSE" },
         { "14J gaffer  34", "GEFNAFL" },
         { "15F reQuite 32", "EEU?RIT" },
+        // new ---
+        { "14A kindler 84", "ILEKNRD" },
+        { "A12 woke    45", "YEORDWO" },
+        { "11E xu      38", "NXSUVAI" },
+        { "3C  oy      25", "DOOYRUA" },
+        { "2C  vain    24", "SA VNUI" },
+        { "1A  oda     22", "RD A UO" },
+        { "5B  us      13", "  US   " },
     };
 
     engine->on_legal_move = &on_legal_move;
