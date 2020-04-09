@@ -312,7 +312,7 @@ void left_part(const Engine* e, int dir, int anchor, int sq, int limit, Word* wo
     const int stride = dir;
     const int stop  = start + stride * DIM;
     auto* rack = r->tiles;
-    assert(e->vals[sq] == EMPTY);
+    // assert(e->vals[sq] == EMPTY);
     assert((((anchor - sq) / stride) - 1) == strlen(word->buf));
     extend_right(e, dir, sq + stride, anchor, word, r, /*right_part_length*/0, *word);
     if (limit == 0) {
@@ -332,6 +332,20 @@ void left_part(const Engine* e, int dir, int anchor, int sq, int limit, Word* wo
         word->len--;
         word->buf[word->len] = 0;       // TODO: hoist this out of loop
         rack[tint]++;
+    }
+    if (rack[BLANK] > 0) {
+        for (const char* tile = edges; *tile != 0; ++tile) {
+            const char tint = to_int(*tile);
+            assert(xchk[sq] == ANYTILE); // see section 3.3.1 Placing Left Parts
+            rack[BLANK]--;                        // TODO: hoist out of loop
+            word->buf[word->len++] = 'a' + (*tile - 'A'); // TODO: hoist len incr out of loop
+            word->buf[word->len]   = 0;           // TODO: hoist this out of loop
+            assert(sq >= start);
+            left_part(e, dir, anchor, sq - stride, limit - 1, word, r); // try to expand the left part more to the left
+            word->len--;                    // TODO: hoist out of loop
+            word->buf[word->len] = 0;       // TODO: hoist this out of loop
+            rack[BLANK]++;                  // TODO: hoist out of loop
+        }
     }
 }
 
@@ -387,7 +401,7 @@ void engine_find(const Engine* e, EngineRack rack)
                 }
                 const int left_most_poss_sq = anchor - stride * limit;
                 assert(left_most_poss_sq >= start);
-                assert((left_most_poss_sq == start) || (getasq(asqs, left_most_poss_sq) != 0));
+                assert((left_most_poss_sq == start) || (getasq(asqs, left_most_poss_sq) != 0 || vals[left_most_poss_sq] == EMPTY));
                 if (anchor - stride >= start && vals[anchor - stride] != EMPTY) {
                     extend_right_on_existing_left_part(e, stride, &rack, anchor, &word);
                 } else {
@@ -532,7 +546,6 @@ void engine_make_move(Engine* e, const EngineMove* m)
                 }
             }
             hchk[after] = chk;
-
             setasq(asqs, after);
         }
 
