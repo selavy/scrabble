@@ -31,6 +31,16 @@ struct EngineTrie
     void print(std::ostream& os) const;
     void print_(std::ostream& os, int curr, std::string& word) const;
 
+    static constexpr char safech(char c) noexcept {
+        if ('A' <= c && c <= 'Z') {
+            return c;
+        } else if ('a' <= c && c <= 'z') {
+            return 'A' + (c - 'a');
+        } else {
+            assert(0 && "invalid character");
+        }
+    }
+
     std::vector<Node> nodes_;
 };
 
@@ -59,16 +69,17 @@ void EngineTrie::insert(const char* word) {
     int curr = 0;
     const char* c = word;
     while (*c != '\0') {
+        char ch = EngineTrie::safech(*c);
         assert(curr < nodes_.size());
         auto& node = nodes_[curr];
-        auto it = node.children.find(*c);
+        auto it = node.children.find(ch);
         if (it != node.children.end()) {
             curr = it->second;
         } else {
             int next = static_cast<int>(nodes_.size());
             nodes_.emplace_back();
-            nodes_.back().value = *c; // TEMP TEMP
-            nodes_[curr].children[*c] = next;
+            nodes_.back().value = ch; // TEMP TEMP
+            nodes_[curr].children[ch] = next;
             curr = next;
         }
         ++c;
@@ -80,9 +91,10 @@ bool EngineTrie::is_word(const char* word) const {
     int curr = 0;
     const char* c = word;
     while (*c != '\0') {
+        char ch = EngineTrie::safech(*c);
         assert(curr < nodes_.size());
         auto& node = nodes_[curr];
-        auto it = node.children.find(*c);
+        auto it = node.children.find(ch);
         if (it == node.children.end()) {
             return false;
         }
@@ -97,9 +109,10 @@ std::vector<char> EngineTrie::children(const char* prefix, bool& is_terminal) co
     int curr = 0;
     const char* c = prefix;
     while (*c != '\0') {
+        char ch = EngineTrie::safech(*c);
         assert(curr < nodes_.size());
         auto& node = nodes_[curr];
-        auto it = node.children.find(*c);
+        auto it = node.children.find(ch);
         if (it == node.children.end()) {
             is_terminal = false;
             return result;
@@ -188,11 +201,6 @@ void trie_tests()
         assert(std::find(result.begin(), result.end(), 'T') != result.end());
         assert(std::find(result.begin(), result.end(), 'Z') != result.end());
     }
-}
-
-int is_word(void* data, const char* word) {
-    auto& dict = *reinterpret_cast<Dict*>(data);
-    return dict.count(word);
 }
 
 IscMove _parse_isc_string(std::string s) {
@@ -424,14 +432,17 @@ void find_tests()
     Dict dict = {
         "AM",
         "BA",
+        "BAD",
         "BAM",
         "IT",
+        "OD",
         "SAG",
         "SILLY",
         "STAG",
         "STAGS",
         "TAGS",
         "TAG",
+        "TO",
         "TRAM",
         "TRAMS",
         "ZA",
@@ -451,7 +462,7 @@ void find_tests()
         { "I6  bam     24", "IMETRAB" },
         { "J5  tag     25", "GTAADTS" },
         { "8F  tram     6", "TTRRENI" },
-        // { "K5  od      16", "T?SDAOD" },
+        { "K5  od      16", "T?SDAOD" },
         // { "L4  arenite 76", "EAITNER" },
         // { "10B pEdants 81", "SPDNA?T" },
     };

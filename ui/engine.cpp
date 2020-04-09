@@ -264,11 +264,24 @@ void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineR
             word->buf[word->len] = 0;       // TODO: hoist out of loop
             rack[tint]++;
         }
-
-        // TODO: handle blanks
-        // if (rack[BLANK] > 0) {
-        //     // ...
-        // }
+        // NOTE: need to run a second time with blanks so I check both path of using
+        //       the blank vs using the actual tile if I have it
+        if (rack[BLANK] > 0) {
+            for (const char* tile = edges; *tile != 0; ++tile) {
+                const char tint = to_int(*tile);
+                if ((xchk[sq] & mask(tint)) == 0) {  // meets cross-check?
+                    continue;
+                }
+                rack[BLANK]--;                  // TODO: hoist out of loop
+                word->buf[word->len++] = 'a' + (*tile - 'A'); // TODO: hoist len incr out of loop
+                word->buf[word->len]   = 0;     // TODO: hoist out of loop
+                assert(word->len <= DIM);
+                extend_right(e, dir, lsq, nextsq, word, r, right_part_length + 1, leftp);
+                word->len--;                    // TODO: hoist out of loop
+                word->buf[word->len] = 0;       // TODO: hoist out of loop
+                rack[BLANK]++;                  // TODO: hoist out of loop
+            }
+        }
     } else if (*edges != 0 || terminal) {
         word->buf[word->len++] = to_ext(e->vals[sq]);
         word->buf[word->len] = 0; // TEMP TEMP
