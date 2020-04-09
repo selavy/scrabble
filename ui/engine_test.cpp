@@ -224,19 +224,65 @@ const char *GetDirName(int dir)
 {
     if (dir == 1) {
         return "HORZ";
-    } else if (dir == 10) {
+    } else if (dir == 15) {
         return "VERT";
     } else {
         return "UNKN";
     }
 }
 
+struct LegalMoves
+{
+    LegalMoves(Dict dict)
+    {
+        for (const auto& word : dict) {
+            trie.insert(word);
+        }
+    }
+
+    void reset() {
+        isc_specs.clear();
+    }
+
+    std::vector<std::string> isc_specs;
+    EngineTrie               trie;
+};
+
+std::string mk_isc_spec(std::string word, int sq, int dir)
+{
+    std::string result;
+    int  row = (sq / 15) + 1;
+    char col = (sq % 15) + 'A';
+    if (dir == 1) {
+        result += col;
+        result += std::to_string(row);
+    } else if (dir == 15) {
+        result += std::to_string(row);
+        result += col;
+    } else {
+        assert(0 && "bad direction");
+    }
+    result += ' ';
+    for (char c : word) {
+        if ('a' <= c && c <= 'z') {
+            result += 'A' + (c - 'a');
+        } else if ('A' <= c && c <= 'Z') {
+            result += 'a' + (c - 'A');
+        } else {
+            assert(0 && "invalid word");
+        }
+    }
+    return result;
+}
+
 void on_legal_move(void* data, const char* word, int lsq, int rsq, int dir) {
     printf("FOUND LEGAL MOVE: %s at [%s, %s] dir=%s\n", word, SQ_(lsq), SQ_(rsq), GetDirName(dir));
-    auto trie = reinterpret_cast<EngineTrie*>(data);
+    auto lm = reinterpret_cast<LegalMoves*>(data);
+    auto& trie = lm->trie;
     bool terminal = false;;
-    auto es = trie->children(word, terminal);
+    auto es = trie.children(word, terminal);
     assert(terminal == true);
+    lm->isc_specs.push_back(mk_isc_spec(word, lsq, dir));
 }
 
 Edges get_prefix_edges(void* data, const char* prefix) {
@@ -272,15 +318,12 @@ void crosscheck_tests()
         "IT",
     };
 
+    LegalMoves legal_moves{dict};
     auto boardp = std::make_unique<Board>();
     auto enginep = std::make_unique<Engine>();
     auto& board = *boardp;
     auto* engine = enginep.get();
 
-    EngineTrie trie;
-    for (const auto& word : dict) {
-        trie.insert(word);
-    }
 
     std::vector<std::string> isc_moves = {
         "H7 zag 26",
@@ -305,9 +348,9 @@ void crosscheck_tests()
     };
 
     engine->on_legal_move = &on_legal_move;
-    engine->on_legal_move_data = &trie;
+    engine->on_legal_move_data = &legal_moves;
     engine->prefix_edges = &get_prefix_edges;
-    engine->prefix_edges_data = &trie;
+    engine->prefix_edges_data = &legal_moves.trie;
     engine_init(engine);
 
     for (auto isc_spec : isc_moves) {
@@ -394,15 +437,12 @@ void find_tests()
         "ZAG",
         "ZAGS",
     };
+
+    LegalMoves legal_moves{dict};
     auto boardp = std::make_unique<Board>();
     auto enginep = std::make_unique<Engine>();
     auto& board = *boardp;
     auto* engine = enginep.get();
-
-    EngineTrie trie;
-    for (const auto& word : dict) {
-        trie.insert(word);
-    }
 
     std::vector<std::pair<std::string, std::string>> isc_moves = {
         // move           , rack before move
@@ -416,9 +456,9 @@ void find_tests()
     };
 
     engine->on_legal_move = &on_legal_move;
-    engine->on_legal_move_data = &trie;
+    engine->on_legal_move_data = &legal_moves;
     engine->prefix_edges = &get_prefix_edges;
-    engine->prefix_edges_data = &trie;
+    engine->prefix_edges_data = &legal_moves.trie;
     engine_init(engine);
 
     for (auto [isc_spec, rack_spec] : isc_moves) {
@@ -449,8 +489,11 @@ void find_tests()
 }
 
 int main(int argc, char** argv) {
+    // std::cout << mk_isc_spec("HELLO", 0, 1 ) << std::endl;
+    // std::cout << mk_isc_spec("HeLLO", 0, 15) << std::endl;
+
     // trie_tests();
-    crosscheck_tests();
-    find_tests();
+    // crosscheck_tests();
+    // find_tests();
     return 0;
 }
