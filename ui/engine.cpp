@@ -340,7 +340,6 @@ void left_part(const SolveState* ss, int sq, int limit, Word* word)
     const int stride = ss->stride;
     const int stop   = ss->stop;
     auto* rack = ss->r->tiles;
-    // assert(e->vals[sq] == EMPTY);
     assert((((anchor - sq) / stride) - 1) == strlen(word->buf));
 
     extend_right(ss, e, stride, sq + stride, anchor, word, ss->r, /*right_part_length*/0, save_lpart(word), ss->anchor);
@@ -348,6 +347,7 @@ void left_part(const SolveState* ss, int sq, int limit, Word* word)
     if (limit == 0) {
         return;
     }
+    assert(e->vals[sq] == EMPTY);
 
     for (const char* tile = edges; *tile != 0; ++tile) {
         const char tint = to_int(*tile);
