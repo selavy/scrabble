@@ -106,6 +106,80 @@ bool is_empty_line(const std::string& line)
     return line.empty() || re2::RE2::FullMatch(line, empty_line_regex);
 }
 
+struct LegalMoves
+{
+    std::vector<std::string> isc_specs;
+    const EngineTrie*        trie;
+
+    static void on_legal_move(void* data, const char* word, int lsq, int rsq, int dir) noexcept
+    {
+        auto* self = reinterpret_cast<LegalMoves*>(data);
+        self->on_legal_move_(word, lsq, rsq, dir);
+    }
+
+    static std::string mk_isc_spec(std::string word, int sq, int dir)
+    {
+        std::string result;
+        char row = (sq / 15) + 'A';
+        int  col = (sq % 15) +  1;
+        if (dir == 1) {
+            result += row;
+            result += std::to_string(col);
+        } else if (dir == 15) {
+            result += std::to_string(col);
+            result += row;
+        } else {
+            assert(0 && "bad direction");
+        }
+        result += ' ';
+        for (char c : word) {
+            if ('a' <= c && c <= 'z') {
+                result += 'A' + (c - 'a');
+            } else if ('A' <= c && c <= 'Z') {
+                result += 'a' + (c - 'A');
+            } else {
+                assert(0 && "invalid word");
+            }
+        }
+        return result;
+    }
+
+    void on_legal_move_(const char* word, int lsq, int rsq, int dir)
+    {
+        bool terminal = false;;
+        auto es = trie->children(word, terminal);
+        assert(terminal == true);
+        isc_specs.push_back(LegalMoves::mk_isc_spec(word, lsq, dir));
+    }
+
+    static Edges get_prefix_edges(void* data, const char* prefix) noexcept {
+        auto* self = reinterpret_cast<LegalMoves*>(data);
+        return self->get_prefix_edges_(prefix);
+    }
+
+    Edges get_prefix_edges_(const char* prefix)
+    {
+        Edges edges;
+        auto es = trie->children(prefix, edges.terminal);
+        std::size_t i = 0;
+        for (auto ch : es) {
+            edges.edges[i++] = ch;
+        }
+        edges.edges[i] = 0;
+        return edges;
+    }
+};
+
+IscMove _parse_isc_string(const std::string& s) {
+    IscMove isc;
+    char spec[32];
+    char root[32];
+    sscanf(s.c_str(), "%s %s %d", &spec[0], &root[0], &isc.score);
+    isc.sqspec = spec;
+    isc.root   = root;
+    return isc;
+}
+
 bool replay_game(std::ifstream& ifs, const EngineTrie& dict)
 {
     assert(isc_regex.ok());
@@ -129,6 +203,18 @@ bool replay_game(std::ifstream& ifs, const EngineTrie& dict)
         fmt::print(stdout, "PGN Header: key=\"{}\" value=\"{}\"\n", key, value);
     }
 
+    auto boardp = std::make_unique<Board>();
+    auto enginep = std::make_unique<Engine>();
+    auto& board = *boardp;
+    auto* engine = enginep.get();
+    LegalMoves lm;
+    lm.trie = &dict;
+    engine->on_legal_move = &LegalMoves::on_legal_move;
+    engine->on_legal_move_data = &lm;
+    engine->prefix_edges = &LegalMoves::get_prefix_edges;
+    engine->prefix_edges_data = &lm;
+    engine_init(engine);
+
     do {
         if (is_empty_line(line)) {
             // fmt::print(stdout, "Skipping blank line: \"{}\"\n", line);
@@ -147,18 +233,53 @@ bool replay_game(std::ifstream& ifs, const EngineTrie& dict)
             fmt::print(stderr, "error: invalid move: \"{}\"\n", line);
             return false;
         }
+        fmt::print(stdout, "[{}] {}\n", rack_spec, isc_spec);
 
-        IscMove move;
-        move.score = -1;
-        re2::RE2::FullMatch(isc_spec, isc_regex, &move.sqspec, &move.root, &move.score);
-        if (move.sqspec.empty() || move.root.empty()) {
+        IscMove isc_move;
+        isc_move.score = -1;
+        re2::RE2::FullMatch(isc_spec, isc_regex, &isc_move.sqspec, &isc_move.root, &isc_move.score);
+        if (isc_move.sqspec.empty() || isc_move.root.empty()) {
             fmt::print(stderr, "error: invalid ISC move: \"{}\"\n", isc_spec);
             return false;
         }
 
         EngineRack rack = make_engine_rack(rack_spec);
 
-        std::cout << "Parsed ISC move: " << move << " with rack = " << rack << "\n";
+        // TEMP TEMP
+        // std::cout << "Parsed ISC move: " << isc_move << " with rack = " << rack << "\n";
+
+        lm.isc_specs.clear();
+        engine_find(engine, rack);
+
+        auto board_copy = std::make_unique<Board>(board);
+        auto gui_move = make_gui_move_from_isc(board, isc_move);
+        auto maybe_move = make_move(board, gui_move);
+        assert(static_cast<bool>(maybe_move) == true);
+        auto move = *maybe_move;
+        // std::cout << "\n" << move << std::endl;
+
+        { // verify that all moves reported as legal are in fact legal
+            // std::cout << "RACK: " << rack_spec << "\n";
+            bool actual_move_in_legal_moves_list = false;
+            for (auto isc_spec2 : lm.isc_specs) {
+                auto isc_move2 = _parse_isc_string(isc_spec2);
+                auto gui_move2 = make_gui_move_from_isc(*board_copy, isc_move2);
+                // std::cout << "CHECKING: " << isc_spec2 << " " << gui_move2 << std::endl;
+                auto maybe_move2 = make_move(*board_copy, gui_move2);
+                assert(static_cast<bool>(maybe_move2) == true);
+                undo_move(*board_copy, gui_move2);
+                actual_move_in_legal_moves_list |= gui_move2 == gui_move;
+            }
+            // std::cout << "ACTUAL MOVE: " << isc_spec << " " << gui_move << std::endl;
+            assert(actual_move_in_legal_moves_list == true);
+        }
+
+        EngineMove em;
+        em.tiles   = &move.tiles[0];
+        em.squares = &move.squares[0];
+        em.ntiles  = static_cast<int>(gui_move.size());
+        em.direction = static_cast<int>(move.direction);
+        engine_make_move(engine, &em);
 
     } while (std::getline(ifs, line));
 
@@ -206,7 +327,9 @@ int main(int argc, char** argv)
         fmt::print(stderr, "error: unable to open game file: \"{}\"\n", gamefile);
         return 1;
     }
-    if (!replay_game(ifs, dict)) {
+    if (replay_game(ifs, dict)) {
+        fmt::print(stdout, "Passed!\n");
+    } else {
         fmt::print(stderr, "error: unable to replay game file: \"{}\"\n", gamefile);
         return 1;
     }

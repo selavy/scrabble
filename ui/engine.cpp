@@ -486,7 +486,7 @@ void engine_find(const Engine* e, EngineRack rack)
 {
     constexpr int dirs[] = { HORZ, VERT };
 
-    printf("--- BEGIN ENGINE FIND --- rack = %s\n", print_rack(&rack));
+    // printf("--- BEGIN ENGINE FIND --- rack = %s\n", print_rack(&rack));
     auto* asqs = e->asqs;
     auto* vals = e->vals;
     char buf[16];
@@ -539,7 +539,7 @@ void engine_find(const Engine* e, EngineRack rack)
             msk = clearlsb(msk);
         }
     }
-    printf("--- END ENGINE FIND ---\n");
+    // printf("--- END ENGINE FIND ---\n");
 }
 
 int engine_xchk(const Engine* e, const EngineMove* m)
