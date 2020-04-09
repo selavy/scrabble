@@ -161,7 +161,6 @@ struct Word
     int   len;
 };
 
-#define ISWORD(word) (e->wordchk(e->wordchk_data, word) != 0)
 #define ONLEGAL(word, sq, dir) e->on_legal_move(e->on_legal_move_data, word, sq, dir)
 
 const char* print_rack(const EngineRack* r)
@@ -217,6 +216,7 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
     const bool  terminal = edges_.terminal;
     const auto* hchk = e->hchk;
     const auto* vchk = e->vchk;
+    const auto* xchk = dir == HORZ ? hchk : vchk;
     const int start = dir == HORZ ? colstart(sq) : rowstart(sq);
     const int stride = dir;
     const int stop  = start + stride * DIM;
@@ -245,12 +245,17 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
             if (rack[tint] == 0) {              // have tile?
                 continue;
             }
-            if ((hchk[sq] & mask(tint)) == 0) { // meets horizontal cross-check?
+
+            // TEMP TEMP
+            if ((xchk[sq] & mask(tint)) == 0) {
                 continue;
             }
-            if ((vchk[sq] & mask(tint)) == 0) { // meets vertical cross-check?
-                continue;
-            }
+            // if ((hchk[sq] & mask(tint)) == 0) { // meets horizontal cross-check?
+            //     continue;
+            // }
+            // if ((vchk[sq] & mask(tint)) == 0) { // meets vertical cross-check?
+            //     continue;
+            // }
             rack[tint]--;
             word->buf[word->len++] = *tile;
             word->buf[word->len]   = 0;
@@ -457,7 +462,6 @@ void engine_make_move(Engine* e, const EngineMove* m)
     auto* asqs = e->asqs;
     auto* horzstart = dir == HORZ ? &colstart : &rowstart;
     auto* vertstart = dir == HORZ ? &rowstart : &colstart;
-    auto* chkwrd = e->wordchk;
     const int lsq   = squares[0];          // left-most square
     const int rsq   = squares[ntiles - 1]; // right-most square
     const int hstart = horzstart(lsq);
@@ -494,7 +498,8 @@ void engine_make_move(Engine* e, const EngineMove* m)
             uint32_t chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[0] = c;
-                if (chkwrd(e->wordchk_data, buf) != 0) {
+                auto edges = e->prefix_edges(e->prefix_edges_data, buf);
+                if (edges.terminal) {
                     chk |= mask(to_int(c));
                 }
             }
@@ -509,7 +514,8 @@ void engine_make_move(Engine* e, const EngineMove* m)
             uint32_t chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[len+1] = c;
-                if (chkwrd(e->wordchk_data, &buf[1]) != 0) {
+                auto edges = e->prefix_edges(e->prefix_edges_data, &buf[1]);
+                if (edges.terminal) {
                     chk |= mask(to_int(c));
                 }
             }
@@ -545,7 +551,8 @@ void engine_make_move(Engine* e, const EngineMove* m)
             uint32_t chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[0] = c;
-                if (chkwrd(e->wordchk_data, buf) != 0) {
+                auto edges = e->prefix_edges(e->prefix_edges_data, buf);
+                if (edges.terminal) {
                     chk |= mask(to_int(c));
                 }
             }
@@ -561,7 +568,8 @@ void engine_make_move(Engine* e, const EngineMove* m)
             uint32_t chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[len+1] = c;
-                if (chkwrd(e->wordchk_data, &buf[1]) != 0) {
+                auto edges = e->prefix_edges(e->prefix_edges_data, &buf[1]);
+                if (edges.terminal) {
                     chk |= mask(to_int(c));
                 }
             }

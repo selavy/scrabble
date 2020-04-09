@@ -8,7 +8,6 @@
 // edges in ['A', 'Z'] with 0 marking final
 struct Edges { bool terminal; char edges[27]; }; // TODO: better name
 
-typedef int   (*WordCheck  )(void* data, const char* word);
 typedef void  (*OnLegalMove)(void* data, const char* word, int sq, int dir);
 typedef Edges (*PrefixEdges)(void* data, const char* prefix);
 
@@ -20,9 +19,6 @@ struct Engine
     uint32_t vchk[225];
     uint64_t asqs[4];
 
-    // TODO: shouldn't need wordchk now that have prefix edges -- just check if terminal node instead
-    WordCheck   wordchk;
-    void*       wordchk_data;
     OnLegalMove on_legal_move;
     void*       on_legal_move_data;
     PrefixEdges prefix_edges;

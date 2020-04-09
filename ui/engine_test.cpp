@@ -220,6 +220,23 @@ EngineRack make_engine_rack(const std::string& s)
     return r;
 }
 
+void on_legal_move(void* data, const char* word, int sq, int dir) {
+    printf("FOUND LEGAL MOVE: %s at %s (%d) dir=%d\n", word, SQ_(sq), sq, dir);
+}
+
+Edges get_prefix_edges(void* data, const char* prefix) {
+    Edges edges;
+    auto trie = reinterpret_cast<EngineTrie*>(data);
+    auto es = trie->children(prefix, edges.terminal);
+    std::size_t i = 0;
+    for (auto ch : es) {
+        edges.edges[i++] = ch;
+    }
+    edges.edges[i] = 0;
+    // printf(" -- get_prefix_edges(\"%s\") = %s term=%s\n", prefix, edges.edges, edges.terminal?"TRUE":"FALSE");
+    return edges;
+}
+
 void crosscheck_tests()
 {
     Dict dict = {
@@ -239,10 +256,16 @@ void crosscheck_tests()
         "SILLY",
         "IT",
     };
+
     auto boardp = std::make_unique<Board>();
     auto enginep = std::make_unique<Engine>();
     auto& board = *boardp;
     auto* engine = enginep.get();
+
+    EngineTrie trie;
+    for (const auto& word : dict) {
+        trie.insert(word);
+    }
 
     std::vector<std::string> isc_moves = {
         "H7 zag 26",
@@ -266,8 +289,10 @@ void crosscheck_tests()
         "O6 OSSIFY", // no "SO" formed vertically
     };
 
-    engine->wordchk = &is_word;
-    engine->wordchk_data = &dict;
+    engine->on_legal_move = &on_legal_move;
+    engine->on_legal_move_data = NULL;
+    engine->prefix_edges = &get_prefix_edges;
+    engine->prefix_edges_data = &trie;
     engine_init(engine);
 
     for (auto isc_spec : isc_moves) {
@@ -335,23 +360,6 @@ void crosscheck_tests()
     printf("\nPASSED!\n");
 }
 
-void on_legal_move(void* data, const char* word, int sq, int dir) {
-    printf("FOUND LEGAL MOVE: %s at %s (%d) dir=%d\n", word, SQ_(sq), sq, dir);
-}
-
-Edges get_prefix_edges(void* data, const char* prefix) {
-    Edges edges;
-    auto trie = reinterpret_cast<EngineTrie*>(data);
-    auto es = trie->children(prefix, edges.terminal);
-    std::size_t i = 0;
-    for (auto ch : es) {
-        edges.edges[i++] = ch;
-    }
-    edges.edges[i] = 0;
-    // printf(" -- get_prefix_edges(\"%s\") = %s term=%s\n", prefix, edges.edges, edges.terminal?"TRUE":"FALSE");
-    return edges;
-}
-
 void find_tests()
 {
     Dict dict = {
@@ -371,12 +379,12 @@ void find_tests()
         "ZAG",
         "ZAGS",
     };
-    EngineTrie trie;
     auto boardp = std::make_unique<Board>();
     auto enginep = std::make_unique<Engine>();
     auto& board = *boardp;
     auto* engine = enginep.get();
 
+    EngineTrie trie;
     for (const auto& word : dict) {
         trie.insert(word);
     }
@@ -392,8 +400,6 @@ void find_tests()
         // { "10B pEdants 81", "SPDNA?T" },
     };
 
-    engine->wordchk = &is_word;
-    engine->wordchk_data = &dict;
     engine->on_legal_move = &on_legal_move;
     engine->on_legal_move_data = NULL;
     engine->prefix_edges = &get_prefix_edges;
