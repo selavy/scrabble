@@ -39,8 +39,8 @@ struct EngineRack
 };
 // clang-format on
 
-// must set wordchk, legalmv, getedges and corresponding data
-// pointers yourself
+// must set on_legal_move, get_prefix_edges and corresponding data pointers
+// yourself
 extern void engine_init(Engine* e);
 
 // tiles from [a-zA-Z] where lowercase = blank tile

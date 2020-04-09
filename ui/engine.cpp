@@ -223,7 +223,7 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
     const int nextsq = sq + stride;
     auto* rack = r->tiles;
 
-#if 1
+#if 0
     // if (strcmp(leftp.buf, "ZAG") == 0) {
     if (anchor == SQIX('G', 8) || anchor == SQIX('F', 8) || anchor == SQIX('E', 8)) {
         INFO("extend_right: word=\"%s\" left_part=\"%s\" sq=%s anchor=%s rack=%s edges=%s terminal=%s hchk=%s vchk=%s",
@@ -253,13 +253,13 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
             // if ((hchk[sq] & mask(tint)) == 0) { // meets horizontal cross-check?
             //     continue;
             // }
-            // if ((vchk[sq] & mask(tint)) == 0) { // meets vertical cross-check?
-            //     continue;
-            // }
+            if ((vchk[sq] & mask(tint)) == 0) { // meets vertical cross-check?
+                continue;
+            }
             rack[tint]--;
             word->buf[word->len++] = *tile;
             word->buf[word->len]   = 0;
-            INFO("\tPLAYING TILE: %c ON %s -- %s", *tile, SQ(sq), word->buf);
+            // INFO("\tPLAYING TILE: %c ON %s -- %s", *tile, SQ(sq), word->buf);
             assert(word->len <= DIM);
             extend_right(e, dir, anchor, nextsq, word, r, right_part_length + 1, leftp);
             word->len--;
@@ -274,10 +274,10 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
     } else if (*edges != 0 || terminal) {
         word->buf[word->len++] = to_ext(e->vals[sq]);
         word->buf[word->len] = 0; // TEMP TEMP
-        INFO("\tADDED ALREADY PLAYED TILE: %c -> %s", to_ext(e->vals[sq]), word->buf);
+        // INFO("\tADDED ALREADY PLAYED TILE: %c -> %s", to_ext(e->vals[sq]), word->buf);
         if (nextsq < stop) {
             extend_right(e, dir, anchor, nextsq, word, r, right_part_length, leftp);
-        } else if (/*(right_part_length > 0 || leftp.len > 0)*/ (word->len > 0) && terminal) {  // hit end of board with a valid word
+        } else if ((right_part_length > 0 || leftp.len > 0) /*(word->len > 0)*/ && terminal) {  // hit end of board with a valid word
             assert(word->buf[word->len] == 0);
             // ONLEGAL(word->buf, anchor, HORZ);
             printf("!!! LEGAL MOVE(2): anchor=%s sq=%s dir=%s word=\"%s\"\n", SQ(anchor), SQ(sq - stride), DIR(dir), word->buf);
