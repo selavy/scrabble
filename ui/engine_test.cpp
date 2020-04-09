@@ -433,11 +433,17 @@ void find_tests()
     Dict dict = {
         "AM",
         "ARENITE",
+        "AT",
         "BA",
         "BAD",
         "BADE",
         "BAM",
         "CHIP",
+        "CHIPS",
+        "EYE",
+        "FE",
+        "GAFFER",
+        "GI",
         "IT",
         "JIB",
         "JIBE",
@@ -446,11 +452,15 @@ void find_tests()
         "OD",
         "OH",
         "OHS",
+        "OVEN",
+        "NOD",
         "QAT",
         "QI",
         "PEDANTS",
+        "REQUITE",
         "SAG",
         "SILLY",
+        "SIRE",
         "STAG",
         "STAGS",
         "TAGS",
@@ -460,11 +470,16 @@ void find_tests()
         "TOR",
         "TRAM",
         "TRAMS",
+        "WELLIE",
         "YO",
         "YE",
         "ZA",
         "ZAG",
         "ZAGS",
+
+        // fake words to test bounds checking
+        "LOVEN",
+        "GLOVEN",
     };
 
     LegalMoves legal_moves{dict};
@@ -489,6 +504,18 @@ void find_tests()
         { "F6  qat     32", "AIEMNQL" },
         { "12K chip    22", "CHVIALG" },
         { "G3  mini    20", "LLEIINM" },
+        { "8A  oven    34", "VNAOLGE" },
+        { "4C  wellie  20", "LLWEERE" },
+        //--------------------------------------------
+        // TODO:
+        // working on adding insidious vs CF589
+        // failing on sire from O12 for some reason
+        // probably related to bounds checking is my
+        // first guess
+        //-------------------------------------------
+        { "O12 sire    28", "IRI?RSE" },
+        // { "14J gaffer  34", "GEFNAFL" },
+        // { "15F reQuite 32", "EEU?RIT" },
     };
 
     engine->on_legal_move = &on_legal_move;
@@ -500,6 +527,26 @@ void find_tests()
     for (auto [isc_spec, rack_spec] : isc_moves) {
         const auto rack = make_engine_rack(rack_spec);
         engine_print_anchors(engine);
+
+        // ACTUAL MOVE: O12 sire    28 [ (S, O12) (I, O13) (R, O14) (E, O15) ]
+        printf("\n\nXChecks:\n");
+        const int SQ_O12 = SQIX('O', 12);
+        const int SQ_O13 = SQIX('O', 13);
+        const int SQ_O14 = SQIX('O', 14);
+        const int SQ_O15 = SQIX('O', 15);
+        printf("HORZ:\n\t%s=%s\n\t%s=%s\n\t%s=%s\n\t%s=%s\n",
+                GetSqName(SQ_O12), MBUF(engine->hchk[SQ_O12]),
+                GetSqName(SQ_O13), MBUF(engine->hchk[SQ_O13]),
+                GetSqName(SQ_O14), MBUF(engine->hchk[SQ_O14]),
+                GetSqName(SQ_O15), MBUF(engine->hchk[SQ_O15])
+        );
+        printf("VERT:\n\t%s=%s\n\t%s=%s\n\t%s=%s\n\t%s=%s\n",
+                GetSqName(SQ_O12), MBUF(engine->vchk[SQ_O12]),
+                GetSqName(SQ_O13), MBUF(engine->vchk[SQ_O13]),
+                GetSqName(SQ_O14), MBUF(engine->vchk[SQ_O14]),
+                GetSqName(SQ_O15), MBUF(engine->vchk[SQ_O15])
+        );
+        printf("\n\n");
         // std::cout << board << std::endl;
         legal_moves.reset();
         engine_find(engine, rack);

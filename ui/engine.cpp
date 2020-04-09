@@ -48,12 +48,6 @@ constexpr const char* const DIR(int dir) noexcept {
     }
 }
 
-/*constexpr*/ int SQIX(char row, int col) noexcept {
-    int r = row - 'A';
-    int c = col - 1;
-    return r*DIM + c;
-}
-
 constexpr const char* SQ(int sq) noexcept {
     if (0 <= sq && sq < 225) {
         return SquareNames[sq];
@@ -116,8 +110,9 @@ constexpr u32 mask(char tile) {
     return 1u << tile;
 }
 
-// TEMP TEMP
-std::unique_ptr<char[]> mask_buffer(u32 m) {
+// TEMP TEMP -- remove me
+std::unique_ptr<char[]> mask_buffer(u32 m)
+{
     auto buf = std::make_unique<char[]>(27);
     std::size_t bidx = 0;
     for (int i = 0; i < 26; ++i) {
@@ -128,10 +123,6 @@ std::unique_ptr<char[]> mask_buffer(u32 m) {
     buf[bidx] = 0;
     return buf;
 }
-
-#define MBUF(m) mask_buffer(m).get()
-#define MM(x, m) ((((x) & (m)) != 0) ? 1 : 0)
-// TEMP TEMP
 
 constexpr int getcol(int sq) noexcept { return sq % DIM; }
 constexpr int getrow(int sq) noexcept { return sq / DIM; }
@@ -237,26 +228,40 @@ int range_contains_square(int start, int stride, int length, int sq)
     return 0;
 }
 
-void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineRack* r, int right_part_length, Word leftp)
+void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineRack* r, int right_part_length, Word leftp, int anchor_orig)
 {
     word->buf[word->len] = 0;
     const Edges edges_ = e->prefix_edges(e->prefix_edges_data, word->buf);
     const char* edges = edges_.edges;
     const bool terminal = edges_.terminal;
     const auto* xchk = dir == HORZ ? e->hchk : e->vchk;
-    const int start = dir == HORZ ? colstart(sq) : rowstart(sq);
+    // TODO: maybe just pass in start/stride/stop into all of these?
+    const int start = dir == HORZ ? colstart(lsq) : rowstart(lsq);
     const int stride = dir;
     const int stop  = start + stride * DIM;
     const int nextsq = sq + stride;
     const int rsq = sq - stride;
     auto* rack = r->tiles;
 
-    if (e->vals[sq] == EMPTY) {
+#if MYDEBUG
+    // DEBUG
+    if (anchor_orig == SQIX('O', 12)) {
+        INFO("extend_right: dir=%s lsq=%s sq=%s word=\"%s\" rack=%s right_part_length=%d leftp=%s anchor_orig=%s edges=%s terminal=%s",
+                DIR(dir), SQ(lsq), SQ(sq), word->buf, print_rack(r), right_part_length, leftp.buf, SQ(anchor_orig), edges, terminal?"TRUE":"FALSE");
+
+        if (strcmp(word->buf, "SIR") == 0) {
+            printf("HERE!\n");
+        }
+    }
+    // END DEBUG
+#endif
+
+    if (sq >= stop || e->vals[sq] == EMPTY) {
         if (right_part_length > 0 && terminal) {
             assert(word->buf[word->len] == 0);
             e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, dir);
         }
-        if (nextsq >= stop) { // hit end of board
+        if (sq >= stop) { // hit end of board
             return;
         }
         for (const char* tile = edges; *tile != 0; ++tile) {
@@ -271,7 +276,7 @@ void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineR
             word->buf[word->len++] = *tile; // TODO: hoist out of loop
             word->buf[word->len]   = 0;     // TODO: hoist out of loop
             assert(word->len <= DIM);
-            extend_right(e, dir, lsq, nextsq, word, r, right_part_length + 1, leftp);
+            extend_right(e, dir, lsq, nextsq, word, r, right_part_length + 1, leftp, anchor_orig);
             word->len--;                    // TODO: hoist out of loop
             word->buf[word->len] = 0;       // TODO: hoist out of loop
             rack[tint]++;
@@ -288,7 +293,7 @@ void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineR
                 word->buf[word->len++] = 'a' + (*tile - 'A'); // TODO: hoist len incr out of loop
                 word->buf[word->len]   = 0;     // TODO: hoist out of loop
                 assert(word->len <= DIM);
-                extend_right(e, dir, lsq, nextsq, word, r, right_part_length + 1, leftp);
+                extend_right(e, dir, lsq, nextsq, word, r, right_part_length + 1, leftp, anchor_orig);
                 word->len--;                    // TODO: hoist out of loop
                 word->buf[word->len] = 0;       // TODO: hoist out of loop
                 rack[BLANK]++;                  // TODO: hoist out of loop
@@ -298,7 +303,7 @@ void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineR
         word->buf[word->len++] = to_ext(e->vals[sq]);
         word->buf[word->len] = 0; // TEMP TEMP
         if (nextsq < stop) {
-            extend_right(e, dir, lsq, nextsq, word, r, right_part_length, leftp);
+            extend_right(e, dir, lsq, nextsq, word, r, right_part_length, leftp, anchor_orig);
         }
         // TODO(peter): how to avoid passing leftp?
         else if ((right_part_length > 0 || leftp.len > 0) && terminal) {  // hit end of board with a valid word
@@ -309,9 +314,23 @@ void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineR
     }
 }
 
+// TEMP TEMP
+char lpart_buf[32];
+
+Word save_lpart(const Word* w) {
+    memset(lpart_buf, 0, sizeof(lpart_buf));
+    strcpy(lpart_buf, w->buf);
+    // memcpy(lpart_buf, w->buf, w->len);
+    Word result;
+    result.buf = lpart_buf;
+    result.len = w->len;
+    assert(strcmp(result.buf, w->buf) == 0);
+    return result;
+}
+
 // TODO: pass in a "tiles_used" parameter so can get rid of right_part_length?
 // TODO: remove `sq` parameter, can calculate it from sq = anchor - strlen(word->buf) - 1 (see line 278 assertion below)
-void left_part(const Engine* e, int dir, int anchor, int sq, int limit, Word* word, EngineRack* r)
+void left_part(const Engine* e, int dir, int anchor, int sq, int limit, Word* word, EngineRack* r, int anchor_orig)
 {
     word->buf[word->len] = 0; // TEMP?
     const Edges edges_ = e->prefix_edges(e->prefix_edges_data, word->buf);
@@ -324,10 +343,22 @@ void left_part(const Engine* e, int dir, int anchor, int sq, int limit, Word* wo
     auto* rack = r->tiles;
     // assert(e->vals[sq] == EMPTY);
     assert((((anchor - sq) / stride) - 1) == strlen(word->buf));
-    extend_right(e, dir, sq + stride, anchor, word, r, /*right_part_length*/0, *word);
+
+#ifdef MYDEBUG
+    // DEBUG
+    if (anchor_orig == SQIX('O', 12)) {
+        INFO("left_part: dir=%s anchor=%s sq=%s limit=%d word=\"%s\" rack=%s",
+                DIR(dir), SQ(anchor), SQ(sq), limit, word->buf, print_rack(r));
+    }
+    // END DEBUG
+#endif
+
+    extend_right(e, dir, sq + stride, anchor, word, r, /*right_part_length*/0, save_lpart(word), anchor_orig);
+
     if (limit == 0) {
         return;
     }
+
     for (const char* tile = edges; *tile != 0; ++tile) {
         const char tint = to_int(*tile);
         if (rack[tint] == 0) {              // have tile?
@@ -338,7 +369,7 @@ void left_part(const Engine* e, int dir, int anchor, int sq, int limit, Word* wo
         word->buf[word->len++] = *tile; // TODO: hoist incr of len
         word->buf[word->len]   = 0;     // TODO: hoist this out of loop
         assert(sq >= start);
-        left_part(e, dir, anchor, sq - stride, limit - 1, word, r); // try to expand the left part more to the left
+        left_part(e, dir, anchor, sq - stride, limit - 1, word, r, anchor_orig); // try to expand the left part more to the left
         word->len--;                    // TODO: hoist out of loop
         word->buf[word->len] = 0;       // TODO: hoist this out of loop
         rack[tint]++;
@@ -350,7 +381,7 @@ void left_part(const Engine* e, int dir, int anchor, int sq, int limit, Word* wo
             word->buf[word->len++] = 'a' + (*tile - 'A'); // TODO: hoist len incr out of loop
             word->buf[word->len]   = 0;           // TODO: hoist this out of loop
             assert(sq >= start);
-            left_part(e, dir, anchor, sq - stride, limit - 1, word, r); // try to expand the left part more to the left
+            left_part(e, dir, anchor, sq - stride, limit - 1, word, r, anchor_orig); // try to expand the left part more to the left
             word->len--;                    // TODO: hoist out of loop
             word->buf[word->len] = 0;       // TODO: hoist this out of loop
             rack[BLANK]++;                  // TODO: hoist out of loop
@@ -358,7 +389,7 @@ void left_part(const Engine* e, int dir, int anchor, int sq, int limit, Word* wo
     }
 }
 
-void extend_right_on_existing_left_part(const Engine* e, int dir, EngineRack* r, int anchor, Word* word)
+void extend_right_on_existing_left_part(const Engine* e, int dir, EngineRack* r, int anchor, Word* word, int anchor_orig)
 {
     const auto* vals = e->vals;
     const int start = dir == HORZ ? colstart(anchor) : rowstart(anchor);
@@ -366,6 +397,16 @@ void extend_right_on_existing_left_part(const Engine* e, int dir, EngineRack* r,
     int sq = anchor - stride;
     assert(sq >= start);
     assert(vals[sq] != EMPTY);
+
+#ifdef MYDEBUG
+    // DEBUG
+    if (anchor_orig == SQIX('O', 12)) {
+        INFO("extend_right_on_existing_left_part: dir=%s anchor=%s word=\"%s\" rack=%s",
+                DIR(dir), SQ(anchor), word->buf, print_rack(r));
+    }
+    // END DEBUG
+#endif
+
     // TODO: more efficient way to extend backwards? maybe make the buffer (DIM+1)*2 so we can start
     //       in the middle?
     while (sq >= start && vals[sq] != EMPTY) {
@@ -374,7 +415,7 @@ void extend_right_on_existing_left_part(const Engine* e, int dir, EngineRack* r,
     }
     word->buf[word->len] = 0;
     revbuf(word->buf, word->len);
-    extend_right(e, dir, anchor - stride * word->len, anchor, word, r, 0, *word);
+    extend_right(e, dir, anchor - stride * word->len, anchor, word, r, 0, save_lpart(word), anchor_orig);
     word->len = 0;
 }
 
@@ -394,27 +435,31 @@ void engine_find(const Engine* e, EngineRack rack)
         const int base = 64*i;
         u64 msk = asqs[i];
         while (msk > 0) {
-            int anchor = base + lsb(msk);
+            const int anchor = base + lsb(msk);
             for (int i = 0; i < ASIZE(dirs); ++i) {
                 const int stride  = dirs[i];
                 const int start = dirs[i] == HORZ ? colstart(anchor) : rowstart(anchor);
-                int limit = 0; // max left part potential length
-                for (int sq = anchor - stride; sq >= start; sq -= stride) {
-                    if (getasq(asqs, sq) != 0) {
-                        break;
-                    }
-                    if (vals[sq] != EMPTY) {
-                        break;
-                    }
-                    ++limit;
-                }
-                const int left_most_poss_sq = anchor - stride * limit;
-                assert(left_most_poss_sq >= start);
-                assert((left_most_poss_sq == start) || (getasq(asqs, left_most_poss_sq) != 0 || vals[left_most_poss_sq] == EMPTY));
                 if (anchor - stride >= start && vals[anchor - stride] != EMPTY) {
-                    extend_right_on_existing_left_part(e, stride, &rack, anchor, &word);
+                    extend_right_on_existing_left_part(e, stride, &rack, anchor, &word, anchor);
                 } else {
-                    left_part(e, stride, anchor, anchor - stride, limit, &word, &rack);
+                    int limit = 0; // max left part potential length
+                    for (int sq = anchor - stride; sq >= start; sq -= stride) {
+                        if (getasq(asqs, sq) != 0) {
+                            break;
+                        }
+                        if (vals[sq] != EMPTY) {
+                            break;
+                        }
+                        ++limit;
+                    }
+                    const int left_most_poss_sq = anchor - stride * limit;
+                    assert(left_most_poss_sq >= start);
+                    assert((left_most_poss_sq == start) ||
+                           (
+                                (getasq(asqs, left_most_poss_sq) != 0) ||
+                                (vals[left_most_poss_sq] == EMPTY)
+                           ));
+                    left_part(e, stride, anchor, anchor - stride, limit, &word, &rack, anchor);
                 }
             }
 

@@ -49,6 +49,14 @@ extern void engine_make_move(Engine* e, const EngineMove* move);
 
 extern void engine_find(const Engine* e, EngineRack rack);
 
+// move back into cpp
+inline /*constexpr*/ int SQIX(char row, int col) noexcept {
+    int r = row - 'A';
+    int c = col - 1;
+    // return r*DIM + c;
+    return r*15 + c;
+}
+
 //-----------------------------------------------------------------------------
 // TEMP TEMP -- utility functions to delete
 //-----------------------------------------------------------------------------
@@ -59,3 +67,11 @@ extern int engine_xchk(const Engine* e, const EngineMove* m); // TEMP TEMP
 extern void engine_print_anchors(const Engine* e);
 
 extern const char* SQ_(int sq) noexcept;
+
+#include <memory>
+
+// TEMP TEMP
+extern std::unique_ptr<char[]> mask_buffer(uint32_t m);
+#define MBUF(m) mask_buffer(m).get()
+#define MM(x, m) ((((x) & (m)) != 0) ? 1 : 0)
+// TEMP TEMP
