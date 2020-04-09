@@ -251,14 +251,14 @@ struct LegalMoves
 std::string mk_isc_spec(std::string word, int sq, int dir)
 {
     std::string result;
-    int  row = (sq / 15) + 1;
-    char col = (sq % 15) + 'A';
+    char row = (sq / 15) + 'A';
+    int  col = (sq % 15) +  1;
     if (dir == 1) {
-        result += col;
-        result += std::to_string(row);
+        result += row;
+        result += std::to_string(col);
     } else if (dir == 15) {
-        result += std::to_string(row);
-        result += col;
+        result += std::to_string(col);
+        result += row;
     } else {
         assert(0 && "bad direction");
     }
@@ -276,13 +276,14 @@ std::string mk_isc_spec(std::string word, int sq, int dir)
 }
 
 void on_legal_move(void* data, const char* word, int lsq, int rsq, int dir) {
-    printf("FOUND LEGAL MOVE: %s at [%s, %s] dir=%s\n", word, SQ_(lsq), SQ_(rsq), GetDirName(dir));
     auto lm = reinterpret_cast<LegalMoves*>(data);
     auto& trie = lm->trie;
     bool terminal = false;;
     auto es = trie.children(word, terminal);
     assert(terminal == true);
     lm->isc_specs.push_back(mk_isc_spec(word, lsq, dir));
+    printf("FOUND LEGAL MOVE: %s at [%s, %s ] dir=%s => isc=%s\n",
+            word, SQ_(lsq), SQ_(rsq), GetDirName(dir), lm->isc_specs.back().c_str());
 }
 
 Edges get_prefix_edges(void* data, const char* prefix) {
@@ -479,15 +480,15 @@ void find_tests()
         { // verify that all moves reported as legal are in fact legal
             bool actual_move_in_legal_moves_list = false;
             for (auto isc_spec2 : legal_moves.isc_specs) {
-                if (isc_spec2 == isc_spec) {
-                    actual_move_in_legal_moves_list = true;
-                }
                 auto isc_move2 = _parse_isc_string(isc_spec2);
                 auto gui_move2 = make_gui_move_from_isc(*board_copy, isc_move2);
+                std::cout << "CHECKING: " << isc_spec2 << " " << gui_move2 << std::endl;
                 auto maybe_move2 = make_move(*board_copy, gui_move2);
                 assert(static_cast<bool>(maybe_move2) == true);
                 undo_move(*board_copy, gui_move2);
+                actual_move_in_legal_moves_list |= gui_move2 == gui_move;
             }
+            std::cout << "ACTUAL MOVE: " << isc_spec << " " << gui_move << std::endl;
             assert(actual_move_in_legal_moves_list == true);
         }
 
@@ -508,8 +509,8 @@ void find_tests()
 int main(int argc, char** argv) {
     // std::cout << mk_isc_spec("HELLO", 0, 1 ) << std::endl;
     // std::cout << mk_isc_spec("HeLLO", 0, 15) << std::endl;
-    trie_tests();
-    crosscheck_tests();
+    // trie_tests();
+    // crosscheck_tests();
     find_tests();
     return 0;
 }

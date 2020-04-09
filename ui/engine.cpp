@@ -16,6 +16,7 @@ constexpr int      BLANK = 26;
 constexpr int      DIM = 15;
 constexpr int      HORZ = 1;
 constexpr int      VERT = DIM;
+constexpr int      SQ_H8 = 112;
 constexpr const char* const SquareNames[225] = {
     " A1", " A2", " A3", " A4", " A5", " A6", " A7", " A8", " A9", "A10", "A11", "A12", "A13", "A14", "A15",
     " B1", " B2", " B3", " B4", " B5", " B6", " B7", " B8", " B9", "B10", "B11", "B12", "B13", "B14", "B15",
@@ -206,6 +207,16 @@ void revbuf(char* buf, int length)
 //   + Everything in this file is specified from the standpoint of generating horizontal
 //     moves. For vertical moves, we can just conceptually rotate the board.
 
+int range_contains_square(int start, int stride, int length, int sq)
+{
+    for (int i = 0; i < length; ++i) {
+        if (start + stride * i == sq) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineRack* r, int right_part_length, Word leftp)
 {
     word->buf[word->len] = 0;
@@ -222,27 +233,35 @@ void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineR
 
     if (e->vals[sq] == EMPTY) {
         if (right_part_length > 0 && terminal) {
-            assert(word->buf[word->len] == 0);
-            e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, dir);
+            // TODO(peter): there has to be a better way!
+            assert(SQ_H8 == SQIX('H', 8));
+            if (e->vals[SQ_H8] != EMPTY || range_contains_square(lsq, stride, word->len, SQ_H8)) {
+                if (strcmp(word->buf, "TAG") == 0) {
+                    INFO("ADDING WORD: \"%s\" [%s,%s] e->vals[H8]=%c range_contains=%d",
+                            word->buf, SQ(lsq), SQ(rsq), to_ext(e->vals[SQ_H8]), range_contains_square(lsq, stride, word->len, SQ_H8));
+                }
+                assert(word->buf[word->len] == 0);
+                e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, dir);
+            }
         }
         if (nextsq >= stop) { // hit end of board
             return;
         }
         for (const char* tile = edges; *tile != 0; ++tile) {
             const char tint = to_int(*tile);
-            if (rack[tint] == 0) {              // have tile?
+            if (rack[tint] == 0) {               // have tile?
                 continue;
             }
-            if ((xchk[sq] & mask(tint)) == 0) {
+            if ((xchk[sq] & mask(tint)) == 0) {  // meets cross-check?
                 continue;
             }
             rack[tint]--;
-            word->buf[word->len++] = *tile;
-            word->buf[word->len]   = 0;
+            word->buf[word->len++] = *tile; // TODO: hoist out of loop
+            word->buf[word->len]   = 0;     // TODO: hoist out of loop
             assert(word->len <= DIM);
             extend_right(e, dir, lsq, nextsq, word, r, right_part_length + 1, leftp);
-            word->len--;
-            word->buf[word->len] = 0;
+            word->len--;                    // TODO: hoist out of loop
+            word->buf[word->len] = 0;       // TODO: hoist out of loop
             rack[tint]++;
         }
 
@@ -256,13 +275,18 @@ void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineR
         if (nextsq < stop) {
             extend_right(e, dir, lsq, nextsq, word, r, right_part_length, leftp);
         } else if ((right_part_length > 0 || leftp.len > 0) && terminal) {  // hit end of board with a valid word
-            assert(word->buf[word->len] == 0);
-            e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, dir);
+            // TODO(peter): there has to be a better way!
+            assert(SQ_H8 == SQIX('H', 8));
+            if (e->vals[SQ_H8] != EMPTY || range_contains_square(lsq, stride, word->len, SQ_H8)) {
+                assert(word->buf[word->len] == 0);
+                e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, dir);
+            }
         }
         word->len--;
     }
 }
 
+// TODO: pass in a "tiles_used" parameter so can get rid of right_part_length?
 // TODO: remove `sq` parameter, can calculate it from sq = anchor - strlen(word->buf) - 1 (see line 278 assertion below)
 void left_part(const Engine* e, int dir, int anchor, int sq, int limit, Word* word, EngineRack* r)
 {
@@ -291,7 +315,7 @@ void left_part(const Engine* e, int dir, int anchor, int sq, int limit, Word* wo
         word->buf[word->len++] = *tile;
         word->buf[word->len]   = 0;     // TODO: hoist this out of loop
         assert(sq >= start);
-        left_part(e, dir, anchor, sq - stride, limit - 1, word, r);
+        left_part(e, dir, anchor, sq - stride, limit - 1, word, r); // try to expand the left part more to the left
         word->len--;
         word->buf[word->len] = 0;       // TODO: hoist this out of loop
         rack[tint]++;

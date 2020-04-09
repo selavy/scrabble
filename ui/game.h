@@ -304,7 +304,7 @@ bool operator!=(const GuiMove& lhs, const GuiMove& rhs) {
 std::ostream& operator<<(std::ostream& os, const GuiMove& move) {
     os << "[ ";
     for (auto&& [tile, square] : move) {
-        os << "(" << tile << ", " << SquareNames[square] << " [" << square << "]" << ") ";
+        os << "(" << tile << ", " << SquareNames[square] /* << " [" << square << "]" */ << ") ";
     }
     os << "]";
     return os;
@@ -771,7 +771,8 @@ std::optional<Move> make_move(Board& b, const GuiMove& m) noexcept {
         return false;
     });
     if (!h8_played && !adjacent_to_played_square) {
-        ERROR("error: play not adjacent to any played tiles");
+        ERROR("error: play not adjacent to any played tiles h8_player=%s adjacent_to_played_square=%s",
+                h8_played?"TRUE":"FALSE", adjacent_to_played_square?"TRUE":"FALSE");
         return std::nullopt;
     }
 
