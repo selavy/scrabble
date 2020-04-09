@@ -239,26 +239,26 @@ struct SolveState
     int stop;
 };
 
-void extend_right(const SolveState* ss, const Engine* e, int dir, int lsq, int sq, Word* word, EngineRack* r, int right_part_length, Word leftp, int anchor_orig)
+void extend_right(const SolveState* ss, int lsq, int sq, Word* word, int right_part_length, Word leftp)
 {
     word->buf[word->len] = 0;
+    const auto* e = ss->e;
     const Edges edges_ = e->prefix_edges(e->prefix_edges_data, word->buf);
     const char* edges = edges_.edges;
     const bool terminal = edges_.terminal;
     const auto* vals = e->vals;
-    const auto* xchk = dir == HORZ ? e->hchk : e->vchk;
-    // TODO: maybe just pass in start/stride/stop into all of these?
-    const int start = dir == HORZ ? colstart(lsq) : rowstart(lsq);
-    const int stride = dir;
-    const int stop  = start + stride * DIM;
+    const auto* xchk = ss->xchk;
+    const int start  = ss->start;
+    const int stride = ss->stride;
+    const int stop   = ss->stop;
     const int nextsq = sq + stride;
     const int rsq = sq - stride;
-    auto* rack = r->tiles;
+    auto* rack = ss->r->tiles;
 
     if (sq >= stop || vals[sq] == EMPTY) {
         if (right_part_length > 0 && terminal) {
             assert(word->buf[word->len] == 0);
-            e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, dir);
+            e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, ss->stride);
         }
         if (sq >= stop) { // hit end of board
             return;
@@ -275,7 +275,7 @@ void extend_right(const SolveState* ss, const Engine* e, int dir, int lsq, int s
             word->buf[word->len++] = *tile; // TODO: hoist out of loop
             word->buf[word->len]   = 0;     // TODO: hoist out of loop
             assert(word->len <= DIM);
-            extend_right(ss, e, dir, lsq, nextsq, word, r, right_part_length + 1, leftp, anchor_orig);
+            extend_right(ss, lsq, nextsq, word, right_part_length + 1, leftp);
             word->len--;                    // TODO: hoist out of loop
             word->buf[word->len] = 0;       // TODO: hoist out of loop
             rack[tint]++;
@@ -292,7 +292,7 @@ void extend_right(const SolveState* ss, const Engine* e, int dir, int lsq, int s
                 word->buf[word->len++] = 'a' + (*tile - 'A'); // TODO: hoist len incr out of loop
                 word->buf[word->len]   = 0;     // TODO: hoist out of loop
                 assert(word->len <= DIM);
-                extend_right(ss, e, dir, lsq, nextsq, word, r, right_part_length + 1, leftp, anchor_orig);
+                extend_right(ss, lsq, nextsq, word, right_part_length + 1, leftp);
                 word->len--;                    // TODO: hoist out of loop
                 word->buf[word->len] = 0;       // TODO: hoist out of loop
                 rack[BLANK]++;                  // TODO: hoist out of loop
@@ -305,7 +305,7 @@ void extend_right(const SolveState* ss, const Engine* e, int dir, int lsq, int s
         if (strchr(edges, tile) != NULL) {
             word->buf[word->len++] = to_ext(vals[sq]);
             word->buf[word->len]   = 0;
-            extend_right(ss, e, dir, lsq, nextsq, word, r, right_part_length, leftp, anchor_orig);
+            extend_right(ss, lsq, nextsq, word, right_part_length, leftp);
             word->len--;
         }
     }
@@ -342,7 +342,7 @@ void left_part(const SolveState* ss, int sq, int limit, Word* word)
     auto* rack = ss->r->tiles;
     assert((((anchor - sq) / stride) - 1) == strlen(word->buf));
 
-    extend_right(ss, e, stride, sq + stride, anchor, word, ss->r, /*right_part_length*/0, save_lpart(word), ss->anchor);
+    extend_right(ss, sq + stride, anchor, word, /*right_part_length*/0, save_lpart(word));
 
     if (limit == 0) {
         return;
@@ -397,7 +397,7 @@ void extend_right_on_existing_left_part(const SolveState* ss, int anchor, Word* 
     }
     word->buf[word->len] = 0;
     revbuf(word->buf, word->len);
-    extend_right(ss, e, stride, anchor - stride * word->len, anchor, word, ss->r, 0, save_lpart(word), ss->anchor);
+    extend_right(ss, anchor - stride * word->len, anchor, word, /*right_part_length*/0, save_lpart(word));
     word->len = 0;
 }
 
