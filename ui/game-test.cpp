@@ -45,6 +45,56 @@ std::optional<EngineTrie> load_dictionary(std::string path)
     return dict;
 }
 
+EngineRack make_engine_rack(const std::string& s)
+{
+    EngineRack r;
+    memset(&r, 0, sizeof(r));
+    for (char c : s) {
+        if (c == '?') {
+            r.tiles[26]++;
+        } else if (c == ' ') {
+            continue;
+        } else if ('A' <= c && c <= 'Z') {
+            r.tiles[c - 'A']++;
+        } else if ('a' <= c && c <= 'z') {
+            r.tiles[c - 'a']++;
+        } else {
+            fmt::print(stderr, "invalid tile in rack specification: '{}' ({})\n", c, static_cast<int>(c));
+            assert(0 && "invalid tile in rack specification");
+        }
+    }
+    return r;
+}
+
+std::ostream& operator<<(std::ostream& os, const EngineRack& rack)
+{
+    auto to_ext = [](char tile) -> char {
+        if (0 <= tile && tile < 26) {
+            return tile + 'A';
+        } else {
+            assert(0 && "invalid rack tile");
+            __builtin_unreachable();
+            return 0;
+        }
+    };
+
+    char buf[8];
+    memset(buf, 0, sizeof(buf));
+    std::size_t bidx = 0;
+    for (int tile = 0; tile < 26; ++tile) {
+        for (int i = 0; i < rack.tiles[tile]; ++i) {
+            assert(bidx < 8);
+            buf[bidx++] = to_ext(tile);
+        }
+    }
+    for (int i = 0; i < rack.tiles[26]; ++i) {
+        buf[bidx++] = '?';
+    }
+    buf[bidx] = 0;
+    os << buf;
+    return os;
+}
+
 re2::RE2 isc_regex(R"(\s*((?:\d{1,2}[A-O])|(?:[A-O]\d{1,2}))\s+([a-zA-Z]+)(?:\s+(\d+))?\s*)");
 re2::RE2 move_line_regex(R"(\s*\"(.*)\", \"(.*)\"\s*)");
 re2::RE2 header_regex(R"(\s*\[(\w+) \"(.*)\"]\s*)");
@@ -106,7 +156,9 @@ bool replay_game(std::ifstream& ifs, const EngineTrie& dict)
             return false;
         }
 
-        std::cout << "Parsed ISC move: " << move << "\n";
+        EngineRack rack = make_engine_rack(rack_spec);
+
+        std::cout << "Parsed ISC move: " << move << " with rack = " << rack << "\n";
 
     } while (std::getline(ifs, line));
 
