@@ -3,6 +3,60 @@
 #include <cstdint>
 #include <array>
 
+// ----------------------------------------------------------------------------
+// EngineTrie
+// ----------------------------------------------------------------------------
+
+// TODO: put this somewhere else?
+#include <map>
+#include <vector>
+#include <string>
+#include <iosfwd>
+#include <cassert>
+
+struct EngineTrie
+{
+    struct Node {
+        char                value    = ' '; // TEMP TEMP
+        bool                terminal = false;
+        std::map<char, int> children;
+
+    };
+
+    EngineTrie() {
+        nodes_.emplace_back();
+    }
+    void insert(const char* word);
+    void insert(const std::string& w) { insert(w.c_str()); }
+    bool is_word(const char* word) const;
+    bool is_word(const std::string& w) const { return is_word(w.c_str()); }
+    std::vector<char> children(const char* prefix) const
+    {
+        [[maybe_unused]] bool unused;
+        return children(prefix, unused);
+    }
+    std::vector<char> children(const char* prefix, bool& is_terminal) const;
+    void print(std::ostream& os) const;
+    void print_(std::ostream& os, int curr, std::string& word) const;
+
+    static constexpr char safech(char c) noexcept {
+        if ('A' <= c && c <= 'Z') {
+            return c;
+        } else if ('a' <= c && c <= 'z') {
+            return 'A' + (c - 'a');
+        } else {
+            assert(0 && "invalid character");
+        }
+    }
+
+    std::vector<Node> nodes_;
+};
+
+std::ostream& operator<<(std::ostream& os, const EngineTrie& t);
+
+// ----------------------------------------------------------------------------
+
+
 // clang-format off
 
 // edges in ['A', 'Z'] with 0 marking final

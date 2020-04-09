@@ -421,16 +421,6 @@ TEST_CASE("ISC -- insidious v cleatier")
     }
 }
 
-std::ostream& operator<<(std::ostream& os, const std::vector<Word>& words)
-{
-    os << "{ ";
-    for (const auto& word : words) {
-        os << word << " ";
-    }
-    os << "}";
-    return os;
-}
-
 bool operator==(const std::vector<Word>& lhs, const std::vector<Word>& rhs)
 {
     assert(std::is_sorted(lhs.begin(), lhs.end()));

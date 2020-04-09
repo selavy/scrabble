@@ -6,6 +6,100 @@
 #include <algorithm> // TEMP TEMP
 #include <memory> // TEMP TEMP
 
+
+// ----------------------------------------------------------------------------
+// EngineTrie
+// ----------------------------------------------------------------------------
+
+#include <iostream>
+// TODO: put this somewhere else?
+
+void EngineTrie::print(std::ostream& os) const {
+    std::string word;
+    print_(os, 0, word);
+}
+
+void EngineTrie::print_(std::ostream& os, int curr, std::string& word) const {
+    if (nodes_[curr].terminal) {
+        os << "\"" << word << "\"\n";
+    }
+    for (auto [ch, child] : nodes_[curr].children) {
+        word += ch;
+        print_(os, child, word);
+        word.pop_back();
+    }
+}
+
+void EngineTrie::insert(const char* word) {
+    int curr = 0;
+    const char* c = word;
+    while (*c != '\0') {
+        char ch = EngineTrie::safech(*c);
+        assert(curr < nodes_.size());
+        auto& node = nodes_[curr];
+        auto it = node.children.find(ch);
+        if (it != node.children.end()) {
+            curr = it->second;
+        } else {
+            int next = static_cast<int>(nodes_.size());
+            nodes_.emplace_back();
+            nodes_.back().value = ch; // TEMP TEMP
+            nodes_[curr].children[ch] = next;
+            curr = next;
+        }
+        ++c;
+    }
+    nodes_[curr].terminal = true;
+}
+
+bool EngineTrie::is_word(const char* word) const {
+    int curr = 0;
+    const char* c = word;
+    while (*c != '\0') {
+        char ch = EngineTrie::safech(*c);
+        assert(curr < nodes_.size());
+        auto& node = nodes_[curr];
+        auto it = node.children.find(ch);
+        if (it == node.children.end()) {
+            return false;
+        }
+        curr = it->second;
+        ++c;
+    }
+    return nodes_[curr].terminal;
+}
+
+std::vector<char> EngineTrie::children(const char* prefix, bool& is_terminal) const {
+    std::vector<char> result;
+    int curr = 0;
+    const char* c = prefix;
+    while (*c != '\0') {
+        char ch = EngineTrie::safech(*c);
+        assert(curr < nodes_.size());
+        auto& node = nodes_[curr];
+        auto it = node.children.find(ch);
+        if (it == node.children.end()) {
+            is_terminal = false;
+            return result;
+        }
+        curr = it->second;
+        ++c;
+    }
+    for (auto [tile, children] : nodes_[curr].children) {
+        result.push_back(tile);
+    }
+    is_terminal = nodes_[curr].terminal;
+    return result;
+}
+
+std::ostream& operator<<(std::ostream& os, const EngineTrie& t) {
+    t.print(os);
+    return os;
+}
+
+// ----------------------------------------------------------------------------
+
+
 #define INFO(fmt, ...) fprintf(stderr, "ENGINE DEBUG: " fmt "\n", ##__VA_ARGS__);
 #define ASIZE(x) (sizeof(x) / sizeof(x[0]))
 

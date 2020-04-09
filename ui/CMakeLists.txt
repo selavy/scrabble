@@ -21,3 +21,12 @@ target_link_libraries(text-game PUBLIC game LibEdit re2::re2)
 
 add_executable(engine-test engine_test.cpp engine.cpp)
 target_link_libraries(engine-test PUBLIC game)
+
+add_executable(game-test game-test.cpp engine.cpp)
+target_link_libraries(game-test
+    PUBLIC
+        cxx_project_options
+        game
+        fmt::fmt
+        cxxopts::cxxopts
+)

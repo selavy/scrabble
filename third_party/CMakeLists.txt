@@ -34,4 +34,8 @@ option(BUILD_SHARED_LIBS "build shared libraries" OFF)
 option(USEPCRE "use PCRE in tests and benchmarks" OFF)
 option(RE2_BUILD_TESTING "enable testing for RE2" OFF)
 add_subdirectory(re2) # target re2::re2
-# target_include_directories(re2 PUBLIC "./re2")
+
+option(CXXOPTS_BUILD_EXAMPLES OFF)
+option(CXXOPTS_BUILD_TESTS OFF)
+option(CXXOPTS_ENABLE_INSTALL OFF)
+add_subdirectory(cxxopts)
