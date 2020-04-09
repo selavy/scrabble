@@ -257,7 +257,7 @@ void extend_right(const SolveState* ss, int lsq, int sq, Word* word, int right_p
     const int rsq    = sq - stride;
 
     if (sq >= stop || vals[sq] == EMPTY) {
-        if (right_part_length > 0 && terminal) {
+        if (/*right_part_length > 0*/ sq > anchor && terminal) {
             assert(word->buf[word->len] == 0);
             e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, ss->stride);
         }
