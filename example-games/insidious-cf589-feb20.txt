@@ -23,7 +23,7 @@
 "CHANGE 4"
 "IRI?RSE", "O12 sire    28"
 "GEFNAFL", "14J gaffer  34"
-"EEU?RIT", "15F reQuite 32"
+"EEU?RIT", "15F reQuite 82"
 "ILEKNRD", "14A kindler 84"
 "YEORDWO", "A12 woke    45"
 "NXSUVAI", "11E xu      38"
