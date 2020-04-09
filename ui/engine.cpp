@@ -239,21 +239,22 @@ struct SolveState
     int stop;
 };
 
-void extend_right(const SolveState* ss, int lsq, int sq, Word* word, int right_part_length, Word leftp)
+void extend_right(const SolveState* ss, int lsq, int sq, Word* word, int right_part_length)
 {
     word->buf[word->len] = 0;
     const auto* e = ss->e;
+    auto* rack = ss->r->tiles;
     const Edges edges_ = e->prefix_edges(e->prefix_edges_data, word->buf);
     const char* edges = edges_.edges;
     const bool terminal = edges_.terminal;
     const auto* vals = e->vals;
     const auto* xchk = ss->xchk;
+    const int anchor = ss->anchor;
     const int start  = ss->start;
     const int stride = ss->stride;
     const int stop   = ss->stop;
     const int nextsq = sq + stride;
-    const int rsq = sq - stride;
-    auto* rack = ss->r->tiles;
+    const int rsq    = sq - stride;
 
     if (sq >= stop || vals[sq] == EMPTY) {
         if (right_part_length > 0 && terminal) {
@@ -275,7 +276,7 @@ void extend_right(const SolveState* ss, int lsq, int sq, Word* word, int right_p
             word->buf[word->len++] = *tile; // TODO: hoist out of loop
             word->buf[word->len]   = 0;     // TODO: hoist out of loop
             assert(word->len <= DIM);
-            extend_right(ss, lsq, nextsq, word, right_part_length + 1, leftp);
+            extend_right(ss, lsq, nextsq, word, right_part_length + 1);
             word->len--;                    // TODO: hoist out of loop
             word->buf[word->len] = 0;       // TODO: hoist out of loop
             rack[tint]++;
@@ -292,7 +293,7 @@ void extend_right(const SolveState* ss, int lsq, int sq, Word* word, int right_p
                 word->buf[word->len++] = 'a' + (*tile - 'A'); // TODO: hoist len incr out of loop
                 word->buf[word->len]   = 0;     // TODO: hoist out of loop
                 assert(word->len <= DIM);
-                extend_right(ss, lsq, nextsq, word, right_part_length + 1, leftp);
+                extend_right(ss, lsq, nextsq, word, right_part_length + 1);
                 word->len--;                    // TODO: hoist out of loop
                 word->buf[word->len] = 0;       // TODO: hoist out of loop
                 rack[BLANK]++;                  // TODO: hoist out of loop
@@ -305,24 +306,10 @@ void extend_right(const SolveState* ss, int lsq, int sq, Word* word, int right_p
         if (strchr(edges, tile) != NULL) {
             word->buf[word->len++] = to_ext(vals[sq]);
             word->buf[word->len]   = 0;
-            extend_right(ss, lsq, nextsq, word, right_part_length, leftp);
+            extend_right(ss, lsq, nextsq, word, right_part_length);
             word->len--;
         }
     }
-}
-
-// TEMP TEMP
-char lpart_buf[32];
-
-Word save_lpart(const Word* w) {
-    memset(lpart_buf, 0, sizeof(lpart_buf));
-    strcpy(lpart_buf, w->buf);
-    // memcpy(lpart_buf, w->buf, w->len);
-    Word result;
-    result.buf = lpart_buf;
-    result.len = w->len;
-    assert(strcmp(result.buf, w->buf) == 0);
-    return result;
 }
 
 // TODO: remove `sq` parameter, can calculate it from sq = anchor - strlen(word->buf) - 1 (see line 278 assertion below)
@@ -342,7 +329,7 @@ void left_part(const SolveState* ss, int sq, int limit, Word* word)
     auto* rack = ss->r->tiles;
     assert((((anchor - sq) / stride) - 1) == strlen(word->buf));
 
-    extend_right(ss, sq + stride, anchor, word, /*right_part_length*/0, save_lpart(word));
+    extend_right(ss, sq + stride, anchor, word, /*right_part_length*/0);
 
     if (limit == 0) {
         return;
@@ -397,7 +384,7 @@ void extend_right_on_existing_left_part(const SolveState* ss, int anchor, Word* 
     }
     word->buf[word->len] = 0;
     revbuf(word->buf, word->len);
-    extend_right(ss, anchor - stride * word->len, anchor, word, /*right_part_length*/0, save_lpart(word));
+    extend_right(ss, anchor - stride * word->len, anchor, word, /*right_part_length*/0);
     word->len = 0;
 }
 
