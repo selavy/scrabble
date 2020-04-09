@@ -239,7 +239,7 @@ bool replay_game(std::ifstream& ifs, const EngineTrie& dict)
         IscMove isc_move;
         isc_move.score = -1;
         re2::RE2::FullMatch(isc_spec, isc_regex, &isc_move.sqspec, &isc_move.root, &isc_move.score);
-        if (isc_move.sqspec.empty() || isc_move.root.empty()) {
+        if (isc_move.sqspec.empty() || isc_move.root.empty() || isc_move.score == -1) {
             fmt::print(stderr, "error: invalid ISC move: \"{}\"\n", isc_spec);
             return false;
         }
@@ -249,6 +249,7 @@ bool replay_game(std::ifstream& ifs, const EngineTrie& dict)
         auto maybe_move = make_move(board, gui_move);
         assert(static_cast<bool>(maybe_move) == true);
         auto move = *maybe_move;
+        assert(move.score == isc_move.score);
         // std::cout << "\n" << move << std::endl;
 
         { // check played words
