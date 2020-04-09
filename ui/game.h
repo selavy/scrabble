@@ -282,6 +282,25 @@ using Dictionary = std::unordered_set<Word>;
 
 using GuiMove = std::vector<std::pair<Tile, Square>>;
 
+bool operator==(const GuiMove& lhs, const GuiMove& rhs) {
+    if (lhs.size() != rhs.size()) {
+        return false;
+    }
+    for (std::size_t i = 0; i < lhs.size(); ++i) {
+        if (lhs[i].first != rhs[i].first) {
+            return false;
+        }
+        if (lhs[i].second != rhs[i].second) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool operator!=(const GuiMove& lhs, const GuiMove& rhs) {
+    return !(lhs == rhs);
+}
+
 std::ostream& operator<<(std::ostream& os, const GuiMove& move) {
     os << "[ ";
     for (auto&& [tile, square] : move) {

@@ -465,14 +465,31 @@ void find_tests()
         const auto rack = make_engine_rack(rack_spec);
         engine_print_anchors(engine);
         // std::cout << board << std::endl;
+        legal_moves.reset();
         engine_find(engine, rack);
 
+        auto board_copy = std::make_unique<Board>(board);
         auto isc_move = _parse_isc_string(isc_spec);
         auto gui_move = make_gui_move_from_isc(board, isc_move);
         auto maybe_move = make_move(board, gui_move);
         assert(static_cast<bool>(maybe_move) == true);
         auto move = *maybe_move;
         std::cout << "\n" << move << std::endl;
+
+        { // verify that all moves reported as legal are in fact legal
+            bool actual_move_in_legal_moves_list = false;
+            for (auto isc_spec2 : legal_moves.isc_specs) {
+                if (isc_spec2 == isc_spec) {
+                    actual_move_in_legal_moves_list = true;
+                }
+                auto isc_move2 = _parse_isc_string(isc_spec2);
+                auto gui_move2 = make_gui_move_from_isc(*board_copy, isc_move2);
+                auto maybe_move2 = make_move(*board_copy, gui_move2);
+                assert(static_cast<bool>(maybe_move2) == true);
+                undo_move(*board_copy, gui_move2);
+            }
+            assert(actual_move_in_legal_moves_list == true);
+        }
 
         EngineMove em;
         em.tiles   = &move.tiles[0];
@@ -491,9 +508,8 @@ void find_tests()
 int main(int argc, char** argv) {
     // std::cout << mk_isc_spec("HELLO", 0, 1 ) << std::endl;
     // std::cout << mk_isc_spec("HeLLO", 0, 15) << std::endl;
-
-    // trie_tests();
-    // crosscheck_tests();
-    // find_tests();
+    trie_tests();
+    crosscheck_tests();
+    find_tests();
     return 0;
 }

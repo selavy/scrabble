@@ -206,7 +206,7 @@ void revbuf(char* buf, int length)
 //   + Everything in this file is specified from the standpoint of generating horizontal
 //     moves. For vertical moves, we can just conceptually rotate the board.
 
-void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, EngineRack* r, int right_part_length, Word leftp)
+void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineRack* r, int right_part_length, Word leftp)
 {
     word->buf[word->len] = 0;
     const Edges edges_ = e->prefix_edges(e->prefix_edges_data, word->buf);
@@ -217,12 +217,13 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
     const int stride = dir;
     const int stop  = start + stride * DIM;
     const int nextsq = sq + stride;
+    const int rsq = sq - stride;
     auto* rack = r->tiles;
 
     if (e->vals[sq] == EMPTY) {
         if (right_part_length > 0 && terminal) {
             assert(word->buf[word->len] == 0);
-            e->on_legal_move(e->on_legal_move_data, word->buf, anchor, sq - stride, dir);
+            e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, dir);
         }
         if (nextsq >= stop) { // hit end of board
             return;
@@ -239,7 +240,7 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
             word->buf[word->len++] = *tile;
             word->buf[word->len]   = 0;
             assert(word->len <= DIM);
-            extend_right(e, dir, anchor, nextsq, word, r, right_part_length + 1, leftp);
+            extend_right(e, dir, lsq, nextsq, word, r, right_part_length + 1, leftp);
             word->len--;
             word->buf[word->len] = 0;
             rack[tint]++;
@@ -253,10 +254,10 @@ void extend_right(const Engine* e, int dir, int anchor, int sq, Word* word, Engi
         word->buf[word->len++] = to_ext(e->vals[sq]);
         word->buf[word->len] = 0; // TEMP TEMP
         if (nextsq < stop) {
-            extend_right(e, dir, anchor, nextsq, word, r, right_part_length, leftp);
-        } else if ((right_part_length > 0 || leftp.len > 0) /*(word->len > 0)*/ && terminal) {  // hit end of board with a valid word
+            extend_right(e, dir, lsq, nextsq, word, r, right_part_length, leftp);
+        } else if ((right_part_length > 0 || leftp.len > 0) && terminal) {  // hit end of board with a valid word
             assert(word->buf[word->len] == 0);
-            e->on_legal_move(e->on_legal_move_data, word->buf, anchor, sq - stride, dir);
+            e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, dir);
         }
         word->len--;
     }
