@@ -9,14 +9,17 @@
 #define INFO(fmt, ...) fprintf(stderr, "ENGINE DEBUG: " fmt "\n", ##__VA_ARGS__);
 #define ASIZE(x) (sizeof(x) / sizeof(x[0]))
 
+typedef uint32_t u32;
+typedef uint64_t u64;
+
 // [1..26] => ['A'..'Z']
-constexpr uint32_t ANYTILE = 0xffffffffu; // ;(1u << 26) - 1;
-constexpr char     EMPTY = 26;
-constexpr int      BLANK = 26;
-constexpr int      DIM = 15;
-constexpr int      HORZ = 1;
-constexpr int      VERT = DIM;
-constexpr int      SQ_H8 = 112;
+constexpr u32  ANYTILE = 0xffffffffu; // ;(1u << 26) - 1;
+constexpr char EMPTY = 52;
+constexpr int  BLANK = 26;
+constexpr int  DIM = 15;
+constexpr int  HORZ = 1;
+constexpr int  VERT = DIM;
+constexpr int  SQ_H8 = 112;
 constexpr const char* const SquareNames[225] = {
     " A1", " A2", " A3", " A4", " A5", " A6", " A7", " A8", " A9", "A10", "A11", "A12", "A13", "A14", "A15",
     " B1", " B2", " B3", " B4", " B5", " B6", " B7", " B8", " B9", "B10", "B11", "B12", "B13", "B14", "B15",
@@ -91,13 +94,13 @@ constexpr int flip_dir(int d) noexcept {
     return 0;
 }
 
-constexpr uint32_t mask(char tile) {
+constexpr u32 mask(char tile) {
     assert(0 <= tile && tile < 26);
     return 1u << tile;
 }
 
 // TEMP TEMP
-std::unique_ptr<char[]> mask_buffer(uint32_t m) {
+std::unique_ptr<char[]> mask_buffer(u32 m) {
     auto buf = std::make_unique<char[]>(27);
     std::size_t bidx = 0;
     for (int i = 0; i < 26; ++i) {
@@ -119,28 +122,28 @@ constexpr int getdim(int dir, int sq) noexcept { return dir == HORZ ? getrow(sq)
 constexpr int rowstart(int sq) noexcept { return getcol(sq); }
 constexpr int colstart(int sq) noexcept { return getrow(sq) * DIM; }
 
-constexpr void setasq(uint64_t* asq, int sq) noexcept
+constexpr void setasq(u64* asq, int sq) noexcept
 {
     assert(0 <= sq < 225);
     const int m = sq / 64;
     const int n = sq % 64;
-    asq[m] |= static_cast<uint64_t>(1ull << n);
+    asq[m] |= static_cast<u64>(1ull << n);
 }
 
-constexpr void clrasq(uint64_t* asq, int sq) noexcept
+constexpr void clrasq(u64* asq, int sq) noexcept
 {
     assert(0 <= sq < 225);
     const int m = sq / 64;
     const int n = sq % 64;
-    asq[m] &= ~static_cast<uint64_t>(1ull << n);
+    asq[m] &= ~static_cast<u64>(1ull << n);
 }
 
-constexpr int getasq(const uint64_t* asq, int sq) noexcept
+constexpr int getasq(const u64* asq, int sq) noexcept
 {
     assert(0 <= sq < 225);
     const int m = sq / 64;
     const int n = sq % 64;
-    return (asq[m] & static_cast<uint64_t>(1ull << n)) != 0;
+    return (asq[m] & static_cast<u64>(1ull << n)) != 0;
 }
 
 void engine_init(Engine* e)
@@ -153,8 +156,8 @@ void engine_init(Engine* e)
     setasq(e->asqs, H8);
 }
 
-constexpr int lsb(uint64_t x) noexcept { return __builtin_ctzll(x); }
-constexpr uint64_t clearlsb(uint64_t x) noexcept { return x & (x - 1); }
+constexpr int lsb(u64 x) noexcept { return __builtin_ctzll(x); }
+constexpr u64 clearlsb(u64 x) noexcept { return x & (x - 1); }
 
 struct Word
 {
@@ -383,7 +386,7 @@ void engine_find(const Engine* e, EngineRack rack)
     word.buf[0] = 0;
     for (int i = 0; i < 4; ++i) {
         const int base = 64*i;
-        uint64_t msk = asqs[i];
+        u64 msk = asqs[i];
         while (msk > 0) {
             int anchor = base + lsb(msk);
             for (int i = 0; i < ASIZE(dirs); ++i) {
@@ -430,7 +433,7 @@ int engine_xchk(const Engine* e, const EngineMove* m)
         const int sq   = squares[i];
         const int tile = tiles[i];
         const int tint = to_int(tile);
-        const uint32_t msk = mask(tint);
+        const u32 msk = mask(tint);
         // INFO("sq=%s chk[%d]=0x%04x=%s=%u hchk[%d]=0x%04x=%s=%u vchk[%d]=0x%04x=%s=%u",
         //     SQ(sq),
         //     sq,  chk[sq], MBUF( chk[sq]), MM( chk[sq], msk),
@@ -521,7 +524,7 @@ void engine_make_move(Engine* e, const EngineMove* m)
         if (before >= start) {
             assert(getdim(stride, before) == getdim(stride, root));
             // TODO(peter): switch to using prefix call to get children
-            uint32_t chk = 0;
+            u32 chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[0] = c;
                 auto edges = e->prefix_edges(e->prefix_edges_data, buf);
@@ -537,7 +540,7 @@ void engine_make_move(Engine* e, const EngineMove* m)
             assert(getdim(stride, after) == getdim(stride, root));
             assert(buf[len+1] == '\0');
             // TODO(peter): switch to using prefix call to get children
-            uint32_t chk = 0;
+            u32 chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[len+1] = c;
                 auto edges = e->prefix_edges(e->prefix_edges_data, &buf[1]);
@@ -573,7 +576,7 @@ void engine_make_move(Engine* e, const EngineMove* m)
             assert(getdim(stride, before) == getdim(stride, lsq));
             assert(getdim(stride, before) == getdim(stride, rsq));
             // TODO(peter): switch to using prefix call to get children
-            uint32_t chk = 0;
+            u32 chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[0] = c;
                 auto edges = e->prefix_edges(e->prefix_edges_data, buf);
@@ -590,7 +593,7 @@ void engine_make_move(Engine* e, const EngineMove* m)
             assert(getdim(stride, after) == getdim(stride, rsq));
             assert(buf[len+1] == '\0');
             // TODO(peter): switch to using prefix call to get children
-            uint32_t chk = 0;
+            u32 chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[len+1] = c;
                 auto edges = e->prefix_edges(e->prefix_edges_data, &buf[1]);
