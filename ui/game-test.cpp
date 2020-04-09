@@ -235,6 +235,7 @@ bool replay_game(std::ifstream& ifs, const EngineTrie& dict)
         }
         fmt::print(stdout, "[{}] {}\n", rack_spec, isc_spec);
 
+        EngineRack rack = make_engine_rack(rack_spec);
         IscMove isc_move;
         isc_move.score = -1;
         re2::RE2::FullMatch(isc_spec, isc_regex, &isc_move.sqspec, &isc_move.root, &isc_move.score);
@@ -243,20 +244,31 @@ bool replay_game(std::ifstream& ifs, const EngineTrie& dict)
             return false;
         }
 
-        EngineRack rack = make_engine_rack(rack_spec);
-
-        // TEMP TEMP
-        // std::cout << "Parsed ISC move: " << isc_move << " with rack = " << rack << "\n";
-
-        lm.isc_specs.clear();
-        engine_find(engine, rack);
-
         auto board_copy = std::make_unique<Board>(board);
         auto gui_move = make_gui_move_from_isc(board, isc_move);
         auto maybe_move = make_move(board, gui_move);
         assert(static_cast<bool>(maybe_move) == true);
         auto move = *maybe_move;
         // std::cout << "\n" << move << std::endl;
+
+        { // check played words
+            if (!dict.is_word(move.root_word)) {
+                fmt::print(stderr, "Played root word: \"{}\" is not in dictionary\n", move.root_word);
+                return false;
+            }
+            fmt::print(stdout, "Root-word formed: \"{}\"\n", move.root_word);
+            for (const auto& word : move.words_formed) {
+                if (!dict.is_word(word)) {
+                    fmt::print(stderr, "Cross-word formed: \"{}\" is not in dictionary\n", word);
+                    return false;
+                }
+                fmt::print(stdout, "Cross-word formed: \"{}\"\n", word);
+            }
+        }
+
+        // let engine generate moves
+        lm.isc_specs.clear();
+        engine_find(engine, rack);
 
         { // verify that all moves reported as legal are in fact legal
             // std::cout << "RACK: " << rack_spec << "\n";
@@ -270,7 +282,13 @@ bool replay_game(std::ifstream& ifs, const EngineTrie& dict)
                 undo_move(*board_copy, gui_move2);
                 actual_move_in_legal_moves_list |= gui_move2 == gui_move;
             }
-            // std::cout << "ACTUAL MOVE: " << isc_spec << " " << gui_move << std::endl;
+            if (!actual_move_in_legal_moves_list) {
+                std::cout << "ACTUAL MOVE: " << isc_spec << " " << gui_move << std::endl;
+                std::cout << "GENERATED MOVES:\n";
+                for (auto mm : lm.isc_specs) {
+                    std::cout << mm << "\n";
+                }
+            }
             assert(actual_move_in_legal_moves_list == true);
         }
 

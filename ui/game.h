@@ -517,7 +517,6 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept {
             const int mult = get_letter_multiplier(b, sq);
             m.root_word += letter;
             score += value * mult;
-            // DEBUG("ROOT: '%c' -- val=%d mult=%d", letter, value, mult)
         }
         assert(m.root_word.size() >= MinWordLength);
         const int mult = get_word_multiplier(m.squares);
@@ -550,7 +549,7 @@ int score_move(const Board& b, /*const*/ Move& m) noexcept {
         if (word.size() > 1) {
             const int mult = double_word_squares[root] * triple_word_squares[root];
             total_score += score * mult;
-            // DEBUG("THRU WORD: '%s' starting from root '%c' -- %d (mult=%d)", word.c_str(), board[root], score, mult);
+            m.words_formed.push_back(word); // TEMP TEMP
         }
     }
 

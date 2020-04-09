@@ -1,0 +1,26 @@
+[Date "02/08/2016"]
+[Player1 "Cruella (1897)"]
+[Player2 "CF589 (1684)"]
+[Rersult "0-1"]
+[Dictionary "TWL; ### NOTE: my TWL06 dict doesn't seem to match, have to use sowpods"]
+
+"UNRYFIA", "H8  unify    30"
+"RDSELUU", "11E sulfured 98"
+"OBATORZ", "12A bazoo    40"
+"YIDIVAE", "13A yea      43"
+"TRNNRTA", "12K rant     16"
+"IDISVEO", "9C  visioned 68"
+"RNTOFAU", "N10 futon    32"
+"HEN?VGI", "E2  Inveighs 78"
+"PTIATPR", "14H trippant 64"
+"ERIGSA?", "15D graVies  87"
+"MHALJCT", "O8  cham     42"
+"SWIDMAI", "7C  wig      11"
+"ETAOJNL", "6B  jo       30"
+"RISIADM", "5D  semiarid 72"
+"LNAEDET", "4H  latened  78"
+"NEOLATE", "A12 byte     27"
+"WQRLGXO", "3K  low      28"
+"EOALEON", "2M  oe       10"
+"RGCXEQK", "6H  rex      58"
+"NBOAETL", "2C  taIlbone 63"
