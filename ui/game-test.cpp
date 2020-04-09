@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <optional>
+#include <cassert>
 #include <fmt/format.h>
 #include <cxxopts.hpp>
 #include <re2/re2.h>
@@ -44,9 +45,72 @@ std::optional<EngineTrie> load_dictionary(std::string path)
     return dict;
 }
 
-void replay_game(std::ifstream& ifs, const EngineTrie& dict)
-{
+re2::RE2 isc_regex(R"(\s*((?:\d{1,2}[A-O])|(?:[A-O]\d{1,2}))\s+([a-zA-Z]+)(?:\s+(\d+))?\s*)");
+re2::RE2 move_line_regex(R"(\s*\"(.*)\", \"(.*)\"\s*)");
+re2::RE2 header_regex(R"(\s*\[(\w+) \"(.*)\"]\s*)");
+re2::RE2 empty_line_regex(R"(\s+)");
+re2::RE2 change_line_regex(R"(\s*"?CHANGE\s+(\d+)\"?\s*)");
 
+bool is_empty_line(const std::string& line)
+{
+    return line.empty() || re2::RE2::FullMatch(line, empty_line_regex);
+}
+
+bool replay_game(std::ifstream& ifs, const EngineTrie& dict)
+{
+    assert(isc_regex.ok());
+    assert(move_line_regex.ok());
+    assert(header_regex.ok());
+    assert(empty_line_regex.ok());
+    assert(change_line_regex.ok());
+
+    std::string line;
+    while (std::getline(ifs, line)) {
+        if (is_empty_line(line)) {
+            // fmt::print(stdout, "Skipping blank line: \"{}\"\n", line);
+            continue;
+        }
+        std::string key;
+        std::string value;
+        if (!re2::RE2::FullMatch(line, header_regex, &key, &value)) {
+            fmt::print(stdout, "Found first non-header line: \"{}\"\n", line);
+            break;
+        }
+        fmt::print(stdout, "PGN Header: key=\"{}\" value=\"{}\"\n", key, value);
+    }
+
+    do {
+        if (is_empty_line(line)) {
+            // fmt::print(stdout, "Skipping blank line: \"{}\"\n", line);
+            continue;
+        }
+
+        int change_num_tiles = 0;
+        if (re2::RE2::FullMatch(line, change_line_regex, &change_num_tiles)) {
+            fmt::print(stdout, "Change {} tiles\n", change_num_tiles);
+            continue;
+        }
+
+        std::string rack_spec;
+        std::string isc_spec;
+        if (!re2::RE2::FullMatch(line, move_line_regex, &rack_spec, &isc_spec)) {
+            fmt::print(stderr, "error: invalid move: \"{}\"\n", line);
+            return false;
+        }
+
+        IscMove move;
+        move.score = -1;
+        re2::RE2::FullMatch(isc_spec, isc_regex, &move.sqspec, &move.root, &move.score);
+        if (move.sqspec.empty() || move.root.empty()) {
+            fmt::print(stderr, "error: invalid ISC move: \"{}\"\n", isc_spec);
+            return false;
+        }
+
+        std::cout << "Parsed ISC move: " << move << "\n";
+
+    } while (std::getline(ifs, line));
+
+    return true;
 }
 
 int main(int argc, char** argv)
@@ -90,7 +154,10 @@ int main(int argc, char** argv)
         fmt::print(stderr, "error: unable to open game file: \"{}\"\n", gamefile);
         return 1;
     }
-    replay_game(ifs, dict);
+    if (!replay_game(ifs, dict)) {
+        fmt::print(stderr, "error: unable to replay game file: \"{}\"\n", gamefile);
+        return 1;
+    }
 
     return 0;
 }
