@@ -63,25 +63,42 @@ constexpr const char* SQ(int sq) noexcept {
 
 const char* SQ_(int sq) noexcept { return SQ(sq); }
 
+// return the internal tile #, ignores blank-ness; result always [0, 26)
 constexpr char to_int(char tile) noexcept {
     if ('A' <= tile && tile <= 'Z') {
         return (tile - 'A');
     } else if ('a' <= tile && tile <= 'z') {
         return (tile - 'a');
-    } else if (tile == ' ') {
-        // TODO(peter): not sure I should ever hit this path here.
-        return EMPTY;
     } else {
         assert(tile && "invalid tile");
+        __builtin_unreachable();
         return 0;
     }
 }
 
-constexpr char to_ext(char tile) noexcept {
-    if (tile == BLANK) {
-        return tile + '?';
+// return the engine representation for the tile
+constexpr char to_eng(char tile) noexcept {
+    if ('A' <= tile && tile <= 'Z') {
+        return (tile - 'A');
+    } else if ('a' <= tile && tile <= 'z') {
+        return (tile - 'a') + BLANK;
     } else {
+        assert(tile && "invalid tile");
+        __builtin_unreachable();
+        return 0;
+    }
+    // return to_int(tile);
+}
+
+constexpr char to_ext(char tile) noexcept {
+    if (0 <= tile && tile < BLANK) {
         return tile + 'A';
+    } else if (BLANK <= tile && tile < 2*BLANK){
+        return (tile - BLANK) + 'a';
+    } else {
+        assert(tile && "invalid teng tile");
+        __builtin_unreachable();
+        return 0;
     }
 }
 
@@ -236,16 +253,8 @@ void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineR
 
     if (e->vals[sq] == EMPTY) {
         if (right_part_length > 0 && terminal) {
-            // TODO(peter): there has to be a better way!
-            if (1) {
-            // if (e->vals[SQ_H8] != EMPTY || range_contains_square(lsq, stride, word->len, SQ_H8)) {
-                // if (strcmp(word->buf, "TAG") == 0) {
-                //     INFO("ADDING WORD: \"%s\" [%s,%s] e->vals[H8]=%c range_contains=%d",
-                //             word->buf, SQ(lsq), SQ(rsq), to_ext(e->vals[SQ_H8]), range_contains_square(lsq, stride, word->len, SQ_H8));
-                // }
-                assert(word->buf[word->len] == 0);
-                e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, dir);
-            }
+            assert(word->buf[word->len] == 0);
+            e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, dir);
         }
         if (nextsq >= stop) { // hit end of board
             return;
@@ -290,13 +299,11 @@ void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineR
         word->buf[word->len] = 0; // TEMP TEMP
         if (nextsq < stop) {
             extend_right(e, dir, lsq, nextsq, word, r, right_part_length, leftp);
-        } else if ((right_part_length > 0 || leftp.len > 0) && terminal) {  // hit end of board with a valid word
-            // TODO(peter): there has to be a better way!
-            if (1) {
-            // if (e->vals[SQ_H8] != EMPTY || range_contains_square(lsq, stride, word->len, SQ_H8)) {
-                assert(word->buf[word->len] == 0);
-                e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, dir);
-            }
+        }
+        // TODO(peter): how to avoid passing leftp?
+        else if ((right_part_length > 0 || leftp.len > 0) && terminal) {  // hit end of board with a valid word
+            assert(word->buf[word->len] == 0);
+            e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, dir);
         }
         word->len--;
     }
@@ -338,7 +345,6 @@ void left_part(const Engine* e, int dir, int anchor, int sq, int limit, Word* wo
     }
     if (rack[BLANK] > 0) {
         for (const char* tile = edges; *tile != 0; ++tile) {
-            const char tint = to_int(*tile);
             assert(xchk[sq] == ANYTILE); // see section 3.3.1 Placing Left Parts
             rack[BLANK]--;                        // TODO: hoist out of loop
             word->buf[word->len++] = 'a' + (*tile - 'A'); // TODO: hoist len incr out of loop
@@ -505,17 +511,17 @@ void engine_make_move(Engine* e, const EngineMove* m)
         const int stride = vstride;
         const int root = squares[tidx];
         const char tile = tiles[tidx];
-        const char tint = to_int(tile);
+        const char teng = to_eng(tile);
         const int start = vertstart(root);
         const int stop = start + DIM * stride;
         assert(vals[root] == EMPTY);
-        vals[root] = tint;
+        vals[root] = teng;
         const int beg = findbeg(vals, start, stop, stride, root);
         const int end = findend(vals, start, stop, stride, root);
         const int len = inclusive_length(beg, end, stride);
         for (int i = 0; i < len; ++i) {
             buf[i+1] = to_ext(vals[beg + i*stride]);
-            assert('A' <= buf[i+1] && buf[i+1] <= 'Z');
+            assert(('A' <= buf[i+1] && buf[i+1] <= 'Z') || ('a' <= buf[i+1] && buf[i+1] <= 'z'));
         }
         buf[len+1] = '\0';
         buf[len+2] = '\0';
@@ -565,7 +571,7 @@ void engine_make_move(Engine* e, const EngineMove* m)
         assert(getdim(stride, lsq) == getdim(stride, rsq)); // move must be on exactly 1 row or col
         for (int i = 0; i < len; ++i) {
             buf[i+1] = to_ext(vals[beg+i*stride]);
-            assert('A' <= buf[i+1] && buf[i+1] <= 'Z');
+            assert(('A' <= buf[i+1] && buf[i+1] <= 'Z') || ('a' <= buf[i+1] && buf[i+1] <= 'z'));
         }
         buf[len+1] = '\0';
         buf[len+2] = '\0';
