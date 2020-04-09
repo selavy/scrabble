@@ -4,6 +4,7 @@
 #include <optional>
 #include <fmt/format.h>
 #include <cxxopts.hpp>
+#include <re2/re2.h>
 #include "game.h"
 #include "engine.h"
 
@@ -43,6 +44,11 @@ std::optional<EngineTrie> load_dictionary(std::string path)
     return dict;
 }
 
+void replay_game(std::ifstream& ifs, const EngineTrie& dict)
+{
+
+}
+
 int main(int argc, char** argv)
 {
     cxxopts::Options options("game-test", "replay through official scrabble games to test engine");
@@ -58,27 +64,33 @@ int main(int argc, char** argv)
         return 0;
     }
     if (!args.count("dict")) {
-        std::cerr << "error: must specify dictionary file to use." << std::endl;
+        fmt::print(stderr, "error: must specify dictionary file to use.\n");
         return 1;
     }
     if (!args.count("input")) {
-        std::cerr << "error: must specify input file to replay." << std::endl;
+        fmt::print(stderr, "error: must specify input file to replay.\n");
         return 1;
     }
 
     auto gamefile = args["input"].as<std::string>();
     auto dictfile = args["dict" ].as<std::string>();
-
-    std::cout << "Game File: " << gamefile << "\n"
-              << "Dict File: " << dictfile << "\n"
-              ;
+    fmt::print(stdout, "Game File: \"{}\"\n", gamefile);
+    fmt::print(stdout, "Dict File: \"{}\"\n", dictfile);
 
     auto maybe_dict = load_dictionary(dictfile);
     if (!maybe_dict) {
-        std::cerr << "error: unable to load dictionary from file: \"" << dictfile << "\"" << std::endl;
+        fmt::print(stderr, "error: unable to load dictionary from file: \"{}\"\n", dictfile);
         return 1;
     }
     const auto& dict = *maybe_dict;
+
+    fmt::print(stdout, "Replaying \"{}\"\n", gamefile);
+    std::ifstream ifs{gamefile};
+    if (!ifs) {
+        fmt::print(stderr, "error: unable to open game file: \"{}\"\n", gamefile);
+        return 1;
+    }
+    replay_game(ifs, dict);
 
     return 0;
 }

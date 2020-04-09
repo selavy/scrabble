@@ -1,0 +1,32 @@
+[Date "02/01/2020"]
+[Player1 "insidious (1821)"]
+[Player2 "CF589 (1934)"]
+[Rersult "1-0"]
+
+"DGZTAAT", "H7  zag     26"
+"IMETRAB", "I6  bam     24"
+"GTAADTS", "J5  tag     25"
+"TTRRENI", "8F  tram     6"
+"T?SDAOD", "K5  od      16"
+"EAITNER", "L4  arenite 76"
+"SPDNA?T", "10B pEdants 81"
+"POOTLYI", "9C  yo      20"
+"LBSCJHA", "8K  jib     12"
+"IECOLTP", "N6  toeclip 78"
+"SHCAOVL", "O6  ohs     67"
+"AIEMNQL", "F6  qat     32"
+"CHVIALG", "12K chip    22"
+"LLEIINM", "G3  mini    20"
+"VNAOLGE", "8A  oven    34"
+"LLWEERE", "4C  wellie  20"
+"CHANGE 4"
+"IRI?RSE", "O12 sire    28"
+"GEFNAFL", "14J gaffer  34"
+"EEU?RIT", "15F reQuite 32"
+"ILEKNRD", "14A kindler 84"
+"YEORDWO", "A12 woke    45"
+"NXSUVAI", "11E xu      38"
+"DOOYRUA", "3C  oy      25"
+"SA VNUI", "2C  vain    24"
+"RD A UO", "1A  oda     22"
+"  US   ", "5B  us      13"

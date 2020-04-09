@@ -29,4 +29,5 @@ target_link_libraries(game-test
         game
         fmt::fmt
         cxxopts::cxxopts
+        re2::re2
 )
