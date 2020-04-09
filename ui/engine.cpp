@@ -64,7 +64,7 @@ constexpr char to_int(char tile) noexcept {
     } else if ('a' <= tile && tile <= 'z') {
         return (tile - 'a');
     } else {
-        assert(tile && "invalid tile");
+        assert(0 && "invalid tile");
         __builtin_unreachable();
         return 0;
     }
@@ -77,7 +77,7 @@ constexpr char to_eng(char tile) noexcept {
     } else if ('a' <= tile && tile <= 'z') {
         return (tile - 'a') + BLANK;
     } else {
-        assert(tile && "invalid tile");
+        assert(0 && "invalid tile");
         __builtin_unreachable();
         return 0;
     }
@@ -90,7 +90,7 @@ constexpr char to_ext(char tile) noexcept {
     } else if (BLANK <= tile && tile < 2*BLANK){
         return (tile - BLANK) + 'a';
     } else {
-        assert(tile && "invalid teng tile");
+        assert(0 && "invalid teng tile");
         __builtin_unreachable();
         return 0;
     }
@@ -234,6 +234,7 @@ void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineR
     const Edges edges_ = e->prefix_edges(e->prefix_edges_data, word->buf);
     const char* edges = edges_.edges;
     const bool terminal = edges_.terminal;
+    const auto* vals = e->vals;
     const auto* xchk = dir == HORZ ? e->hchk : e->vchk;
     // TODO: maybe just pass in start/stride/stop into all of these?
     const int start = dir == HORZ ? colstart(lsq) : rowstart(lsq);
@@ -256,7 +257,7 @@ void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineR
     // END DEBUG
 #endif
 
-    if (sq >= stop || e->vals[sq] == EMPTY) {
+    if (sq >= stop || vals[sq] == EMPTY) {
         if (right_part_length > 0 && terminal) {
             assert(word->buf[word->len] == 0);
             e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, dir);
@@ -299,18 +300,16 @@ void extend_right(const Engine* e, int dir, int lsq, int sq, Word* word, EngineR
                 rack[BLANK]++;                  // TODO: hoist out of loop
             }
         }
-    } else if (*edges != 0 || terminal) {
-        word->buf[word->len++] = to_ext(e->vals[sq]);
-        word->buf[word->len] = 0; // TEMP TEMP
-        if (nextsq < stop) {
+    } else {
+        assert(vals[sq] != EMPTY);
+        const char tile = vals[sq] < BLANK ? vals[sq] + 'A' : vals[sq] - BLANK + 'A'; // force to be in range [A..Z]
+        assert('A' <= tile && tile <= 'Z');
+        if (strchr(edges, tile) != NULL) {
+            word->buf[word->len++] = to_ext(vals[sq]);
+            word->buf[word->len]   = 0;
             extend_right(e, dir, lsq, nextsq, word, r, right_part_length, leftp, anchor_orig);
+            word->len--;
         }
-        // TODO(peter): how to avoid passing leftp?
-        else if ((right_part_length > 0 || leftp.len > 0) && terminal) {  // hit end of board with a valid word
-            assert(word->buf[word->len] == 0);
-            e->on_legal_move(e->on_legal_move_data, word->buf, lsq, rsq, dir);
-        }
-        word->len--;
     }
 }
 

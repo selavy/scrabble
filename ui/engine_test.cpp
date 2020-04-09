@@ -514,8 +514,8 @@ void find_tests()
         // first guess
         //-------------------------------------------
         { "O12 sire    28", "IRI?RSE" },
-        // { "14J gaffer  34", "GEFNAFL" },
-        // { "15F reQuite 32", "EEU?RIT" },
+        { "14J gaffer  34", "GEFNAFL" },
+        { "15F reQuite 32", "EEU?RIT" },
     };
 
     engine->on_legal_move = &on_legal_move;
