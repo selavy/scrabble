@@ -335,11 +335,11 @@ void left_part(const Engine* e, int dir, int anchor, int sq, int limit, Word* wo
         }
         assert(xchk[sq] == ANYTILE); // see section 3.3.1 Placing Left Parts
         rack[tint]--;
-        word->buf[word->len++] = *tile;
+        word->buf[word->len++] = *tile; // TODO: hoist incr of len
         word->buf[word->len]   = 0;     // TODO: hoist this out of loop
         assert(sq >= start);
         left_part(e, dir, anchor, sq - stride, limit - 1, word, r); // try to expand the left part more to the left
-        word->len--;
+        word->len--;                    // TODO: hoist out of loop
         word->buf[word->len] = 0;       // TODO: hoist this out of loop
         rack[tint]++;
     }

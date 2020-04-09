@@ -474,7 +474,7 @@ void find_tests()
         { "10B pEdants 81", "SPDNA?T" },
         // TODO: the issue is that forms horizontal crossword "YE", which
         //       uses the E-blank from pEdants
-        // { "9C  yo      20", "POOTLYI" },
+        { "9C  yo      20", "POOTLYI" },
     };
 
     engine->on_legal_move = &on_legal_move;
@@ -525,14 +525,14 @@ void find_tests()
     }
 
     // engine_print_anchors(engine);
-    // std::cout << board << std::endl;
+    std::cout << board << std::endl;
 }
 
 int main(int argc, char** argv) {
     // std::cout << mk_isc_spec("HELLO", 0, 1 ) << std::endl;
     // std::cout << mk_isc_spec("HeLLO", 0, 15) << std::endl;
-    // trie_tests();
-    // crosscheck_tests();
+    trie_tests();
+    crosscheck_tests();
     find_tests();
     return 0;
 }
