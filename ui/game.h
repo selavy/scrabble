@@ -668,6 +668,90 @@ std::optional<Move> make_move_isc_notation(const Board& b, std::string sqspec, s
     return result;
 }
 
+struct GcgMove
+{
+    std::string nick;
+    std::string rack;
+    std::string sq;
+    std::string tiles;
+    int         score;
+    int         total;
+};
+
+std::ostream& operator<<(std::ostream& os, const GcgMove& m)
+{
+    os << m.nick << " "
+       << m.rack << " "
+       << m.sq << " "
+       << m.tiles << " "
+       << m.score << " "
+       << m.total;
+    return os;
+}
+
+std::optional<GuiMove> make_gui_move_from_gcg(const Board& b, const GcgMove& gcg)
+{
+    Direction dir = static_cast<Direction>(-1);
+    int row;
+    int col;
+    // NOTE(peter): GCG notation is backwards from what I used internally! The columns
+    //              are labeled with letters;
+    if (gcg.sq.size() == 2) {
+        if ('A' <= gcg.sq[0] && gcg.sq[0] <= 'O') {
+            col = gcg.sq[0] - 'A';
+            row = gcg.sq[1] - '1';
+            dir = Direction::VERTICAL;
+        } else {
+            row = gcg.sq[0] - '1';
+            col = gcg.sq[1] - 'A';
+            dir = Direction::HORIZONTAL;
+        }
+    } else if (gcg.sq.size() == 3) {
+        if ('A' <= gcg.sq[0] && gcg.sq[0] <= 'O') {
+            col = gcg.sq[0] - 'A';
+            row = 10*(gcg.sq[1] - '0') + (gcg.sq[2] - '0') - 1;
+            dir = Direction::VERTICAL;
+        } else {
+            row = 10*(gcg.sq[0] - '0') + (gcg.sq[1] - '0') - 1;
+            col = gcg.sq[2] - 'A';
+            dir = Direction::HORIZONTAL;
+        }
+    } else {
+        ERROR("error: invalid square specification: '%s'", gcg.sq.c_str());
+        return std::nullopt;
+    }
+    assert(dir == Direction::HORIZONTAL || dir == Direction::VERTICAL);
+    if (!((0 <= row && row < Dim) && (0 <= col && col < Dim))) {
+        ERROR("error: invalid square specification (index out of range): '%s'", gcg.sq.c_str());
+        return std::nullopt;
+    }
+
+    const int length = static_cast<int>(gcg.tiles.size());
+    const int root   = row*15 + col;
+    const int start  = dir == Direction::HORIZONTAL ? getcol(root) : Dim * getrow(root);
+    const int stride = static_cast<int>(dir);
+    const int stop   = start + stride * Dim;
+    if (length < MinWordLength || length > MaxWordLength) {
+        ERROR("error: move length too long: %d", length);
+        return std::nullopt;
+    }
+
+    GuiMove result;
+    for (int i = 0; i < length; ++i) {
+        const char tile  = gcg.tiles[i];
+        const int square = root + i * stride;
+        if ((b.brd[square] != Empty) != (tile == '.')) {
+            ERROR("error: tiles[%d]='%c' board[%s]='%c'", i, tile, GetSqName(square), b.brd[square]);
+            return std::nullopt;
+        }
+        if (tile != '.') {
+            result.emplace_back(tile, square);
+        }
+    }
+    return result;
+
+}
+
 GuiMove make_gui_move_from_isc(const Board& b, const IscMove& isc) {
     GuiMove result;
     const auto root = convert_to_internal_word(isc.root);
@@ -678,7 +762,7 @@ GuiMove make_gui_move_from_isc(const Board& b, const IscMove& isc) {
     const int step = static_cast<int>(direction);
     const int mdim = direction == Direction::HORIZONTAL ? col : row;
     assert(mdim + len <= Dim);
-    const int stop = start + step * (mdim + len);
+    const int stop = start + step * (mdim + len); // TODO: this is wrong
     for (int i = 0; i < len; ++i) {
         const int square = start + i * step;
         assert(start <= square && square < stop);
