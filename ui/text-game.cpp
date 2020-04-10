@@ -109,7 +109,7 @@ bool no_squares_in_gui_move_are_not_empty(const Board& board, const GuiMove& gui
 void remove_tiles_from_rack(Rack& rack, const GuiMove& move) {
     for (auto [tile, square] : move) {
         if (isBlankTile(tile)) {
-            tile = Empty;
+            tile = Blank;
         }
         auto it = std::find(std::begin(rack), std::end(rack), tile);
         assert(it != std::end(rack));
@@ -372,7 +372,9 @@ int main(int argc, char** argv) {
             }
         }
 
-        std::cout << board << std::endl;
+        std::cout << board << "\n";
+        std::cout << GetPlayerName(ptm) << " rack: " << rack << "\n";
+        std::cout << "\n";
         if (best_move != nullptr) {
             std::cout << "BEST MOVE: " << *best_move << "\n";
             std::cout << "ENGINE BEST MOVE: " << isc_move_from_move(board, *best_move) << "\n";
@@ -381,6 +383,7 @@ int main(int argc, char** argv) {
             std::cout << "ENGINE BEST MOVE: [unknown]\n";
             std::cout << "      BEST SCORE:\n";
         }
+        std::cout << "\n";
 
 #define ENGINE_SELF_PLAY 1
 #if ENGINE_SELF_PLAY
