@@ -382,6 +382,19 @@ int main(int argc, char** argv) {
             std::cout << "      BEST SCORE:\n";
         }
 
+#define ENGINE_SELF_PLAY 1
+#if ENGINE_SELF_PLAY
+    if (best_move == nullptr) {
+        std::cout << "ENGINE SEES NO LEGAL MOVES\n";
+        break;
+    }
+    if (1) {
+        auto move = *best_move;
+        move.player = ptm;
+        move.score  = score_move(board, move);
+        auto gui_move = make_gui_move_from_move(move);
+        play_move(board, move);
+#else
         auto maybe_isc_move = get_move(ptm, rack);
         if (!maybe_isc_move) {
             break;
@@ -407,7 +420,7 @@ int main(int argc, char** argv) {
             auto move = *maybe_move;
             std::cout << "DEBUG: Got a move: " << move << "\n";
             assert(isc_move.score == -1 || move.score == isc_move.score);
-
+#endif
             auto words = find_words(board, move);
             std::cout << "--------------------------------------\n";
             std::cout << "| Move Scored  : " << move.score  << "\n";

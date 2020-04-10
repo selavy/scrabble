@@ -418,7 +418,7 @@ void clear_multiplier_for_squares(const RackArray<Square>& squares, std::array<i
 }
 
 // precondition: move is legal to play
-void play_move(Board& b, Move& m) noexcept {
+void play_move(Board& b, const Move& m) noexcept {
     auto& board = b.brd;
     assert((b.n_moves % 2) == static_cast<int>(m.player));
 
@@ -772,6 +772,20 @@ GuiMove make_gui_move_from_isc(const Board& b, const IscMove& isc) {
         } else {
             assert(board[square] == root[i]);
         }
+    }
+    return result;
+}
+
+GuiMove make_gui_move_from_move(const Move& move)
+{
+    GuiMove result;
+    for (std::size_t i = 0; i < move.squares.size(); ++i) {
+        auto tile   = move.tiles[i];
+        auto square = move.squares[i];
+        if (tile == Empty || square == InvalidSquare) {
+            break;
+        }
+        result.emplace_back(tile, square);
     }
     return result;
 }
