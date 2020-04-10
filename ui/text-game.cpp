@@ -117,9 +117,27 @@ void remove_tiles_from_rack(Rack& rack, const GuiMove& move) {
     }
 }
 
+EngineRack make_engine_rack_from_gui_rack(const Rack& rack) {
+    EngineRack r;
+    for (auto tile : rack) {
+        if (tile == Empty) {
+            continue;
+        } else if (tile == Blank) {
+            r.tiles[26]++;
+        } else if ('A' <= tile && tile <= 'Z') {
+            r.tiles[tile - 'A']++;
+        } else {
+            assert(0 && "invalid tile in rack");
+        }
+    }
+    return r;
+}
+
 struct LegalMoves {
-    std::vector<std::string> isc_specs;
+    std::vector<Move> moves;
     const EngineTrie* trie;
+    std::vector<std::string> isc_specs; // TEMP TEMP
+    const char*       board;
 
     static void on_legal_move(void* data, const char* word, int lsq, int rsq, int dir) noexcept {
         auto* self = reinterpret_cast<LegalMoves*>(data);
@@ -154,10 +172,38 @@ struct LegalMoves {
 
     void on_legal_move_(const char* word, int lsq, int rsq, int dir) {
         bool terminal = false;
-        ;
         auto es = trie->children(word, terminal);
         assert(terminal == true);
-        isc_specs.push_back(LegalMoves::mk_isc_spec(word, lsq, dir));
+        isc_specs.push_back(LegalMoves::mk_isc_spec(word, lsq, dir)); // TEMP TEMP
+
+        Move move;
+        move.player = Player::Player1;
+        move.score = -1;
+        move.square = lsq;
+        move.direction = static_cast<Direction>(dir);
+        move.length = ((rsq - lsq) / dir) + 1;
+        std::fill(std::begin(move.tiles),   std::end(move.tiles),   Empty);
+        std::fill(std::begin(move.squares), std::end(move.squares), InvalidSquare);
+
+        const int start  = dir == 1 ? getcol(lsq) : Dim * getrow(lsq);
+        const int stride = dir;
+        const int stop   = start + Dim * stride;
+        std::size_t tidx = 0;
+        for (int i = 0; i < move.length; ++i) {
+            const int sq = lsq + i * stride;
+            assert(lsq <= sq && sq <= rsq);
+            if (board[sq] == Empty) {
+                move.tiles[tidx] = word[i];
+                move.squares[tidx] = sq;
+                tidx++;
+            } else {
+                assert(board[sq] == word[i]);
+            }
+        }
+        moves.emplace_back(std::move(move));
+        // fmt::print(stdout, "\"{}\" [{},{}] [{},{}] ({}) => ",
+        //         word, GetSqName(lsq), GetSqName(rsq), SQ_(lsq), SQ_(rsq), GetDirectionName(move.direction));
+        // std::cout << isc_specs.back() << " -> " << moves.back();
     }
 
     static Edges get_prefix_edges(void* data, const char* prefix) noexcept {
@@ -212,6 +258,41 @@ std::optional<EngineTrie> load_dictionary(std::string path) {
     return dict;
 }
 
+IscMove isc_move_from_move(const Board& b, const Move& move)
+{
+    auto flip_case = [](char c) -> char {
+        if ('a' <= c && c <= 'z') {
+            return (c - 'a') + 'A';
+        } else if ('A' <= c && c <= 'Z') {
+            return (c - 'A') + 'a';
+        } else {
+            return Empty;
+        }
+    };
+    IscMove result;
+    auto& board = b.brd;
+    const char row = (move.square / 15) + 'A';
+    const int  col = (move.square % 15) +   1;
+    if (move.direction == Direction::HORIZONTAL) {
+        result.sqspec = fmt::format("{}{}", row, col);
+    } else {
+        result.sqspec = fmt::format("{}{}", col, row);
+    }
+    result.root;
+    const int stride = static_cast<int>(move.direction);
+    int tidx = 0;
+    for (int i = 0; i < move.length; ++i) {
+        const int square = move.square + i * stride;
+        if (board[square] != Empty) {
+            result.root += flip_case(board[square]);
+        } else {
+            result.root += flip_case(move.tiles[tidx++]);
+        }
+    }
+    result.score = move.score;
+    return result;
+}
+
 int main(int argc, char** argv) {
     // clang-format off
     cxxopts::Options options("text-game", "play against engine");
@@ -254,12 +335,14 @@ int main(int argc, char** argv) {
 
     LegalMoves lm;
     lm.trie = &dict;
+    lm.board = &board.brd[0];
     engine->on_legal_move = &LegalMoves::on_legal_move;
     engine->on_legal_move_data = &lm;
-    engine->prefix_edges = &LegalMoves::get_prefix_edges;
+    engine->prefix_edges  = &LegalMoves::get_prefix_edges;
     engine->prefix_edges_data = &lm;
     engine_init(engine);
 
+#if 0
     {  // TEMP TEMP
         DEBUG("--- DRAW ORDER ---");
         for (auto rit = bag.tiles.rbegin(); rit != bag.tiles.rend(); ++rit) {
@@ -267,19 +350,44 @@ int main(int argc, char** argv) {
         }
         DEBUG("--- END DRAW ORDER ---");
     }
+#endif
 
     for (;;) {
         auto& rack = racks[static_cast<std::size_t>(ptm)];
         draw_tiles(bag, rack);
+
+        // engine analyze move
+        EngineRack engine_rack = make_engine_rack_from_gui_rack(rack);
+        lm.isc_specs.clear();
+        lm.moves.clear();
+        engine_find(engine, engine_rack);
+
+        int   best_score = -1;
+        Move* best_move = nullptr;
+        for (auto& move : lm.moves) {
+            move.score = score_move(board, move);
+            if (move.score > best_score) {
+                best_score = move.score;
+                best_move = &move;
+            }
+        }
+
         std::cout << board << std::endl;
+        if (best_move != nullptr) {
+            std::cout << "BEST MOVE: " << *best_move << "\n";
+            std::cout << "ENGINE BEST MOVE: " << isc_move_from_move(board, *best_move) << "\n";
+            std::cout << "      BEST SCORE: " << best_score << "\n";
+        } else {
+            std::cout << "ENGINE BEST MOVE: [unknown]\n";
+            std::cout << "      BEST SCORE:\n";
+        }
+
         auto maybe_isc_move = get_move(ptm, rack);
         if (!maybe_isc_move) {
             break;
         }
         auto isc_move = *maybe_isc_move;
-        if (isc_move.sqspec.empty()) {
-            std::cout << GetPlayerName(ptm) << " PASSED!\n";
-        } else {
+        if (!isc_move.sqspec.empty()) {
             std::cout << "DEBUG: Got a ISC move: " << isc_move << "\n";
             auto gui_move = make_gui_move_from_isc(board, isc_move);
             std::cout << "DEBUG: Got a GUI move: " << gui_move << "\n";
@@ -308,6 +416,15 @@ int main(int argc, char** argv) {
             // TODO: include tile frequencies in the rack instead so can do
             //       tile check and removal faster
             remove_tiles_from_rack(rack, gui_move);
+
+            EngineMove em;
+            em.tiles = &move.tiles[0];
+            em.squares = &move.squares[0];
+            em.ntiles = static_cast<int>(gui_move.size());
+            em.direction = static_cast<int>(move.direction);
+            engine_make_move(engine, &em);
+        } else {
+            std::cout << GetPlayerName(ptm) << " PASSED!\n";
         }
 
         ptm = flip_player(ptm);

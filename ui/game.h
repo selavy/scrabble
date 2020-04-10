@@ -325,7 +325,7 @@ struct Move
     Score             score;
     Square            square;
     Direction         direction;
-    int               length;
+    int               length; // total length of play; includes already placed tiles
     Tiles             tiles;
     RackArray<Square> squares;
 
