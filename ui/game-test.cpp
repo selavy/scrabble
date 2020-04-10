@@ -194,6 +194,13 @@ struct GcgFinal {
     int total;
 };
 
+struct GcgTileExch {
+    std::string nick;
+    std::string tiles;
+    std::string exch;
+    int total;
+};
+
 std::ostream& operator<<(std::ostream& os, const GcgFinal& m) {
     os << m.nick << " " << m.tiles << " " << m.score << " " << m.total;
     return os;
@@ -259,9 +266,11 @@ bool replay_gcg(std::ifstream& ifs, const EngineTrie& dict) {
     re2::RE2 pragma_player_regex(R"(#player(\d)\s+(\w+).*)");
     re2::RE2 gcg_move_regex(R"(>(\w+):\s+([A-Z\?]+) (\w+)\s+([A-Za-z\.]+)\s+([+-]?\d+) ([+-]?\d+))");
     re2::RE2 gcg_final_move_regex(R"(>(\w+):\s+\(([A-Z\.]+)\)\s+([+-]?\d+)\s+([+-]?\d+)\s*)");
+    re2::RE2 gcg_tile_exch_regex(R"(>(\w+):\s+([A-Z\?]+)\s+-([A-Z\?]+)\s+\+0\s+(\d+)\s*)");
     assert(pragma_player_regex.ok());
     assert(gcg_move_regex.ok());
     assert(gcg_final_move_regex.ok());
+    assert(gcg_tile_exch_regex.ok());
 
     fmt::print(stdout, "parsing gcg file\n");  // TEMP TEMP
 
@@ -305,6 +314,8 @@ bool replay_gcg(std::ifstream& ifs, const EngineTrie& dict) {
                 // TODO: check if nick already set
                 nicks[player_number - 1] = nick;
                 continue;
+            } else if (startswith(line, "#note")) {
+                continue;
             } else {
                 // ignoring other pragmas
                 fmt::print(stderr, "warning: skipping unknown pragma: \"{}\"\n", line);
@@ -316,12 +327,18 @@ bool replay_gcg(std::ifstream& ifs, const EngineTrie& dict) {
                 fmt::print(stderr, "error: player nicknames not specified\n");
                 return false;
             }
+            GcgTileExch gcg_exch;
+            if (re2::RE2::FullMatch(line, gcg_tile_exch_regex, &gcg_exch.nick, &gcg_exch.tiles, &gcg_exch.exch, &gcg_exch.total)) {
+                fmt::print(stderr, "info: skipping tile exchange: \"{}\"\n", line);
+                continue;
+            }
             GcgFinal gcg_final;
             if (re2::RE2::FullMatch(line, gcg_final_move_regex, &gcg_final.nick, &gcg_final.tiles, &gcg_final.score,
                                     &gcg_final.total)) {
                 fmt::print(stderr, "info: skipping final move: \"{}\"\n", line);
                 continue;
             }
+
             GcgMove gcg_move;
             if (!re2::RE2::FullMatch(line, gcg_move_regex, &gcg_move.nick, &gcg_move.rack, &gcg_move.sq,
                                      &gcg_move.tiles, &gcg_move.score, &gcg_move.total)) {
@@ -430,8 +447,8 @@ bool replay_game(std::ifstream& ifs, const EngineTrie& dict) {
 int main(int argc, char** argv) {
     cxxopts::Options options("game-test", "replay through official scrabble games to test engine");
     options.add_options()("d,dict", "dictionary file to use", cxxopts::value<std::string>(), "DICT")(
-        "f,input", "input game file", cxxopts::value<std::string>(), "FILE");
-    options.parse_positional({"dict", "input", "too many positional arguments"});
+        "f,input", "input game file", cxxopts::value<std::vector<std::string>>(), "FILE");
+    options.parse_positional({"dict", "input" });
     auto args = options.parse(argc, argv);
 
     if (args.count("help")) {
@@ -447,13 +464,14 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    auto gamefile = args["input"].as<std::string>();
-    auto dictfile = args["dict"].as<std::string>();
-    fmt::print(stdout, "Game File: \"{}\"\n", gamefile);
+    auto gamefiles = args["input"].as<std::vector<std::string>>();
+    auto dictfile  = args["dict"].as<std::string>();
+    // fmt::print(stdout, "Game File: \"{}\"\n", gamefile);
     fmt::print(stdout, "Dict File: \"{}\"\n", dictfile);
 
 #define LOAD_DICTIONARY
 #ifdef LOAD_DICTIONARY
+    fmt::print(stdout, "Loading dictionary....\n");
     auto maybe_dict = load_dictionary(dictfile);
     if (!maybe_dict) {
         fmt::print(stderr, "error: unable to load dictionary from file: \"{}\"\n", dictfile);
@@ -464,19 +482,20 @@ int main(int argc, char** argv) {
     EngineTrie dict;  // TEMP TEMP
 #endif
 
-    fmt::print(stdout, "Replaying \"{}\"\n", gamefile);
-    std::ifstream ifs{gamefile};
-    if (!ifs) {
-        fmt::print(stderr, "error: unable to open game file: \"{}\"\n", gamefile);
-        return 1;
-    }
-
-    auto* replay_fn = strstr(gamefile.c_str(), ".gcg") != 0 ? replay_gcg : replay_game;
-    if (replay_fn(ifs, dict)) {
-        fmt::print(stdout, "Passed!\n");
-    } else {
-        fmt::print(stderr, "error: unable to replay game file: \"{}\"\n", gamefile);
-        return 1;
+    for (auto gamefile : gamefiles) {
+        fmt::print(stdout, "Replaying \"{}\"\n", gamefile);
+        std::ifstream ifs{gamefile};
+        if (!ifs) {
+            fmt::print(stderr, "error: unable to open game file: \"{}\"\n", gamefile);
+            return 1;
+        }
+        auto* replay_fn = strstr(gamefile.c_str(), ".gcg") != 0 ? replay_gcg : replay_game;
+        if (replay_fn(ifs, dict)) {
+            fmt::print(stdout, "Passed!\n");
+        } else {
+            fmt::print(stderr, "error: unable to replay game file: \"{}\"\n", gamefile);
+            return 1;
+        }
     }
 
     return 0;
