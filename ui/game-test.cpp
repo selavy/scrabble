@@ -445,11 +445,15 @@ bool replay_game(std::ifstream& ifs, const EngineTrie& dict) {
 }
 
 int main(int argc, char** argv) {
+    // clang-format off
     cxxopts::Options options("game-test", "replay through official scrabble games to test engine");
-    options.add_options()("d,dict", "dictionary file to use", cxxopts::value<std::string>(), "DICT")(
-        "f,input", "input game file", cxxopts::value<std::vector<std::string>>(), "FILE");
+    options.add_options()
+        ("d,dict", "dictionary file to use", cxxopts::value<std::string>(), "DICT")
+        ("f,input", "input game file", cxxopts::value<std::vector<std::string>>(), "FILE")
+        ;
     options.parse_positional({"dict", "input" });
     auto args = options.parse(argc, argv);
+    // clang-format on
 
     if (args.count("help")) {
         std::cerr << options.help() << std::endl;
