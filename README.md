@@ -47,3 +47,5 @@ Compilation on Ubuntu 16.04 (there's a linker bug?):
 - [ ] GADDAG creator for dictionary
 - [ ] Benchmark vs [Quackle](https://github.com/quackle/quackle)
 - [ ] NN + [MCTS](https://en.wikipedia.org/wiki/Monte_Carlo_tree_search) + [RL](lilieanweng.github.io/lil-log/2018/02/19/a-long-peek-into-reinforcement-learning.html) for evaluation function?
+- [ ] Name for engine
+    - [ ] cicero?
