@@ -38,3 +38,9 @@ target_link_libraries(game-test
         cxxopts::cxxopts
         re2::re2
 )
+
+add_executable(datrie datrie.cpp)
+target_link_libraries(datrie
+    PUBLIC
+        cxx_project_options
+)
