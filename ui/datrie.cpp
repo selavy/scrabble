@@ -268,6 +268,7 @@ int main(int argc, char** argv)
                     break;
                 }
             }
+            // TODO: implement relocate logic
             if (new_base == -1) {
                 printf("Unable to find a new_base for '%c'\n", node.value);
                 assert(0);
