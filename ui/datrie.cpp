@@ -200,6 +200,17 @@ int main(int argc, char** argv)
         "HIPPY",
         "HIT",
     };
+
+    const std::vector<std::string> missing = {
+        "HELLO",
+        "HEE",
+        "HITE",
+        "MISSING",
+        "ANOTHER",
+        "Z",
+        "ZZZ",
+    };
+
     using Nodes = EngineTrie::Nodes;
     using Node  = Nodes::value_type;
     EngineTrie et;
@@ -267,18 +278,23 @@ int main(int argc, char** argv)
     // ------------------------------------------------------------------------
 
     int failures = 0;
-    for (auto w : words) {
+    for (const auto& w : words) {
         if (!walk3(base, next, chck, term, w)) {
             printf("Failed to find: '%s'\n", w.c_str());
             ++failures;
         }
     }
 
-    printf("\n\n");
+    for (const auto& w : missing) {
+        if (walk3(base, next, chck, term, w)) {
+            printf("Accidentally found: '%s'\n", w.c_str());
+            ++failures;
+        }
+    }
     if (failures == 0) {
         printf("Passed.\n");
     } else {
-        printf("Failed.\n");
+        printf("\nFailed.\n");
     }
 
     return 0;
