@@ -157,8 +157,21 @@ int iconv(char c) {
 
 using Array = std::vector<int>;
 
-bool walk3(const Array& base, const Array& next, const Array& chck, const Array& term, const std::string& word)
+struct DATrie3
 {
+    Array base;
+    Array next;
+    Array chck;
+    Array term;
+};
+
+bool walk3(const DATrie3& trie, const std::string& word)
+{
+    auto& base = trie.base;
+    auto& next = trie.next;
+    auto& chck = trie.chck;
+    auto& term = trie.term;
+
     int s = 0;
     for (const char ch : word) {
         const int c = iconv(ch);
@@ -224,19 +237,24 @@ int main(int argc, char** argv)
 
     int n_symbols     = et.num_symbols();
     int n_states      = et.num_states();
-    Array base(n_states, -1);
-    Array term(n_states, 0);
-    Array next(n_symbols * n_states, -1);
-    Array chck(n_symbols * n_states, -1);
+    DATrie3 trie;
+    trie.base = Array(n_states, -1);
+    trie.term = Array(n_states, 0);
+    trie.next = Array(n_symbols * n_states, -1);
+    trie.chck = Array(n_symbols * n_states, -1);
 
     { // TEMP TEMP
         int nodenum = 0;
         et.visit([&](Node& node, Nodes& nodes, const std::string& word) { node.base = nodenum++; });
     }
 
-    int nodenum = 0;
     et.visit([&](Node& node, Nodes& nodes, const std::string& word)
         {
+            auto& base = trie.base;
+            auto& next = trie.next;
+            auto& chck = trie.chck;
+            auto& term = trie.term;
+
             // get all child transitions
             std::vector<int> cs;
             for (auto&& [ch, link] : node.children) {
@@ -257,6 +275,7 @@ int main(int argc, char** argv)
             }
 
             // install transitions in table
+            const int nodenum = node.base;
             assert(0 <= nodenum && nodenum < base.size());
             assert(0 <= nodenum && nodenum < term.size());
             base[nodenum] = new_base;
@@ -270,7 +289,6 @@ int main(int argc, char** argv)
                 next[new_base + c] = nodes[link].base;
                 chck[new_base + c] = nodenum;
             }
-            ++nodenum;
         });
 
     // ------------------------------------------------------------------------
@@ -279,14 +297,14 @@ int main(int argc, char** argv)
 
     int failures = 0;
     for (const auto& w : words) {
-        if (!walk3(base, next, chck, term, w)) {
+        if (!walk3(trie, w)) {
             printf("Failed to find: '%s'\n", w.c_str());
             ++failures;
         }
     }
 
     for (const auto& w : missing) {
-        if (walk3(base, next, chck, term, w)) {
+        if (walk3(trie, w)) {
             printf("Accidentally found: '%s'\n", w.c_str());
             ++failures;
         }
