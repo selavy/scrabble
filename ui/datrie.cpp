@@ -159,38 +159,39 @@ using Array = std::vector<int>;
 
 struct DATrie3
 {
-    Array base;
+    Array base; // top 1 of base[s] indicates terminal or not
     Array next;
     Array chck;
-    Array term;
 };
+
+int getbase3(const DATrie3& trie, int s)
+{
+    return s < trie.base.size() ? trie.base[s] & ~(1u << 31) : 0;
+}
+
+bool getterm3(const DATrie3& trie, int s)
+{
+    return s < trie.base.size() ? (trie.base[s] >> 31) != 0 : false;
+}
 
 bool walk3(const DATrie3& trie, const std::string& word)
 {
     auto& base = trie.base;
     auto& next = trie.next;
     auto& chck = trie.chck;
-    auto& term = trie.term;
 
     int s = 0;
     for (const char ch : word) {
         const int c = iconv(ch);
         assert(s >= 0);
-        if (s >= base.size()) {
+        int base_s = getbase3(trie, s);
+        if (base_s + c > chck.size() || chck[base_s + c] != s) {
             return false;
         }
-        assert(base[s] + c >= 0);
-        if (base[s] + c > chck.size()) {
-            return false;
-        }
-        assert(0 <= (base[s] + c) && (base[s] + c) < next.size());
-        if (chck[base[s] + c] != s) {
-            return false;
-        }
-        const int t = next[base[s] + c];
-        s = t;
+        assert(0 <= (base_s + c) && (base_s + c) < next.size());
+        s = next[base_s + c];
     }
-    return s < term.size() && term[s];
+    return getterm3(trie, s);
 }
 
 // IDEA: use top bit in index to indicate if terminal? or separate array?
@@ -239,7 +240,6 @@ int main(int argc, char** argv)
     int n_states      = et.num_states();
     DATrie3 trie;
     trie.base = Array(n_states, -1);
-    trie.term = Array(n_states, 0);
     trie.next = Array(n_symbols * n_states, -1);
     trie.chck = Array(n_symbols * n_states, -1);
 
@@ -253,7 +253,6 @@ int main(int argc, char** argv)
             auto& base = trie.base;
             auto& next = trie.next;
             auto& chck = trie.chck;
-            auto& term = trie.term;
 
             // get all child transitions
             std::vector<int> cs;
@@ -277,9 +276,7 @@ int main(int argc, char** argv)
             // install transitions in table
             const int nodenum = node.base;
             assert(0 <= nodenum && nodenum < base.size());
-            assert(0 <= nodenum && nodenum < term.size());
-            base[nodenum] = new_base;
-            term[nodenum] = node.terminal ? 1 : 0;
+            base[nodenum] = new_base | ((node.terminal ? 1 : 0) << 31);
             for (auto&& [ch, link] : node.children) {
                 const int c = iconv(ch);
                 assert(0 <= (new_base + c) && (new_base + c) < next.size());
