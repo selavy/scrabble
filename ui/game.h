@@ -501,6 +501,15 @@ std::ostream& operator<<(std::ostream& os, const std::vector<Word>& words) {
     return os;
 }
 
+std::ostream& operator<<(std::ostream& os, const std::vector<std::string>& words) {
+    os << "{ ";
+    for (const auto& word : words) {
+        os << word << " ";
+    }
+    os << "}";
+    return os;
+}
+
 int score_move(const Board& b, /*const*/ Move& m) noexcept {
     int total_score = 0;
     auto& board = b.brd;
@@ -796,6 +805,20 @@ GuiMove make_gui_move_from_move(const Move& move)
 void undo_move(Board& b, const GuiMove& m) noexcept {
     for (auto&& [tile, square] : m) {
         b.brd[square] = Empty;
+    }
+    b.n_moves--;
+}
+
+void unplay_move(Board& b, const Move& m) noexcept {
+    auto& board = b.brd;
+    for (std::size_t i = 0; i < m.squares.size(); ++i) {
+        auto square = m.squares[i];
+        auto tile   = m.tiles[i];
+        if (square == InvalidSquare) {
+            break;
+        }
+        assert(board[square] == tile);
+        board[square] = Empty;
     }
     b.n_moves--;
 }

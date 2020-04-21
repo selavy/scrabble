@@ -51,6 +51,46 @@ std::optional<IscMove> valid_isc_form(const char* isc) {
     return std::nullopt;
 }
 
+std::optional<Rack> get_rack() {
+    Rack rack;
+    char* buf;
+    while ((buf = readline("rack? ")) != nullptr) {
+        std::size_t len = strlen(buf);
+        if (len > 0) {
+            add_history(buf);
+        }
+        if (len > NumTilesRack) {
+            fmt::print(stderr, "Too many tiles specified: {}\n", len);
+            free(buf);
+            continue;
+        }
+
+        bool valid = true;
+        std::fill(std::begin(rack), std::end(rack), Empty);
+        for (std::size_t i = 0; i < len; ++i) {
+            const char c = buf[i];
+            if ('a' <= c && c <= 'z') {
+                rack[i] = (c - 'a') + 'A';
+            } else if ('A' <= c && c <= 'Z') {
+                rack[i] = c;
+            } else if (c == '?') {
+                rack[i] = Blank;
+            } else {
+                fmt::print(stderr, "Invalid tile specified: '{}'\n", c);
+                valid = false;
+                break;
+            }
+        }
+
+        free(buf);
+        if (valid) {
+            return rack;
+        }
+    }
+    // TODO: confirm that want to quit
+    return std::nullopt;
+}
+
 std::optional<IscMove> get_move(Player player, const Rack& rack) {
     bool quit = false;
     char* buf;
@@ -297,7 +337,8 @@ int main(int argc, char** argv) {
     // clang-format off
     cxxopts::Options options("text-game", "play against engine");
     options.add_options()
-        ("d,dict", "dictionary file to use", cxxopts::value<std::string>(), "DICT")
+        ("d,dict",          "dictionary file to use", cxxopts::value<std::string>(), "DICT")
+        ("a,analysis-mode", "specify racks")
         ;
     options.parse_positional({"dict", "too many arguments" });
     auto args = options.parse(argc, argv);
@@ -310,6 +351,11 @@ int main(int argc, char** argv) {
     if (!args.count("dict")) {
         fmt::print(stderr, "error: must specify dictionary file to use.\n");
         return 1;
+    }
+
+    const bool analysis_mode = !!args.count("analysis-mode");
+    if (analysis_mode) {
+        fmt::print(stdout, "turning on analysis mode!\n");
     }
 
     auto dictfile  = args["dict"].as<std::string>();
@@ -342,22 +388,23 @@ int main(int argc, char** argv) {
     engine->prefix_edges_data = &lm;
     engine_init(engine);
 
-#if 0
-    {  // TEMP TEMP
-        DEBUG("--- DRAW ORDER ---");
-        for (auto rit = bag.tiles.rbegin(); rit != bag.tiles.rend(); ++rit) {
-            DEBUG("%c", *rit);
-        }
-        DEBUG("--- END DRAW ORDER ---");
-    }
-#endif
-
+    Rack analysis_rack;
     for (;;) {
-        auto& rack = racks[static_cast<std::size_t>(ptm)];
-        draw_tiles(bag, rack);
+        Rack* rack = nullptr;
+        if (analysis_mode) {
+            auto maybe_rack = get_rack();
+            if (!maybe_rack) {
+                break;
+            }
+            analysis_rack = *maybe_rack;
+            rack = &analysis_rack;
+        } else {
+            rack = &racks[static_cast<std::size_t>(ptm)];
+            draw_tiles(bag, *rack);
+        }
 
         // engine analyze move
-        EngineRack engine_rack = make_engine_rack_from_gui_rack(rack);
+        EngineRack engine_rack = make_engine_rack_from_gui_rack(*rack);
         lm.isc_specs.clear();
         lm.moves.clear();
         engine_find(engine, engine_rack);
@@ -365,15 +412,20 @@ int main(int argc, char** argv) {
         int   best_score = -1;
         Move* best_move = nullptr;
         for (auto& move : lm.moves) {
+            play_move  (board, move);
             move.score = score_move(board, move);
+            unplay_move(board, move);
             if (move.score > best_score) {
                 best_score = move.score;
                 best_move = &move;
             }
+            std::cout << "SCORE MOVE: " << move;
+            std::cout << "ROOT WORD:  " << move.root_word << "\n";
+            std::cout << "WORDS FORMED: " << move.words_formed << "\n";
         }
 
         std::cout << board << "\n";
-        std::cout << GetPlayerName(ptm) << " rack: " << rack << "\n";
+        std::cout << GetPlayerName(ptm) << " rack: " << *rack << "\n";
         std::cout << "\n";
         if (best_move != nullptr) {
             std::cout << "BEST MOVE: " << *best_move << "\n";
@@ -385,7 +437,7 @@ int main(int argc, char** argv) {
         }
         std::cout << "\n";
 
-#define ENGINE_SELF_PLAY 1
+#define ENGINE_SELF_PLAY 0
 #if ENGINE_SELF_PLAY
     if (best_move == nullptr) {
         std::cout << "ENGINE SEES NO LEGAL MOVES\n";
@@ -396,9 +448,13 @@ int main(int argc, char** argv) {
         move.player = ptm;
         move.score  = score_move(board, move);
         auto gui_move = make_gui_move_from_move(move);
-        play_move(board, move);
+        // TODO(peter): play_move does not update the multiplier squares
+        // play_move(board, move);
+        auto maybe_move = make_move(board, gui_move);
+        assert(maybe_move);
+        move = *maybe_move;
 #else
-        auto maybe_isc_move = get_move(ptm, rack);
+        auto maybe_isc_move = get_move(ptm, *rack);
         if (!maybe_isc_move) {
             break;
         }
@@ -409,7 +465,7 @@ int main(int argc, char** argv) {
             std::cout << "DEBUG: Got a GUI move: " << gui_move << "\n";
             assert(no_squares_in_gui_move_are_not_empty(board, gui_move));
 
-            if (!rack_has_tiles(rack, gui_move)) {
+            if (!rack_has_tiles(*rack, gui_move)) {
                 std::cerr << "Attempted to play tiles you don't have!" << std::endl;
                 continue;
             }
@@ -431,7 +487,7 @@ int main(int argc, char** argv) {
             std::cout << "--------------------------------------\n";
             // TODO: include tile frequencies in the rack instead so can do
             //       tile check and removal faster
-            remove_tiles_from_rack(rack, gui_move);
+            remove_tiles_from_rack(*rack, gui_move);
 
             EngineMove em;
             em.tiles = &move.tiles[0];
