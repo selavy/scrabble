@@ -34,5 +34,13 @@ int main([[maybe_unused]]int argc, [[maybe_unused]] const char** argv) {
         return 1;
     }
 
+    assert(mafsa_isword(&m, "HELLO")   == true);
+    assert(mafsa_isword(&m, "GOODBYE") == true);
+    assert(mafsa_isword(&m, "GOODBY")  == false);
+    assert(mafsa_isword(&m, "HELLOO")  == false);
+    assert(mafsa_isword(&m, "HELL")    == false);
+
+    mafsa_free(&m);
+
     return 0;
 }

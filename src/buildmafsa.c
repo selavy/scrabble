@@ -3,33 +3,34 @@
 #include <assert.h>
 #include <string.h>
 #include "iconv.h"
+#include <stdio.h>
 
 typedef unsigned int uint;
 
 int mafsa_builder_start(mafsa_builder *m)
 {
-    size_t capacity = 100;
+    size_t capacity = 26 * 100;
     m->capacity = (int)capacity;
-    m->children = malloc(sizeof(int) * capacity * 26);
+    m->children = malloc(sizeof(int) * capacity);
     m->terms    = malloc(sizeof(int) * capacity);
     m->size     = 1;
-    memset(m->children, 0, sizeof(int) * capacity * 26);
+    memset(m->children, 0, sizeof(int) * capacity);
     memset(m->terms,    0, sizeof(int) * capacity);
     return 0;
 }
 
 static int expand(mafsa_builder *m, size_t amount)
 {
-    size_t capacity = (size_t)m->capacity + amount;
-    int*   children = realloc(m->children, sizeof(int) * capacity * 26);
+    size_t capacity = (size_t)m->capacity + 26*amount;
+    int*   children = realloc(m->children, sizeof(int) * capacity);
     int*   terms    = realloc(m->terms,    sizeof(int) * capacity);
     if (!children || !terms) {
         free(children);
         free(terms);
         return -1;
     }
-    memset(&children[m->capacity], 0, sizeof(int) * amount);
-    memset(&terms   [m->capacity], 0, sizeof(int) * amount);
+    memset(&children[m->capacity], 0, sizeof(int) * 26*amount);
+    memset(&terms   [m->capacity], 0, sizeof(int) * 26*amount);
     m->capacity = (int)capacity;
     m->children = children;
     m->terms    = terms;
@@ -47,7 +48,7 @@ int mafsa_builder_insert(mafsa_builder *m, const char* const word)
         const int c = iconv(*p);
         const int i = 26*s + c;
         assert(0 <= c && c < 26);
-        assert(i < m->capacity);
+        assert(i < 26*m->capacity);
         assert(i < 26*m->size);
         const int t = m->children[i];
         if (t == 0) {
@@ -67,12 +68,12 @@ int mafsa_builder_insert(mafsa_builder *m, const char* const word)
     return 0;
 }
 
-int mafsa_builder_finish(const mafsa_builder *m, mafsa *out)
+int mafsa_builder_finish(mafsa_builder *m, mafsa *out)
 {
     // TODO: reduce
-    size_t size = (size_t)m->size;
-    int   *children = malloc(sizeof(int) * 26 * size);
-    uint  *terms    = malloc(size);
+    size_t size = (size_t)m->size * 26;
+    int   *children = malloc(sizeof(int) * size);
+    uint  *terms    = malloc(size + sizeof(uint));
     if (!children || !terms) {
         free(children);
         free(terms);
@@ -80,15 +81,17 @@ int mafsa_builder_finish(const mafsa_builder *m, mafsa *out)
     }
     memset(terms, 0, size);
     for (size_t i = 0; i < size; ++i) {
-        for (size_t j = 0; j < 26; ++j) {
-            children[i+j] = m->children[i+j];
-        }
+        children[i] = m->children[i];
         size_t entry = (size_t)i / sizeof(uint);
         size_t shift = (size_t)i % sizeof(uint);
-        terms[entry] |= (uint)(m->terms[i]?1:0) << shift;
+        uint   tbit  = m->terms[i] ? 1u : 0u;
+        // printf("i=%zu entry=%zu shift=%zu size=%zu\n", i, entry, shift, size);
+        terms[entry] |= tbit << shift;
     }
     out->children = children;
     out->terms    = terms;
     out->size     = m->size;
+    free(m->children);
+    free(m->terms);
     return 0;
 }

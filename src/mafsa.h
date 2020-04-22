@@ -12,7 +12,8 @@ struct mafsa
 };
 typedef struct mafsa mafsa;
 
-extern int mafsa_isword(const mafsa *m, const char *const word);
+extern int  mafsa_isword(const mafsa *m, const char *const word);
+extern void mafsa_free(mafsa *m);
 
 struct mafsa_builder
 {
@@ -26,7 +27,7 @@ typedef struct mafsa_builder mafsa_builder;
 
 extern int mafsa_builder_start (mafsa_builder *m);
 extern int mafsa_builder_insert(mafsa_builder *m, const char *const word);
-extern int mafsa_builder_finish(const mafsa_builder *m, mafsa *out);
+extern int mafsa_builder_finish(mafsa_builder *m, mafsa *out);
 
 #ifdef __cplusplus
 }
