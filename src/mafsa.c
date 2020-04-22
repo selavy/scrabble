@@ -20,22 +20,22 @@ int isterm(const uint* terms, int s)
 
 int mafsa_isword(const struct mafsa *m, const char *const word)
 {
-    printf("ISWORD: '%s'\n", word);
+    // printf("ISWORD: '%s'\n", word);
     const int  *children = m->children;
     const int   size     = m->size;
     int s = 0;
     for (const char *p = word; *p != '\0'; ++p) {
         const int c = iconv(*p);
+        const int t = children[26*s + c];
         assert(0 <= s && s < size);
         assert(0 <= c && c <= 26);
-        const int t = children[26*s + c];
-        printf("\tch=%c c=%d t=%d\n", *p, c, t);
+        // printf("\tch=%c c=%d t=%d\n", *p, c, t);
         if (t == 0) {
             return 0;
         }
         s = t;
     }
-    return isterm(m->terms, s);
+    return isterm(m->terms, 26*s);
 }
 
 void mafsa_free(mafsa *m)

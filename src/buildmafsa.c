@@ -7,18 +7,6 @@
 
 typedef unsigned int uint;
 
-int mafsa_builder_start(mafsa_builder *m)
-{
-    size_t capacity = 26 * 100;
-    m->capacity = (int)capacity;
-    m->children = malloc(sizeof(int) * capacity);
-    m->terms    = malloc(sizeof(int) * capacity);
-    m->size     = 1;
-    memset(m->children, 0, sizeof(int) * capacity);
-    memset(m->terms,    0, sizeof(int) * capacity);
-    return 0;
-}
-
 static int expand(mafsa_builder *m, size_t amount)
 {
     size_t capacity = (size_t)m->capacity + 26*amount;
@@ -37,6 +25,16 @@ static int expand(mafsa_builder *m, size_t amount)
     return 0;
 }
 
+
+int mafsa_builder_start(mafsa_builder *m)
+{
+    m->capacity = 0;
+    m->size     = 1;
+    m->terms    = NULL;
+    m->children = NULL;
+    return expand(m, 1);
+}
+
 #define TRY(x) if ((rc = (x)) != 0) { return rc; }
 
 int mafsa_builder_insert(mafsa_builder *m, const char* const word)
@@ -44,19 +42,19 @@ int mafsa_builder_insert(mafsa_builder *m, const char* const word)
     int rc;
     int s = 0;
     for (const char *p = word; *p != '\0'; ++p) {
-        assert(0 <= s && s < m->size);
         const int c = iconv(*p);
         const int i = 26*s + c;
+        assert(0 <= s && s < m->size);
         assert(0 <= c && c < 26);
-        assert(i < 26*m->capacity);
+        assert(i < m->capacity);
         assert(i < 26*m->size);
         const int t = m->children[i];
         if (t == 0) {
             const int next = m->size++;
             m->children[i] = next;
             m->terms[i]    = 0;
-            if (m->size >= m->capacity) {
-                TRY(expand(m, 26*10));
+            if (26*m->size >= m->capacity) {
+                TRY(expand(m, 10));
             }
             s = next;
         } else {
@@ -64,7 +62,7 @@ int mafsa_builder_insert(mafsa_builder *m, const char* const word)
         }
     }
     assert(0 <= s && s < m->size);
-    m->terms[s] = 1;
+    m->terms[26*s] = 1;
     return 0;
 }
 
