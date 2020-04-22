@@ -1,2 +1,5 @@
 add_executable(scrabble scrabble.cpp)
 target_link_libraries(scrabble PUBLIC cxx_project_options cxx_project_warnings Mafsa)
+
+add_executable(makedawg makedawg.cpp)
+target_link_libraries(makedawg PUBLIC cxx_project_options cxx_project_warnings Mafsa)

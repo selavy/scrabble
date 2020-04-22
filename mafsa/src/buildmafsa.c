@@ -31,7 +31,6 @@ static int expand(mafsa_builder *m, size_t amount)
     return 0;
 }
 
-
 int mafsa_builder_start(mafsa_builder *m)
 {
     m->capacity = 0;
@@ -235,5 +234,8 @@ int mafsa_builder_finish(mafsa_builder *m, mafsa *out)
     out->size  = m->size;
     free(m->nodes);
     free(m->terms);
+    m->nodes = NULL;
+    m->terms = NULL;
+    m->size = 0;
     return 0;
 }

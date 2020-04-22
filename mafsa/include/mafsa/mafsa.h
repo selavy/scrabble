@@ -22,7 +22,6 @@ struct mafsa_builder
 {
     mafsa_node *nodes;
     int        *terms;
-    int         next;
     int         size;
     int         capacity;
 };
