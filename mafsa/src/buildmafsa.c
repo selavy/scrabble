@@ -1,4 +1,4 @@
-#include "mafsa.h"
+#include <mafsa/mafsa.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>

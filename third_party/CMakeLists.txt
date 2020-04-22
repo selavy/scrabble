@@ -30,6 +30,8 @@ option(CATCH_INSTALL_DOCS "Install documentation alongside library" OFF)
 option(CATCH_INSTALL_HELPERS "Install contrib alongside library" OFF)
 add_subdirectory(Catch2)
 set(CATCH_MAIN "${CMAKE_CURRENT_SOURCE_DIR}/unit_test_main.cpp" PARENT_SCOPE)
+# add_executable(target ${CATCH_MAIN})
+# target_link_libraries(target PUBLIC Catch2)
 
 option(BUILD_SHARED_LIBS "build shared libraries" OFF)
 option(USEPCRE "use PCRE in tests and benchmarks" OFF)

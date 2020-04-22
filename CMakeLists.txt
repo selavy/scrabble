@@ -33,5 +33,7 @@ target_include_directories(LibEdit INTERFACE ${LIBEDIT_INCLUDE_DIR})
 # find_package(Threads REQUIRED)
 
 add_subdirectory(third_party)
+add_subdirectory(mafsa)
 add_subdirectory(src)
+add_subdirectory(tests)
 add_subdirectory(ui)
