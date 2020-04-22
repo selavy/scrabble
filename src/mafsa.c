@@ -10,9 +10,9 @@ typedef unsigned int uint;
 int isterm(const uint* terms, int s)
 {
     assert(0 <= s);
-    size_t entry  = (size_t)s / sizeof(uint);
-    size_t bitnum = (size_t)s % sizeof(uint);
-    uint   mask   = 1u << bitnum;
+    size_t entry = (size_t)s / sizeof(uint);
+    size_t shift = (size_t)s % sizeof(uint);
+    uint   mask  = 1u << shift;
     return (int)(terms[entry] & mask);
 }
 

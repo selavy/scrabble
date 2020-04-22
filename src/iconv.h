@@ -26,7 +26,7 @@ static const int sconv_table[128] = {
     16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, -1, -1, -1, -1, -1,
 };
 
-int iconv(char c) {
+static inline int iconv(char c) {
 #ifndef NDEBUG
     assert(('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z'));
     return iconv_table[(unsigned char)(c & 0x7Fu)];
@@ -36,7 +36,7 @@ int iconv(char c) {
 }
 
 
-int sconv(char c) {
+static inline int sconv(char c) {
 #ifndef NDEBUG
     assert(('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z'));
     return sconv_table[(unsigned char)(c & 0x7Fu)];
