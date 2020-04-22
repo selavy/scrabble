@@ -19,6 +19,7 @@ TEST_CASE("Mafsa check word")
 {
     mafsa m = make_mafsa();
     for (const auto& word : DICT) {
+        INFO("Checking " << word);
         CHECK(mafsa_isword(&m, word.c_str()) != 0);
     }
     for (const auto& word : MISSING) {

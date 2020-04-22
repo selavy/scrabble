@@ -8,6 +8,7 @@
 #include <stdio.h> // TEMP TEMP
 
 typedef unsigned int uint;
+typedef mafsa_node   node;
 
 int isterm(const uint* terms, int s)
 {
@@ -21,12 +22,12 @@ int isterm(const uint* terms, int s)
 int mafsa_isword(const struct mafsa *m, const char *const word)
 {
     // printf("ISWORD: '%s'\n", word);
-    const int  *children = m->children;
-    const int   size     = m->size;
+    const node *nodes = m->nodes;
+    const int   size  = m->size;
     int s = 0;
     for (const char *p = word; *p != '\0'; ++p) {
         const int c = iconv(*p);
-        const int t = children[26*s + c];
+        const int t = nodes[s].children[c];
         assert(0 <= s && s < size);
         assert(0 <= c && c <= 26);
         // printf("\tch=%c c=%d t=%d\n", *p, c, t);
@@ -35,14 +36,17 @@ int mafsa_isword(const struct mafsa *m, const char *const word)
         }
         s = t;
     }
-    return isterm(m->terms, 26*s);
+    // printf("Leaving term[%d] = %d (0x%08x)\n", s, isterm(m->terms, s), m->terms[s/sizeof(uint)]);
+    return isterm(m->terms, s);
 }
 
 void mafsa_free(mafsa *m)
 {
-    free(m->children);
+    free(m->nodes);
     free(m->terms);
-    m->children = NULL;
-    m->terms    = NULL;
-    m->size     = 0;
+#ifndef NDEBUG
+    m->nodes = NULL;
+    m->terms = NULL;
+    m->size  = 0;
+#endif
 }

@@ -4,9 +4,12 @@
 extern "C" {
 #endif
 
+struct mafsa_node { int children[26]; };
+typedef struct mafsa_node mafsa_node;
+
 struct mafsa
 {
-    int          *children;
+    mafsa_node   *nodes;
     unsigned int *terms;
     int           size;
 };
@@ -17,11 +20,11 @@ extern void mafsa_free(mafsa *m);
 
 struct mafsa_builder
 {
-    int* children;
-    int* terms;
-    int  next;
-    int  size;
-    int  capacity;
+    mafsa_node *nodes;
+    int        *terms;
+    int         next;
+    int         size;
+    int         capacity;
 };
 typedef struct mafsa_builder mafsa_builder;
 
