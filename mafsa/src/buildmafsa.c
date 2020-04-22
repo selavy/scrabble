@@ -10,7 +10,7 @@
 
 
 typedef unsigned int uint;
-typedef mafsa_node   node;
+typedef mafsa_node_  node;
 
 
 static int expand(mafsa_builder *m, size_t amount)

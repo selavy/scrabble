@@ -8,7 +8,7 @@
 #include <stdio.h> // TEMP TEMP
 
 typedef unsigned int uint;
-typedef mafsa_node   node;
+typedef mafsa_node_  node;
 
 int isterm(const uint* terms, int s)
 {
