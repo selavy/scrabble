@@ -69,7 +69,6 @@ int mafsa_builder_insert(mafsa_builder *m, const char* const word)
     return 0;
 }
 
-#if 0
 KHASH_MAP_INIT_INT(m32, int);
 
 typedef kvec_t(int) vec_t;
@@ -81,7 +80,7 @@ struct reduce_state
 };
 typedef struct reduce_state reduce_state;
 
-int nodecmp(const int *children, const int* terms, int s, int t)
+int nodecmp(const mafsa_builder *m, int s, int t)
 {
     // from https://www.aclweb.org/anthology/J00-1002.pdf pg. 7:
     //
@@ -95,16 +94,10 @@ int nodecmp(const int *children, const int* terms, int s, int t)
     // 4'. corresponding transitions lead to the same states.
 
     // TODO: do I need to verify that the value is the same?
-
-    if (terms[26*s] != terms[26*t]) {
+    if (m->terms[s] != m->terms[t]) {
         return 1;
     }
-    for (int i = 0; i < 26; ++i) {
-        if (children[26*s+i] != children[26*t+i]) {
-            return 2;
-        }
-    }
-    return 0;
+    return memcmp(&m->nodes[s], &m->nodes[t], sizeof(*m->nodes));
 }
 
 void visit_post(mafsa_builder *m, int s, reduce_state *state)
@@ -116,7 +109,7 @@ void visit_post(mafsa_builder *m, int s, reduce_state *state)
 
     assert(s < m->size);
     for (int i = 0; i < 26; ++i) {
-        const int t = m->children[26*s + i];
+        const int t = m->nodes[s].children[i];
         if (t != 0) {
             visit_post(m, t, state);
         }
@@ -124,7 +117,7 @@ void visit_post(mafsa_builder *m, int s, reduce_state *state)
 
     {
         for (int i = 0; i < 26; ++i) {
-            const int t = m->children[26*s + i];
+            const int t = m->nodes[s].children[i];
             if (t == 0) {
                 continue;
             }
@@ -132,7 +125,7 @@ void visit_post(mafsa_builder *m, int s, reduce_state *state)
             if (k == kh_end(rep)) {
                 continue;
             }
-            m->children[26*s + i] = kh_value(rep, k);
+            m->nodes[s].children[i] = kh_value(rep, k);
         }
 
         if (s == 0) {
@@ -142,7 +135,7 @@ void visit_post(mafsa_builder *m, int s, reduce_state *state)
         for (int i = 0; i < kv_size(*reg); ++i) {
             const int t = kv_A(*reg, i);
             assert(kh_get(m32, rep, t) == kh_end(rep));
-            if (nodecmp(m->children, m->terms, s, t) == 0) {
+            if (nodecmp(m, s, t) == 0) {
                 k = kh_put(m32, rep, s, &ret);
                 assert(k != kh_end(rep));
                 assert(ret != -1 && ret != 0);
@@ -157,28 +150,68 @@ void visit_post(mafsa_builder *m, int s, reduce_state *state)
 
 void reduce(mafsa_builder *m)
 {
+    int ret;
+    khiter_t k;
     reduce_state state;
+
     kv_init(state.reg);
     state.rep = kh_init(m32);
     visit_post(m, 0, &state);
 
     // re-number states
+    // TODO: use flat array instead of hash table
     int new_size = 0;
     ht_t *conv  = kh_init(m32);
     ht_t *rconv = kh_init(m32);
-    for (int i = 0; i < m->size; i += 26) {
-        if (kh_get(m32, i))
+    for (int i = 0; i < m->size; i++) {
+        if (kh_get(m32, state.rep, i) != kh_end(state.rep)) {  // dead node
+            continue;
+        }
+        k = kh_put(m32, conv, i, &ret);
+        assert(ret != 0); // TODO: handle error
+        kh_value(conv, k) = new_size;
+        k = kh_put(m32, rconv, new_size, &ret);
+        assert(ret != 0); // TODO: handle error
+        kh_value(rconv, k) = i;
+        ++new_size;
     }
-
-
     kh_destroy(m32, state.rep);
     kv_destroy(state.reg);
+
+    node *new_nodes = malloc(sizeof(*new_nodes) * new_size);
+    int  *new_terms = malloc(sizeof(*new_terms) * new_size);
+    memset(new_nodes, 0, sizeof(*new_nodes) * new_size);
+    memset(new_terms, 0, sizeof(*new_terms) * new_size);
+    assert(new_nodes != NULL); // TODO: handle error
+    for (int i = 0; i < new_size; ++i) {
+        assert(kh_get(m32, rconv, i) != kh_end(rconv));
+        const int newidx = i;
+        const int oldidx = kh_value(rconv, kh_get(m32, rconv, newidx));
+        new_terms[newidx] = m->terms[oldidx];
+        for (int child = 0; child < 26; ++child) {
+            const int old_t = m->nodes[oldidx].children[child];
+            if (old_t == 0) {
+                continue;
+            }
+            assert(kh_get(m32, conv, old_t) != kh_end(conv));
+            const int new_t = kh_value(conv, kh_get(m32, conv, old_t));
+            new_nodes[newidx].children[child] = new_t;
+        }
+    }
+    kh_destroy(m32, conv);
+    kh_destroy(m32, rconv);
+
+    free(m->nodes);
+    free(m->terms);
+    m->nodes = new_nodes;
+    m->terms = new_terms;
+    m->size  = new_size;
+    m->capacity = new_size;
 }
-#endif
 
 int mafsa_builder_finish(mafsa_builder *m, mafsa *out)
 {
-    // TODO: reduce
+    reduce(m);
     size_t size  = (size_t)m->size;
     node  *nodes = malloc(sizeof(*nodes) * size);
     uint  *terms = malloc(size + sizeof(*terms));
