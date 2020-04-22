@@ -11,7 +11,7 @@ add_library(game game.h game.cpp)
 target_link_libraries(game PUBLIC cxx_project_options)
 
 add_executable(unittest
-    unit_test.cpp
+    ${CATCH_MAIN}
     game.test.cpp
 )
 target_link_libraries(unittest PUBLIC game Catch2)
