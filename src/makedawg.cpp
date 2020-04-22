@@ -4,60 +4,8 @@
 #include <string>
 #include <climits>
 #include <cassert>
-#include <mafsa/mafsa.h>
-
-struct MafsaBuilder
-{
-    MafsaBuilder()
-    {
-        builder.nodes = nullptr;
-        builder.terms = nullptr;
-        if (mafsa_builder_start(&builder) != 0) {
-            throw std::runtime_error("unable to initialize MA-FSA builder");
-        }
-    }
-
-    ~MafsaBuilder()
-    {
-        free(builder.nodes);
-        free(builder.terms);
-    }
-
-    bool insert(const std::string word)
-    {
-        return mafsa_builder_insert(&builder, word.c_str()) == 0;
-    }
-
-    std::optional<mafsa> finish()
-    {
-        mafsa out;
-        if (mafsa_builder_finish(&builder, &out) != 0) {
-            return std::nullopt;
-        }
-        return out;
-    }
-
-    mafsa_builder builder;
-};
-
-struct Mafsa
-{
-    Mafsa(mafsa m_)
-        : m{m_}
-    {}
-
-    ~Mafsa()
-    {
-        mafsa_free(&m);
-    }
-
-    bool isword(const std::string& word) const noexcept
-    {
-        return mafsa_isword(&m, word.c_str());
-    }
-
-    mafsa m;
-};
+#include <vector>
+#include "mafsa.h"
 
 
 std::optional<Mafsa> load_dictionary(std::string path, int max_words)
@@ -157,16 +105,42 @@ std::string make_out_filename(std::string inname, std::string newext)
     }
 }
 
-#if 0
-bool write_data(const std::string& filename, const uint8_t* buf, std::size_t length)
+void write_data(const std::string& filename, const uint8_t* buf, std::size_t length)
 {
     std::ofstream ofs;
     ofs.open(filename, std::ios::binary);
-    ofs.write(reinterpret_cast<const char*>(buf), length);
+    ofs.write(reinterpret_cast<const char*>(buf), static_cast<std::streamsize>(length));
     ofs.close();
-    return true;
 }
-#endif
+
+void write_mafsa(const Mafsa& mm, const std::string& filename)
+{
+    auto make_serial_links = [](const int* children)
+    {
+        std::vector<SerialMafsaLink> result;
+        for (int value = 0; value < 26; ++value) {
+            if (children[value] != 0) {
+                result.emplace_back(value, children[value]);
+            }
+        }
+        return result;
+    };
+
+    const auto* m = mm.m.get();
+    flatbuffers::FlatBufferBuilder builder;
+    std::vector<flatbuffers::Offset<SerialMafsaNode>> nodes;
+    for (int i = 0; i < m->size; ++i) {
+        const auto* node = &m->nodes[i];
+        auto children = make_serial_links(node->children);
+        auto serial_node = CreateSerialMafsaNodeDirect(builder, mm.isterm(i), &children);
+        nodes.emplace_back(serial_node);
+    }
+    auto serial_mafsa = CreateSerialMafsaDirect(builder, &nodes);
+    builder.Finish(serial_mafsa);
+    auto* buf = builder.GetBufferPointer();
+    auto  len = builder.GetSize();
+    write_data(filename, buf, len);
+}
 
 int main(int argc, char** argv)
 {
@@ -200,6 +174,8 @@ int main(int argc, char** argv)
         std::cerr << "dictionary test failed!" << std::endl;
         return 1;
     }
+
+    write_mafsa(dict, outname);
 
     return 0;
 }

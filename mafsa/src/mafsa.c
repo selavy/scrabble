@@ -19,6 +19,14 @@ int isterm(const uint* terms, int s)
     return (int)(terms[entry] & mask) != 0;
 }
 
+int mafsa_isterm(const mafsa *m, int s)
+{
+    if (!(0 <= s && s < m->size)) {
+        return 0;
+    }
+    return isterm(m->terms, s);
+}
+
 int mafsa_isword(const struct mafsa *m, const char *const word)
 {
     // printf("ISWORD: '%s'\n", word);

@@ -17,6 +17,7 @@ typedef struct mafsa mafsa;
 
 extern int  mafsa_isword(const mafsa *m, const char *const word);
 extern void mafsa_free(mafsa *m);
+extern int  mafsa_isterm(const mafsa *m, int s);
 
 struct mafsa_builder
 {
