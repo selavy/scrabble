@@ -126,11 +126,10 @@ void write_mafsa(const Mafsa& mm, const std::string& filename)
         return result;
     };
 
-    const auto* m = mm.m.get();
     flatbuffers::FlatBufferBuilder builder;
     std::vector<flatbuffers::Offset<SerialMafsaNode>> nodes;
-    for (int i = 0; i < m->size; ++i) {
-        const auto* node = &m->nodes[i];
+    for (int i = 0; i < mm->size; ++i) {
+        const auto* node = &mm->nodes[i];
         auto children = make_serial_links(node->children);
         auto serial_node = CreateSerialMafsaNodeDirect(builder, mm.isterm(i), &children);
         nodes.emplace_back(serial_node);

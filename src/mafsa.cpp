@@ -8,12 +8,28 @@
 #include <memory>
 #include "mafsa_generated.h"
 
+Mafsa::~Mafsa() noexcept
+{
+    mafsa_free(&mafsa_);
+}
+
+bool Mafsa::isword(const std::string& word) const noexcept
+{
+    return mafsa_isword(&mafsa_, word.c_str());
+}
+
+bool Mafsa::isterm(int s) const noexcept
+{
+    return mafsa_isterm(&mafsa_, s) != 0;
+}
 
 static bool ends_with(const std::string& s, std::string_view sv)
 {
-    return s.size() >= sv.size() && s.compare(s.size() - sv.size(), std::string::npos, sv) == 0;
+    return (
+        s.size() >= sv.size() &&
+        s.compare(s.size() - sv.size(), std::string::npos, sv) == 0
+    );
 }
-
 
 static std::vector<char> read_gz_dict_file(const std::string& filename)
 {
@@ -71,8 +87,10 @@ std::optional<Mafsa> Mafsa::load(const std::string& filename)
     // using uint = unsigned int;
     using Node = mafsa_node_;
     size_t size = serial_mafsa->nodes()->size();
-    auto nodes = std::make_unique<Node[]>(size);
-    auto terms = std::make_unique<uint[]>(size);
+    Node* nodes = reinterpret_cast<Node*>(malloc(size * sizeof(*nodes)));
+    uint* terms = reinterpret_cast<uint*>(malloc(size * sizeof(*terms)));
+    // auto nodes = std::make_unique<Node[]>(size);
+    // auto terms = std::make_unique<uint[]>(size);
     memset(&nodes[0], 0, sizeof(nodes[0]) * size);
     memset(&terms[0], 0, sizeof(terms[0]) * size);
     size_t index = 0;
@@ -87,8 +105,10 @@ std::optional<Mafsa> Mafsa::load(const std::string& filename)
         }
     }
     Mafsa result;
-    result.m->nodes = nodes.release();
-    result.m->terms = terms.release();
-    result.m->size  = static_cast<int>(size);
+    // result.mafsa_.nodes = nodes.release();
+    // result.mafsa_.terms = terms.release();
+    result.mafsa_.nodes = nodes;
+    result.mafsa_.terms = terms;
+    result.mafsa_.size  = static_cast<int>(size);
     return result;
 }

@@ -52,9 +52,7 @@ void mafsa_free(mafsa *m)
 {
     free(m->nodes);
     free(m->terms);
-#ifndef NDEBUG
     m->nodes = NULL;
     m->terms = NULL;
     m->size  = 0;
-#endif
 }

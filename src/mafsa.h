@@ -42,22 +42,46 @@ struct MafsaBuilder
 
 struct Mafsa
 {
+    Mafsa(mafsa&& m) noexcept : mafsa_{m} {}
+    Mafsa(Mafsa&& other) noexcept : mafsa_{other.mafsa_}
+    {
+        other.mafsa_.nodes = nullptr;
+        other.mafsa_.terms = nullptr;
+        other.mafsa_.size  = 0;
+    }
+    ~Mafsa() noexcept;
+    const mafsa& operator*() const  { return mafsa_; }
+    const mafsa* operator->() const { return &mafsa_; }
+    bool isword(const std::string& word) const noexcept;
+    bool isterm(int s) const noexcept;
     static std::optional<Mafsa> load(const std::string& filename);
 
-    Mafsa(mafsa m_)
-        : m{std::make_unique<mafsa>()}
+private:
+    Mafsa() : mafsa_{} {}
+    mafsa mafsa_;
+};
+
+#if 0
+struct Mafsa
+{
+    struct MafsaDeleter
+    {
+        void operator()(mafsa* m)
+        {
+            mafsa_free(m);
+            delete m;
+        }
+    };
+    using MafsaPtr = std::unique_ptr<mafsa, MafsaDeleter>;
+
+    static std::optional<Mafsa> load(const std::string& filename);
+
+    Mafsa(mafsa m_) : m{new mafsa{}}
     {
         *m = m_;
     }
 
     Mafsa(Mafsa&& other) noexcept : m{std::move(other.m)} {}
-
-    ~Mafsa()
-    {
-        if (m) {
-            mafsa_free(m.release());
-        }
-    }
 
     bool isword(const std::string& word) const noexcept
     {
@@ -69,9 +93,10 @@ struct Mafsa
         return mafsa_isterm(m.get(), s) != 0;
     }
 
-    std::unique_ptr<mafsa> m;
+    MafsaPtr m;
 
 private:
-    Mafsa() : m{std::make_unique<mafsa>()} {}
+    Mafsa() : m{new mafsa{}} {}
 
 };
+#endif

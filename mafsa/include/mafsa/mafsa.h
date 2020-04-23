@@ -4,6 +4,8 @@
 extern "C" {
 #endif
 
+// TODO: add allocate / deallocate API for custom allocators
+
 struct mafsa_node_ { int children[26]; };
 typedef struct mafsa_node_ mafsa_node_;
 
