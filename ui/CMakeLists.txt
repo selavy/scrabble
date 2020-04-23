@@ -21,7 +21,8 @@ target_link_libraries(text-game
     PUBLIC
         game
         LibEdit
-        re2::re2
+        # re2::re2
+        RE2
         fmt::fmt
         cxxopts::cxxopts
     )
@@ -36,7 +37,8 @@ target_link_libraries(game-test
         game
         fmt::fmt
         cxxopts::cxxopts
-        re2::re2
+        # re2::re2
+        RE2
 )
 
 add_executable(datrie datrie.cpp)

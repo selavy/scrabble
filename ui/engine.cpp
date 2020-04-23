@@ -184,7 +184,7 @@ constexpr char to_ext(char tile) noexcept {
     } else if (BLANK <= tile && tile < 2*BLANK){
         return (tile - BLANK) + 'a';
     } else {
-        assert(0 && "invalid teng tile");
+        // assert(0 && "invalid teng tile");
         __builtin_unreachable();
         return 0;
     }
@@ -195,7 +195,7 @@ constexpr int flip_dir(int d) noexcept {
         case HORZ: return VERT;
         case VERT: return HORZ;
     }
-    assert(0 && "invalid direction");
+    // assert(0 && "invalid direction");
     return 0;
 }
 

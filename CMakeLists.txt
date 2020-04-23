@@ -32,7 +32,7 @@ add_library(LibEdit INTERFACE)
 target_link_libraries(LibEdit INTERFACE ${LIBEDIT_LIBRARIES})
 target_include_directories(LibEdit INTERFACE ${LIBEDIT_INCLUDE_DIR})
 
-# find_package(Threads REQUIRED)
+find_package(Threads REQUIRED)
 
 add_subdirectory(third_party)
 add_subdirectory(mafsa)
