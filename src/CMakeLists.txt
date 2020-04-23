@@ -7,6 +7,7 @@ target_link_libraries(Mafsa++
         cxx_project_warnings
         ZLIB::ZLIB
 )
+target_include_directories(Mafsa++ PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(scrabble scrabble.cpp)
 target_link_libraries(scrabble

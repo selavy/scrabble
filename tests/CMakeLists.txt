@@ -8,6 +8,7 @@ target_link_libraries(cicero_tests
     PUBLIC
         Catch2
         Mafsa
+        Mafsa++
         Cicero
         cxx_project_options
 )
