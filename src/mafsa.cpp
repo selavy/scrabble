@@ -103,6 +103,7 @@ std::optional<Mafsa> Mafsa::load(const std::string& filename)
         for (const auto* link : *node->children()) {
             nodes[index].children[link->value()] = link->next();
         }
+        ++index;
     }
     Mafsa result;
     // result.mafsa_.nodes = nodes.release();
