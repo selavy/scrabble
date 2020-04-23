@@ -16,7 +16,7 @@ int isterm(const uint* terms, int s)
     size_t entry = (size_t)s / sizeof(uint);
     size_t shift = (size_t)s % sizeof(uint);
     uint   mask  = 1u << shift;
-    return (int)(terms[entry] & mask) != 0;
+    return ((terms[entry] & mask) != 0) ? 1 : 0;
 }
 
 int mafsa_isterm(const mafsa *m, int s)
@@ -55,4 +55,29 @@ void mafsa_free(mafsa *m)
     m->nodes = NULL;
     m->terms = NULL;
     m->size  = 0;
+}
+
+mafsa_edges mafsa_prefix_edges(const mafsa *m, const char *const word)
+{
+    mafsa_edges result;
+    const node *nodes = m->nodes;
+    const int   size  = m->size;
+    int s = 0;
+    memset(&result, 0, sizeof(result));
+    for (const char *p = word; *p != '\0'; ++p) {
+        const int c = iconv(*p);
+        const int t = nodes[s].children[c];
+        if (t == 0) {
+            return result;
+        }
+        s = t;
+    }
+    result.terminal = isterm(m->terms, s);
+    int ntiles = 0;
+    for (int i = 0; i < 26; ++i) {
+        if (nodes[s].children[i] != 0) {
+            result.edges[ntiles++] = (char)(i + 'A');
+        }
+    }
+    return result;
 }

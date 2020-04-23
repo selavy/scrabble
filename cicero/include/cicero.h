@@ -19,7 +19,7 @@ typedef enum cicero_direction cicero_direction;
 struct cicero_edges
 {
     int  terminal;
-    char edges[27];
+    char edges[27]; // [A-Z], null-terminated
 };
 typedef struct cicero_edges cicero_edges;
 

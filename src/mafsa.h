@@ -54,6 +54,8 @@ struct Mafsa
     const mafsa* operator->() const { return &mafsa_; }
     bool isword(const std::string& word) const noexcept;
     bool isterm(int s) const noexcept;
+    mafsa_edges get_edges(const char* const word) const noexcept;
+    mafsa_edges get_edges(const std::string& word) const noexcept { return get_edges(word.c_str()); }
     static std::optional<Mafsa> load(const std::string& filename);
 
 private:

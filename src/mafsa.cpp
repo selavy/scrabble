@@ -23,6 +23,11 @@ bool Mafsa::isterm(int s) const noexcept
     return mafsa_isterm(&mafsa_, s) != 0;
 }
 
+mafsa_edges Mafsa::get_edges(const char* const word) const noexcept
+{
+    return mafsa_prefix_edges(&mafsa_, word);
+}
+
 static bool ends_with(const std::string& s, std::string_view sv)
 {
     return (
