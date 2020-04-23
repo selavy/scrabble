@@ -1,5 +1,5 @@
 add_library(Cicero
-    include/cicero.h
+    include/cicero/cicero.h
     src/cicero_types.h
     src/movegen.c
 )

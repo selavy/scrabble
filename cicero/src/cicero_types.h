@@ -1,7 +1,7 @@
 #ifndef CICERO_TYPES__H_
 #define CICERO_TYPES__H_
 
-#include "cicero.h"
+#include <cicero/cicero.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
