@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include "mafsa.h"
 
+
 int main(int argc, const char** argv) {
     if (argc <= 1) {
         std::cout << "usage: " << argv[0] << " [DICT]" << std::endl;
