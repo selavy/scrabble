@@ -9,6 +9,7 @@ target_link_libraries(cicero_tests
         Catch2
         Mafsa
         Mafsa++
+        Scrabble
         Cicero
         cxx_project_options
 )

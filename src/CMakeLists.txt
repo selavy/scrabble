@@ -9,8 +9,14 @@ target_link_libraries(Mafsa++
 )
 target_include_directories(Mafsa++ PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_executable(scrabble scrabble.cpp)
-target_link_libraries(scrabble
+add_library(Scrabble scrabble.h scrabble.cpp)
+target_link_libraries(Scrabble PRIVATE cxx_project_options cxx_project_warnings)
+target_include_directories(Scrabble PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+# -----------------------------------------------------------------------------
+
+add_executable(play_cicero driver.cpp)
+target_link_libraries(play_cicero
     PUBLIC
         cxx_project_options
         cxx_project_warnings
