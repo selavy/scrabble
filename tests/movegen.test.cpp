@@ -169,6 +169,7 @@ TEST_CASE("Cicero first moves")
         "ORANGE",
         "HELLO",
         "WORLD",
+        "SULFURED",
     };
 
     auto cb = make_callbacks(words);
@@ -204,7 +205,7 @@ TEST_CASE("Cicero first moves")
         std::sort(expect.begin(), expect.end());
         cicero_movegen_generate(&movegen, rack);
         auto legal_moves = cb.sorted_legal_moves();
-        REQUIRE(legal_moves == expect);
+        CHECK(legal_moves == expect);
     }
 
     SECTION("First move with blank tile")
@@ -227,6 +228,26 @@ TEST_CASE("Cicero first moves")
         std::sort(expect.begin(), expect.end());
         cicero_movegen_generate(&movegen, rack);
         auto legal_moves = cb.sorted_legal_moves();
-        REQUIRE(legal_moves == expect);
+        CHECK(legal_moves == expect);
+    }
+
+    SECTION("Second move after H8 unify")
+    {
+        char tiles[5]   = {      'U',      'N',       'I',       'F',       'Y' };
+        int  squares[5] = { IX("H8"), IX("H9"), IX("H10"), IX("H11"), IX("H12") };
+        cicero_move move;
+        move.tiles   = &tiles[0];
+        move.squares = &squares[0];
+        move.ntiles  = 5;
+        move.direction = CICERO_HORZ;
+        cicero_movegen_make_move(&movegen, &move);
+
+
+        auto rack = make_rack("RDSELUU");
+        Move expect{ "11E", "SULFURED" };
+        cicero_movegen_generate(&movegen, rack);
+        auto legal_moves = cb.sorted_legal_moves();
+        REQUIRE(legal_moves.size() == 1);
+        CHECK(legal_moves[0] == expect);
     }
 }

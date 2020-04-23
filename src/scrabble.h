@@ -105,3 +105,21 @@ constexpr SqDir SqNumDir(const char *const name)
     // assert(0 && "invalid square name");
     return SqDir(-1, -1);
 }
+
+constexpr int IX(const char *const name)
+{
+    int i = 0;
+    for (auto* sq : HorizontalSquareNames) {
+        if (strcmp(name, sq) == 0) {
+            return i;
+        }
+        ++i;
+    }
+    i = 0;
+    for (auto* sq : VerticalSquareNames) {
+        if (strcmp(name, sq) == 0) {
+            return i;
+        }
+        ++i;
+    }
+}
