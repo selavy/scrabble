@@ -1,4 +1,4 @@
-#include "mafsa.h"
+#include <mafsa++.h>
 #include <iostream>
 #include <fstream>
 #include <string_view>
@@ -91,6 +91,9 @@ std::optional<Mafsa> Mafsa::load(const std::string& filename)
 
     // using uint = unsigned int;
     using Node = mafsa_node_;
+    if (!serial_mafsa->nodes()) {
+        return std::nullopt;
+    }
     size_t size = serial_mafsa->nodes()->size();
     Node* nodes = reinterpret_cast<Node*>(malloc(size * sizeof(*nodes)));
     uint* terms = reinterpret_cast<uint*>(malloc(size * sizeof(*terms)));

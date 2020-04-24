@@ -5,7 +5,7 @@
 #include <iostream>
 #include <cicero/cicero.h>
 #include <scrabble.h>
-#include <mafsa.h>
+#include <mafsa++.h>
 #include "test_data.h"
 
 struct Move

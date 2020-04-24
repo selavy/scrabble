@@ -4,7 +4,7 @@
 #include <string>
 #include <iostream>
 #include <unordered_set>
-#include "mafsa.h"
+#include <mafsa++.h>
 
 
 int main(int argc, const char** argv) {

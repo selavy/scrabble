@@ -46,6 +46,7 @@ struct EngineTrie
             return 'A' + (c - 'a');
         } else {
             assert(0 && "invalid character");
+            return '?';
         }
     }
 

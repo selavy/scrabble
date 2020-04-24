@@ -5,7 +5,7 @@
 #include <climits>
 #include <cassert>
 #include <vector>
-#include "mafsa.h"
+#include <mafsa++.h>
 
 
 std::optional<Mafsa> load_dictionary(std::string path, int max_words)

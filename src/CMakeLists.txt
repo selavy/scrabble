@@ -1,4 +1,4 @@
-add_library(Mafsa++ mafsa.h mafsa.cpp mafsa_generated.h)
+add_library(Mafsa++ mafsa++.h mafsa++.cpp mafsa_generated.h)
 target_link_libraries(Mafsa++
     PUBLIC
         Mafsa
