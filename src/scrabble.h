@@ -4,6 +4,10 @@
 #include <stdexcept>
 #include <utility>
 #include <cstring>
+#include <vector>
+#include <iosfwd>
+#include <string_view>
+#include <cicero/cicero.h>
 
 // general utilities that might useful
 
@@ -88,25 +92,21 @@ struct SqDir {
 
 constexpr SqDir SqNumDir(const char *const name)
 {
-    int i = 0;
-    for (auto* sq : HorizontalSquareNames) {
-        if (strcmp(name, sq) == 0) {
+    for (int i = 0; i < 225; ++i) {
+        if (strcmp(name, HorizontalSquareNames[i]) == 0) {
             return SqDir(i, 1);
         }
-        ++i;
     }
-    i = 0;
-    for (auto* sq : VerticalSquareNames) {
-        if (strcmp(name, sq) == 0) {
+    for (int i = 0; i < 225; ++i) {
+        if (strcmp(name, VerticalSquareNames[i]) == 0) {
             return SqDir(i, Dim);
         }
-        ++i;
     }
     // assert(0 && "invalid square name");
     return SqDir(-1, -1);
 }
 
-constexpr int IX(const char *const name)
+constexpr int IX(const char *const name) noexcept
 {
     int i = 0;
     for (auto* sq : HorizontalSquareNames) {
@@ -122,4 +122,35 @@ constexpr int IX(const char *const name)
         }
         ++i;
     }
+    // throw std::runtime_error("invalid square");
+    return -1;
 }
+
+namespace scrabble {
+
+enum class Direction
+{
+    Horz = CICERO_HORZ,
+    Vert = CICERO_VERT,
+};
+
+struct Move
+{
+    int         square;
+    Direction   direction;
+    std::string word;       // upper case is regular tile, lower case is blank
+    int         score;      // -1 if unset
+
+    // e.g. "8G flip 18", "I7 kiva 20"
+    static Move from_isc_spec(const std::string& spec);
+};
+
+std::ostream& operator<<(std::ostream& os, const Move& move);
+bool operator==(const Move& lhs, const Move& rhs) noexcept;
+bool operator!=(const Move& lhs, const Move& rhs) noexcept;
+bool operator< (const Move& lhs, const Move& rhs) noexcept;
+std::ostream& operator<<(std::ostream& os, const std::vector<Move>& moves);
+bool operator==(const std::vector<Move>& lhs, const std::vector<Move>& rhs) noexcept;
+bool operator!=(const std::vector<Move>& lhs, const std::vector<Move>& rhs) noexcept;
+
+} // scrabble

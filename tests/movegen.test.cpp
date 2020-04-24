@@ -251,3 +251,13 @@ TEST_CASE("Cicero first moves")
         CHECK(legal_moves[0] == expect);
     }
 }
+
+TEST_CASE("Parse ISC moves")
+{
+    std::string spec = "8G flip 18";
+    auto move = scrabble::Move::from_isc_spec(spec);
+    REQUIRE(move.square    == IX("8G"));
+    REQUIRE(move.direction == scrabble::Direction::Vert);
+    REQUIRE(move.word      == "FLIP");
+    REQUIRE(move.score     == 18);
+}
