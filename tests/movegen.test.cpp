@@ -254,10 +254,63 @@ TEST_CASE("Cicero first moves")
 
 TEST_CASE("Parse ISC moves")
 {
-    std::string spec = "8G flip 18";
-    auto move = scrabble::Move::from_isc_spec(spec);
-    REQUIRE(move.square    == IX("8G"));
-    REQUIRE(move.direction == scrabble::Direction::Vert);
-    REQUIRE(move.word      == "FLIP");
-    REQUIRE(move.score     == 18);
+    SECTION("8G flip 18")
+    {
+        std::string spec = "8G flip 18";
+        auto move = scrabble::Move::from_isc_spec(spec);
+        REQUIRE(move.square    == IX("8G"));
+        REQUIRE(move.direction == scrabble::Direction::Vert);
+        REQUIRE(move.word      == "FLIP");
+        REQUIRE(move.score     == 18);
+    }
+
+    SECTION("I7 kiva 20")
+    {
+        std::string spec = "I7 kiva 20";
+        auto move = scrabble::Move::from_isc_spec(spec);
+        REQUIRE(move.square    == IX("I7"));
+        REQUIRE(move.direction == scrabble::Direction::Horz);
+        REQUIRE(move.word      == "KIVA");
+        REQUIRE(move.score     == 20);
+    }
+
+    SECTION("J10 ae 8")
+    {
+        std::string spec = "J10 ae 8";
+        auto move = scrabble::Move::from_isc_spec(spec);
+        REQUIRE(move.square    == IX("J10"));
+        REQUIRE(move.direction == scrabble::Direction::Horz);
+        REQUIRE(move.word      == "AE");
+        REQUIRE(move.score     == 8);
+    }
+
+    SECTION("11J exon 22")
+    {
+        std::string spec = "11J exon 22";
+        auto move = scrabble::Move::from_isc_spec(spec);
+        REQUIRE(move.square    == IX("11J"));
+        REQUIRE(move.direction == scrabble::Direction::Vert);
+        REQUIRE(move.word      == "EXON");
+        REQUIRE(move.score     == 22);
+    }
+
+    SECTION("M9 lun 4")
+    {
+        std::string spec = "M9 lun 4";
+        auto move = scrabble::Move::from_isc_spec(spec);
+        REQUIRE(move.square    == IX("M9"));
+        REQUIRE(move.direction == scrabble::Direction::Horz);
+        REQUIRE(move.word      == "LUN");
+        REQUIRE(move.score     == 4);
+    }
+
+    SECTION("12K up 25")
+    {
+        std::string spec = "12K up 25";
+        auto move = scrabble::Move::from_isc_spec(spec);
+        REQUIRE(move.square    == IX("12K"));
+        REQUIRE(move.direction == scrabble::Direction::Vert);
+        REQUIRE(move.word      == "UP");
+        REQUIRE(move.score     == 25);
+    }
 }
