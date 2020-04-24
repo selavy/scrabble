@@ -71,10 +71,11 @@ Move Move::from_isc_spec(const std::string& spec)
 
 std::ostream& operator<<(std::ostream& os, const Move& move)
 {
-    os << IscSqName(move.direction, move.square) << " " << InvertWordCase(move.word);
+    os << "\"" << IscSqName(move.direction, move.square) << " " << InvertWordCase(move.word);
     if (move.score >= 0) {
         os << " " << move.score;
     }
+    os << "\"";
     return os;
 }
 
