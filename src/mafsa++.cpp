@@ -65,7 +65,6 @@ static std::vector<char> read_gz_dict_file(const std::string& filename)
     return buf;
 }
 
-
 std::vector<char> read_dict_file(const std::string& filename)
 {
     if (ends_with(filename, ".gz")) {
@@ -82,8 +81,55 @@ std::vector<char> read_dict_file(const std::string& filename)
     return data;
 }
 
+std::optional<Mafsa> Mafsa::build_from_file(const std::string& path, int max_words)
+{
+    MafsaBuilder builder;
+    std::string word;
+    std::ifstream ifs{path};
+    int n_words = 0;
+    if (!ifs) {
+        std::cerr << "error: unable to open input file\n";
+        return std::nullopt;
+    }
+    while (ifs >> word) {
+        if (word.empty()) {
+            continue;
+        }
+        if (word.size() < 2 || word.size() > 15) {
+            std::cerr << "warning: skipping invalid word: \"" << word << "\"\n";
+        }
+        bool valid_word = true;
+        for (std::size_t i = 0; i < word.size(); ++i) {
+            char c = word[i];
+            if ('a' <= c && c <= 'z') {
+                word[i] = static_cast<char>((c - 'a') + 'A');
+            } else if ('A' <= c && c <= 'Z') {
+                word[i] = c;
+            } else {
+                std::cerr << "warning: invalid character '" << c << "' in word \"" << word << "\"\n";
+                valid_word = false;
+                break;
+            }
+        }
+        if (valid_word) {
+            if (!builder.insert(word)) {
+                std::cerr << "error: unable to insert word: " << word << "\n";
+                return std::nullopt;
+            }
+            if (++n_words >= max_words) {
+                break;
+            }
+        }
+    }
+    return builder.finish();
+}
+
 std::optional<Mafsa> Mafsa::load(const std::string& filename)
 {
+    if (ends_with(filename, ".txt")) {
+        return Mafsa::build_from_file(filename);
+    }
+
     auto buf = read_dict_file(filename);
     auto serial_mafsa = GetSerialMafsa(buf.data());
     flatbuffers::Verifier v(reinterpret_cast<const uint8_t*>(buf.data()), buf.size());

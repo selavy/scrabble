@@ -8,49 +8,6 @@
 #include <mafsa++.h>
 
 
-std::optional<Mafsa> load_dictionary(std::string path, int max_words)
-{
-    MafsaBuilder builder;
-    std::string word;
-    std::ifstream ifs{path};
-    int n_words = 0;
-    if (!ifs) {
-        std::cerr << "error: unable to open input file\n";
-        return std::nullopt;
-    }
-    while (ifs >> word) {
-        if (word.empty()) {
-            continue;
-        }
-        if (word.size() < 2 || word.size() > 15) {
-            std::cerr << "warning: skipping invalid word: \"" << word << "\"\n";
-        }
-        bool valid_word = true;
-        for (std::size_t i = 0; i < word.size(); ++i) {
-            char c = word[i];
-            if ('a' <= c && c <= 'z') {
-                word[i] = static_cast<char>((c - 'a') + 'A');
-            } else if ('A' <= c && c <= 'Z') {
-                word[i] = c;
-            } else {
-                std::cerr << "warning: invalid character '" << c << "' in word \"" << word << "\"\n";
-                valid_word = false;
-                break;
-            }
-        }
-        if (valid_word) {
-            if (!builder.insert(word)) {
-                std::cerr << "error: unable to insert word: " << word << "\n";
-                return std::nullopt;
-            }
-            if (++n_words >= max_words) {
-                break;
-            }
-        }
-    }
-    return builder.finish();
-}
-
 bool test_dictionary(const Mafsa& dict, std::string path, int max_words)
 {
     std::string word;
@@ -163,7 +120,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    auto maybe_dict = load_dictionary(inname, max_words);
+    auto maybe_dict = Mafsa::build_from_file(inname, max_words);
     if (!maybe_dict) {
         return 1;
     }

@@ -3,6 +3,7 @@
 #include <optional>
 #include <mafsa/mafsa.h>
 #include <memory>
+#include <climits>
 #include "mafsa_generated.h"
 
 
@@ -28,6 +29,7 @@ struct MafsaBuilder
         return mafsa_builder_insert(&builder, word.c_str()) == 0;
     }
 
+    // TODO: return Mafsa instead
     std::optional<mafsa> finish()
     {
         mafsa out;
@@ -57,6 +59,7 @@ struct Mafsa
     mafsa_edges get_edges(const char* const word) const noexcept;
     mafsa_edges get_edges(const std::string& word) const noexcept { return get_edges(word.c_str()); }
     static std::optional<Mafsa> load(const std::string& filename);
+    static std::optional<Mafsa> build_from_file(const std::string& filename, int max_words=INT_MAX);
 
 private:
     Mafsa() : mafsa_{} {}
