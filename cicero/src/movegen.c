@@ -1,8 +1,8 @@
 #include "cicero_types.h"
 
 internal rack_tile char_to_rack_tile(char tile) {
-    assert(('A' <= tile && tile <= 'Z') || tile == ' ');
-    return tile == ' ' ? 26 : tile - 'A';
+    assert(('A' <= tile && tile <= 'Z') || tile == CICERO_BLANK_TILE);
+    return tile == CICERO_BLANK_TILE ? 26 : tile - 'A';
 }
 
 internal int findbeg(const char* vals, const int start, const int stop, const int stride, const int root)
@@ -44,7 +44,10 @@ void cicero_movegen_init(cicero_movegen *e, cicero_callbacks callbacks)
 
 void cicero_rack_add_tile(cicero_rack* rack, char tile)
 {
-    assert(('A' <= tile && tile <= 'Z') || tile == ' ');
+    if (tile == CICERO_UNKNOWN_TILE) {
+        return;
+    }
+    assert(('A' <= tile && tile <= 'Z') || tile == CICERO_BLANK_TILE);
     rack->tiles[char_to_rack_tile(tile)]++;
 }
 

@@ -35,6 +35,13 @@ struct cicero_move
 };
 typedef struct cicero_move cicero_move;
 
+enum cicero_special_tiles
+{
+    CICERO_BLANK_TILE   = '?',
+    CICERO_UNKNOWN_TILE = ' ',
+    CICERO_EMPTY_TILE   = ' ',
+};
+
 struct cicero_rack
 {
     int tiles[27];

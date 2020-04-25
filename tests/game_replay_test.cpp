@@ -12,14 +12,6 @@
 #include <mafsa++.h>
 
 
-std::ifstream& safe_getline(std::ifstream& ifs, std::string& line) {
-    std::getline(ifs, line);
-    if (!line.empty() && *line.rbegin() == '\r') {
-        line.pop_back();
-    }
-    return ifs;
-}
-
 std::string stripline(const std::string& line)
 {
     auto first = std::find_if_not(line.begin(), line.end(), isspace);
@@ -33,15 +25,100 @@ std::string stripline(const std::string& line)
     return line.substr(static_cast<size_type>(pos), static_cast<size_type>(count));
 }
 
+std::ifstream& safe_getline(std::ifstream& ifs, std::string& line) {
+    std::getline(ifs, line);
+    line = stripline(line);
+    return ifs;
+}
+
+enum class FileType
+{
+    eIsc,
+    eGcg,
+    eInvalid,
+};
+
+struct ReplayMove
+{
+    using scrabble::Direction;
+
+    std::string         player;
+    std::array<char, 7> rack;       // ' ' == blank, '?' == unknown
+    int                 square;
+    Direction           direction;
+    std::string         word;       // uppercase = regular tile, lowercase = blank
+    int                 score = -1;
+
+    int                 change_tiles = 0; // TODO: mark which tiles changed?
+};
+
+re2::RE2 isc_regex(R"(\s*((?:\d{1,2}[A-O])|(?:[A-O]\d{1,2}))\s+([a-zA-Z]+)(?:\s+(\d+))?\s*)");
+re2::RE2 move_line_regex(R"(\s*\"(.*)\", \"(.*)\"\s*)");
+re2::RE2 header_regex(R"(\s*\[(\w+) \"(.*)\"]\s*)");
+re2::RE2 empty_line_regex(R"(\s+)");
+re2::RE2 change_line_regex(R"(\s*"?CHANGE\s+(\d+)\"?\s*)");
+
+std::optional<ReplayMove> parsemove_isc(const std::string& line)
+{
+    assert(isc_regex.ok());
+    assert(move_line_regex.ok());
+    assert(header_regex.ok());
+    assert(empty_line_regex.ok());
+    assert(change_line_regex.ok());
+
+    ReplayMove result;
+    if (re2::RE2::FullMatch(line, change_line_regex, &result.change_tiles)) {
+        return std::nullopt;
+    }
+
+    std::string rack;
+    std::string isc;
+    if (!re2::RE2::FullMatch(line, move_line_regex, &rack, &isc)) {
+        throw std::runtime_error("invalid line in ISC file");
+    }
+
+    auto move = scrabble::Move::from_isc_spec(isc);
+    result.square    = move.square;
+    result.direction = move.direction;
+    result.word      = move.word;
+    result.score     = move.score;
+
+    // std::fill(std::begin(result.rack), std::end(result.rack), '?');
+    // for (const char c : rack) {
+
+    // }
+    return result;
+}
+
 bool replay_file(std::ifstream& ifs, const Mafsa& dict)
 {
+    FileType type = FileType::eInvalid;
+
     std::string line;
     while (safe_getline(ifs, line)) {
-        line = stripline(line);
         if (line.empty()) {
+            continue;
+        }
+        if (line == "#pragma ISC") {
+            type = FileType::eIsc;
+        } else if (line == "#pragma GCG") {
+            type = FileType::eGcg;
+        } else {
+            fmt::print(stderr, "error: game file doesn't begin with type identifier");
+            return false;
+        }
+        break;
+    }
+
+    while (safe_getline(ifs, line)) {
+        line = stripline(line);
+        if (line.empty() || line[0] == '#') {
             std::cout << "skipping line: \"" << line << "\"\n";
             continue;
         }
+
+
+
         std::cout << "line: \"" << line << "\"" << std::endl;
     }
     return true;

@@ -153,7 +153,7 @@ TEST_CASE("Cicero first moves")
 
     SECTION("First move with blank tile")
     {
-        auto rack = make_rack("APPL ZW");
+        auto rack = make_rack("APPL?ZW");
         std::vector<std::string> expect_isc = {
             // horizontal applE
             { "H4 applE" },
