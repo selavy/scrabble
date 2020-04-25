@@ -81,7 +81,7 @@ std::vector<char> read_dict_file(const std::string& filename)
     return data;
 }
 
-std::optional<Mafsa> Mafsa::build_from_file(const std::string& path, int max_words)
+std::optional<Mafsa> MafsaBuilder::build_from_file(const std::string& path, int max_words)
 {
     MafsaBuilder builder;
     std::string word;
@@ -127,7 +127,7 @@ std::optional<Mafsa> Mafsa::build_from_file(const std::string& path, int max_wor
 std::optional<Mafsa> Mafsa::load(const std::string& filename)
 {
     if (ends_with(filename, ".txt")) {
-        return Mafsa::build_from_file(filename);
+        return MafsaBuilder::build_from_file(filename);
     }
 
     auto buf = read_dict_file(filename);

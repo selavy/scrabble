@@ -120,7 +120,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    auto maybe_dict = Mafsa::build_from_file(inname, max_words);
+    auto maybe_dict = MafsaBuilder::build_from_file(inname, max_words);
     if (!maybe_dict) {
         return 1;
     }

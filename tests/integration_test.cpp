@@ -2,6 +2,7 @@
 #include <fstream>
 #include <algorithm>
 #include <string>
+#include <string_view>
 #include <optional>
 
 #include <fmt/format.h>
@@ -10,10 +11,6 @@
 
 #include <mafsa++.h>
 
-Mafsa load_dict(std::string filename)
-{
-    if ()
-}
 
 int main(int argc, char **argv)
 {
@@ -33,7 +30,12 @@ int main(int argc, char **argv)
     auto gamefiles = args["input"].as<std::vector<std::string>>();
     auto dictfile  = args["dict"].as<std::string>();
 
-    const auto dict = load_dict(dictfile);
+    const auto maybe_dict = Mafsa::load(dictfile);
+    if (!maybe_dict) {
+        std::cerr << "unable to load dictionary from file: " << dictfile << std::endl;
+        return 1;
+    }
+    const auto& dict = *maybe_dict;
 
 
     return 0;
