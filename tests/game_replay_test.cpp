@@ -28,7 +28,7 @@ std::string stripline(const std::string& line)
     auto pos   = std::distance(line.begin(), first);
     auto count = std::distance(first, last);
     assert(0 <= pos && pos <= line.size());
-    assert(0 <= count && (pos + count) <= line.size());
+    assert(0 <= (pos + count) && (pos + count) <= line.size());
     using size_type = std::string::size_type;
     return line.substr(static_cast<size_type>(pos), static_cast<size_type>(count));
 }
@@ -38,6 +38,10 @@ bool replay_file(std::ifstream& ifs, const Mafsa& dict)
     std::string line;
     while (safe_getline(ifs, line)) {
         line = stripline(line);
+        if (line.empty()) {
+            std::cout << "skipping line: \"" << line << "\"\n";
+            continue;
+        }
         std::cout << "line: \"" << line << "\"" << std::endl;
     }
     return true;
