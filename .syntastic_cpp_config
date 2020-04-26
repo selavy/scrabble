@@ -1,0 +1,11 @@
+-Iui
+-Itools
+-Itests
+-Isrc
+-Ithird_party/Catch2/single_include
+-Ithird_party/imgui/src
+-Ithird_party
+-Ithird_party/cxxopts/src
+-Ithird_party/cxxopts/test
+-Icicero/include
+-Imafsa/include
