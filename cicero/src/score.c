@@ -105,7 +105,6 @@ internal void remove_tiles(char *board, const cicero_move *move)
 
 int cicero_score_move_fast(cicero *e, const cicero_move *move)
 {
-    int score = 0;
     char       *board   = e->vals;
     const u16  *hscr    = move->direction == CICERO_HORZ ? e->hscr : e->vscr;
     const int  *squares = move->squares;
@@ -115,6 +114,10 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
     const int   vstride = flip_dir(move->direction);
     const dimstart hstart = move->direction == CICERO_HORZ ? colstart : rowstart;
     // const dimstart vstart = move->direction == CICERO_HORZ ? rowstart : colstart;
+
+    int root_score  = 0;
+    int cross_score = 0;
+    int bingo_bonus = ntiles == 7 ? 50 : 0;
 
     place_tiles(board, move);
 
@@ -144,25 +147,22 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
             word_mult  *= double_word_squares[square] * triple_word_squares[square];
             printf("%c => %d x %d => %d\n", to_ext(tile), value, mult, value * mult);
         }
-        score += word_score * word_mult;
+
+        root_score = word_score * word_mult;
         printf("word_mult = %d\n", word_mult);
-        printf("total = %d x %d = %d", word_score, word_mult, word_score * word_mult);
+        printf("total root score = %d x %d = %d\n", word_score, word_mult, root_score);
     }
 
-    // int root_score = 0;
-    // int root_multiplier = 1;
-    // for (int i = 0; i < ntiles; ++i) {
-    //     const int tile   = tiles[i];
-    //     const int square = squares[i];
-    //     root_score += hscr[square];
-    //     root_score += letter_values[tile] * double_letter_squares[square] * triple_letter_squares[square];
-    // }
 
-    if (ntiles == 7) {
-        score += 50;
+    // TODO: move into other loop through squares played
+    for (int i = 0; i < ntiles; ++i) {
+        const int square = squares[i];
+        printf("%s (%d) => %d\n", SQ[square], square, hscr[square]);
+        cross_score += hscr[square];
     }
+    printf("total cross score = %d\n", cross_score);
 
     remove_tiles(board, move);
 
-    return score;
+    return root_score + cross_score + bingo_bonus;
 }

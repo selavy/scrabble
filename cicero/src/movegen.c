@@ -69,6 +69,8 @@ int cicero_make_move(cicero *e, const cicero_move *move)
     char *vals = e->vals;
     u32  *hchk = dir == HORZ ? e->hchk : e->vchk;
     u32  *vchk = dir == HORZ ? e->vchk : e->hchk;
+    u16  *hscr = dir == HORZ ? e->hscr : e->vscr;
+    u16  *vscr = dir == HORZ ? e->vscr : e->hscr;
     u64  *asqs = e->asqs;
     dimstart horzstart = dir == HORZ ? &colstart : &rowstart;
     dimstart vertstart = dir == HORZ ? &rowstart : &colstart;
@@ -90,11 +92,14 @@ int cicero_make_move(cicero *e, const cicero_move *move)
         const int stop = start + DIM * stride;
         assert(vals[root] == EMPTY);
         vals[root] = teng;
+        int partial_score = 0;
         const int beg = findbeg(vals, start, stop, stride, root);
         const int end = findend(vals, start, stop, stride, root);
         const int len = inclusive_length(beg, end, stride);
         for (int i = 0; i < len; ++i) {
-            buf[i+1] = to_ext(vals[beg + i*stride]);
+            const char tile = vals[beg + i * stride];
+            partial_score += letter_values[tile];
+            buf[i+1] = to_ext(tile);
             assert(('A' <= buf[i+1] && buf[i+1] <= 'Z') || ('a' <= buf[i+1] && buf[i+1] <= 'z'));
         }
         buf[len+1] = '\0';
@@ -103,7 +108,7 @@ int cicero_make_move(cicero *e, const cicero_move *move)
         const int after  = end + stride;
         if (before >= start) {
             assert(getdim(stride, before) == getdim(stride, root));
-            // TODO(peter): switch to using prefix call to get children
+            // TODO(peter): switch to using prefix call to get children -- need GADDAG for this one
             u32 chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[0] = c;
@@ -113,22 +118,27 @@ int cicero_make_move(cicero *e, const cicero_move *move)
                 }
             }
             hchk[before] = chk;
+            hscr[before] = partial_score;
             setasq(asqs, before);
         }
 
         if (after < stop) {
             assert(getdim(stride, after) == getdim(stride, root));
             assert(buf[len+1] == '\0');
-            // TODO(peter): switch to using prefix call to get children
             u32 chk = 0;
-            for (char c = 'A'; c <= 'Z'; ++c) {
-                buf[len+1] = c;
-                cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, &buf[1]);
-                if (edges.terminal) {
-                    chk |= tilemask(tilenum(c));
-                }
+            cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, &buf[1]);
+            for (const char *edge = edges.edges; *edge != '\0'; ++edge) {
+                chk |= tilemask(tilenum(*edge));
             }
+            // for (char c = 'A'; c <= 'Z'; ++c) {
+            //     buf[len+1] = c;
+            //     cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, &buf[1]);
+            //     if (edges.terminal) {
+            //         chk |= tilemask(tilenum(c));
+            //     }
+            // }
             hchk[after] = chk;
+            hscr[after] = partial_score;
             setasq(asqs, after);
         }
 
@@ -142,9 +152,12 @@ int cicero_make_move(cicero *e, const cicero_move *move)
         const int beg = findbeg(vals, start, stop, stride, lsq);
         const int end = findend(vals, start, stop, stride, rsq);
         const int len = inclusive_length(beg, end, stride);
+        int partial_score = 0;
         assert(getdim(stride, lsq) == getdim(stride, rsq)); // move must be on exactly 1 row or col
         for (int i = 0; i < len; ++i) {
-            buf[i+1] = to_ext(vals[beg+i*stride]);
+            const char tile = vals[beg+i*stride];
+            partial_score += letter_values[tile];
+            buf[i+1] = to_ext(tile);
             assert(('A' <= buf[i+1] && buf[i+1] <= 'Z') || ('a' <= buf[i+1] && buf[i+1] <= 'z'));
         }
         buf[len+1] = '\0';
@@ -155,7 +168,7 @@ int cicero_make_move(cicero *e, const cicero_move *move)
             assert(vals[before] == EMPTY);
             assert(getdim(stride, before) == getdim(stride, lsq));
             assert(getdim(stride, before) == getdim(stride, rsq));
-            // TODO(peter): switch to using prefix call to get children
+            // TODO(peter): switch to using prefix call to get children -- need GADDAG for this one
             u32 chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[0] = c;
@@ -165,6 +178,7 @@ int cicero_make_move(cicero *e, const cicero_move *move)
                 }
             }
             vchk[before] = chk;
+            vscr[before] = partial_score;
             setasq(asqs, before);
         }
         if (after < stop) {
@@ -172,16 +186,20 @@ int cicero_make_move(cicero *e, const cicero_move *move)
             assert(getdim(stride, after) == getdim(stride, lsq));
             assert(getdim(stride, after) == getdim(stride, rsq));
             assert(buf[len+1] == '\0');
-            // TODO(peter): switch to using prefix call to get children
             u32 chk = 0;
-            for (char c = 'A'; c <= 'Z'; ++c) {
-                buf[len+1] = c;
-                cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, &buf[1]);
-                if (edges.terminal) {
-                    chk |= tilemask(tilenum(c));
-                }
+            cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, &buf[1]);
+            for (const char *edge = edges.edges; *edge != '\0'; ++edge) {
+                chk |= tilemask(tilenum(*edge));
             }
+            // for (char c = 'A'; c <= 'Z'; ++c) {
+            //     buf[len+1] = c;
+            //     cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, &buf[1]);
+            //     if (edges.terminal) {
+            //         chk |= tilemask(tilenum(c));
+            //     }
+            // }
             vchk[after] = chk;
+            vscr[after] = partial_score;
             setasq(asqs, after);
         }
     }
