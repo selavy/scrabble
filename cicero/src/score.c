@@ -131,6 +131,7 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
             word_score += value;
             printf("%c => %d\n", to_ext(tile), value);
         }
+        printf("Root value: %d\n", word_score);
 
         int word_mult = 1;
         for (int i = 0; i < ntiles; ++i) {
@@ -145,6 +146,7 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
         }
         score += word_score * word_mult;
         printf("word_mult = %d\n", word_mult);
+        printf("total = %d x %d = %d", word_score, word_mult, word_score * word_mult);
     }
 
     // int root_score = 0;
