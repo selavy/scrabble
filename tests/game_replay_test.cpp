@@ -136,33 +136,6 @@ std::optional<ReplayMove> parsemove_isc(const std::string& line)
     return result;
 }
 
-struct EngineMove
-{
-    std::vector<char> tiles;
-    std::vector<int>  squares;
-    cicero_move       move;
-
-    static EngineMove make(cicero* engine, const ReplayMove& m)
-    {
-        EngineMove result;
-        const int step   = static_cast<int>(m.move.direction);
-        const int square = m.move.square;
-        int i = 0;
-        for (auto c : m.move.word) {
-            const int sq = square + i++ * step;
-            const char t = cicero_tile_on_square(engine, sq);
-            if (t == CICERO_EMPTY_TILE) {
-                result.tiles.push_back(c);
-                result.squares.push_back(sq);
-            }
-        }
-        result.move.tiles = &result.tiles[0];
-        result.move.squares = &result.squares[0];
-        result.move.ntiles = static_cast<int>(result.tiles.size());
-        result.move.direction = static_cast<cicero_direction>(m.move.direction);
-        return result;
-    }
-};
 
 bool replay_file(std::ifstream& ifs, const Mafsa& dict)
 {
@@ -244,7 +217,7 @@ bool replay_file(std::ifstream& ifs, const Mafsa& dict)
         //         cicero_undo_move(&engine, &move);
         //     }
 
-        auto engine_move = EngineMove::make(&engine, replay_move);
+        auto engine_move = scrabble::EngineMove::make(&engine, replay_move.move);
         int score = cicero_make_move(&engine, &engine_move.move);
         if (score != replay_move.move.score) {
             fmt::print(stderr, "Scores don't match :( => engine={} correct={}\n\n", score, replay_move.move.score);

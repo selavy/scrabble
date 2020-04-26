@@ -26,7 +26,7 @@ typedef struct cicero_edges cicero_edges;
 typedef void         (*on_legal_move)(void *data, const char* word, int sq, int dir);
 typedef cicero_edges (*prefix_edges )(void *data, const char* prefix);
 
-// TODO: switch to this:
+// TODO: switch to this?
 // struct cicero_move
 // {
 //     cicero_direction direction;
@@ -68,7 +68,10 @@ typedef struct cicero_callbacks cicero_callbacks;
 struct cicero
 {
     char     vals[225];
-    uint32_t hchk[225];
+    // TODO: can likely switch to uint8_t
+    uint16_t hscr[225]; // if playing horizontally at square, how many additional points you'd score
+    uint16_t vscr[225];
+    uint32_t hchk[225]; // if playing horizontally, need to check hchk
     uint32_t vchk[225];
     uint64_t asqs[4];
     cicero_callbacks cb;
@@ -101,6 +104,9 @@ cicero_api void cicero_generate_legal_moves(const cicero *e, cicero_rack rack);
 
 // precondition: `move` was just played
 cicero_api int  cicero_score_move(const cicero *e, const cicero_move *move);
+
+// precondition: `move` is legal (and therefore has not been played yet)
+cicero_api int  cicero_score_move_fast(cicero *e, const cicero_move *move);
 
 #ifdef __cplusplus
 }

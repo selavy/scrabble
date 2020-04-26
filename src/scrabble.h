@@ -146,6 +146,15 @@ struct Move
     static Move from_isc_spec(const std::string& spec);
 };
 
+struct EngineMove
+{
+    std::vector<char> tiles;
+    std::vector<int>  squares;
+    cicero_move       move;
+
+    static EngineMove make(cicero* engine, const scrabble::Move& move);
+};
+
 std::ostream& operator<<(std::ostream& os, const Move& move);
 bool operator==(const Move& lhs, const Move& rhs) noexcept;
 bool operator!=(const Move& lhs, const Move& rhs) noexcept;
@@ -154,6 +163,5 @@ std::ostream& operator<<(std::ostream& os, const std::vector<Move>& moves);
 bool operator==(const std::vector<Move>& lhs, const std::vector<Move>& rhs) noexcept;
 bool operator!=(const std::vector<Move>& lhs, const std::vector<Move>& rhs) noexcept;
 std::ostream& operator<<(std::ostream& os, const cicero_rack& rack);
-
 
 } // scrabble

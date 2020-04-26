@@ -14,6 +14,8 @@ extern "C" {
 
 #define ASIZE(x) (sizeof(x) / sizeof(x[0]))
 
+typedef uint8_t  u8;
+typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
 
@@ -118,6 +120,7 @@ internal tile_num tilenum(char tile) {
     }
 }
 
+// precondition: `root` is the left-most square trying to be played
 internal int findbeg(const char* vals, const int start, const int stop, const int stride, const int root)
 {
     assert(vals[root] != EMPTY);

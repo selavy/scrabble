@@ -155,4 +155,26 @@ std::ostream& operator<<(std::ostream& os, const cicero_rack& rack)
     return os;
 }
 
+
+EngineMove EngineMove::make(cicero* engine, const scrabble::Move& move)
+{
+    EngineMove result;
+    const int step   = static_cast<int>(move.direction);
+    const int square = move.square;
+    int i = 0;
+    for (auto c : move.word) {
+        const int sq = square + i++ * step;
+        const char t = cicero_tile_on_square(engine, sq);
+        if (t == CICERO_EMPTY_TILE) {
+            result.tiles.push_back(c);
+            result.squares.push_back(sq);
+        }
+    }
+    result.move.tiles = &result.tiles[0];
+    result.move.squares = &result.squares[0];
+    result.move.ntiles = static_cast<int>(result.tiles.size());
+    result.move.direction = static_cast<cicero_direction>(move.direction);
+    return result;
+}
+
 } // ~scrabble

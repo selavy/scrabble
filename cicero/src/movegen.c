@@ -28,6 +28,8 @@ char cicero_tile_on_square(const cicero *e, int square)
 void cicero_init(cicero *e, cicero_callbacks callbacks)
 {
     memset(e->vals, EMPTY, sizeof(e->vals));
+    memset(e->hscr, 0x00u, sizeof(e->hscr));
+    memset(e->vscr, 0x00u, sizeof(e->vscr));
     memset(e->vchk, 0xffu, sizeof(e->vchk));
     memset(e->hchk, 0xffu, sizeof(e->hchk));
     memset(e->asqs, 0x00u, sizeof(e->asqs));

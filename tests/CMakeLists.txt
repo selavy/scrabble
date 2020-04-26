@@ -1,7 +1,9 @@
 add_executable(cicero_tests
     ${CATCH_MAIN}
+    test_helpers.h
     mafsa.test.cpp
     movegen.test.cpp
+    score.test.cpp
 )
 
 target_link_libraries(cicero_tests
