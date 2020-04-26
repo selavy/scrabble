@@ -1,4 +1,5 @@
 #include "cicero_types.h"
+#include "cicero_tables.h"
 
 internal rack_tile char_to_rack_tile(char tile) {
     assert(('A' <= tile && tile <= 'Z') || tile == CICERO_BLANK_TILE);
@@ -46,6 +47,15 @@ void cicero_movegen_init(cicero_movegen *e, cicero_callbacks callbacks)
     memset(e->asqs, 0x00u, sizeof(e->asqs));
     setasq(e->asqs, SQ_H8);
     e->cb = callbacks;
+
+    memcpy(&e->dlsq[0], &double_letter_squares[0], sizeof(e->dlsq));
+    memcpy(&e->tlsq[0], &triple_letter_squares[0], sizeof(e->tlsq));
+
+    e->double_letter_squares = &e->dlsq[0];
+    e->triple_letter_squares = &e->tlsq[0];
+    e->double_word_squares   = &double_word_squares[0];
+    e->triple_word_squares   = &triple_word_squares[0];
+    e->letter_values         = &letter_values[0];
 }
 
 void cicero_rack_add_tile(cicero_rack* rack, char tile)

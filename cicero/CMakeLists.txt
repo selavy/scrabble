@@ -1,7 +1,9 @@
 add_library(Cicero
     include/cicero/cicero.h
     src/cicero_types.h
+    src/cicero_tables.h
     src/movegen.c
+    src/score.c
 )
 target_link_libraries(Cicero
     PRIVATE

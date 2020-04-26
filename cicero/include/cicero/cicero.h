@@ -71,16 +71,35 @@ struct cicero_movegen
     uint32_t vchk[225];
     uint64_t asqs[4];
     cicero_callbacks cb;
+
+    int        dlsq[225]; // TODO: remove
+    int        tlsq[225]; // TODO: remove
+    int       *double_letter_squares;
+    int       *triple_letter_squares;
+    const int *double_word_squares;
+    const int *triple_word_squares;
+    const int *letter_values;
 };
 typedef struct cicero_movegen cicero_movegen;
 
+
+// A-Z = regular tile, a-z = blank, ' ' = empty
 cicero_api char cicero_tile_on_square(const cicero_movegen *m, int square);
-cicero_api void cicero_movegen_init(cicero_movegen *m, cicero_callbacks callbacks);
-// precondition: move is legal and valid
-cicero_api void cicero_movegen_make_move(cicero_movegen *m, const cicero_move *move);
-cicero_api void cicero_movegen_generate(const cicero_movegen *m, cicero_rack rack);
+
 // precondition: 'A' <= tile <= 'Z' or tile == ' '
 cicero_api void cicero_rack_add_tile(cicero_rack* rack, char tile);
+
+// note: no memory is allocated to intialize `cicero_movegen`
+cicero_api void cicero_movegen_init(cicero_movegen *m, cicero_callbacks callbacks);
+
+// precondition: move is legal and valid
+cicero_api void cicero_movegen_make_move(cicero_movegen *m, const cicero_move *move);
+
+// will call `onlegal` callback with all legal moves from `rack`
+cicero_api void cicero_movegen_generate(const cicero_movegen *m, cicero_rack rack);
+
+// precondition: `move` was just played
+cicero_api int cicero_score_move(const cicero_movegen *s, const cicero_move *move);
 
 #ifdef __cplusplus
 }

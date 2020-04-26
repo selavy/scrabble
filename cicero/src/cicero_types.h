@@ -13,13 +13,13 @@
 typedef uint32_t u32;
 typedef uint64_t u64;
 
-const u32  ANYTILE = 0xffffffffu;
-const char EMPTY = 52;
-const int  BLANK = 26;
-const int  DIM = 15;
-const int  HORZ = CICERO_HORZ;
-const int  VERT = CICERO_VERT;
-const int  SQ_H8 = 112;
+static const u32  ANYTILE = 0xffffffffu;
+static const char EMPTY = 52;
+static const int  BLANK = 26;
+static const int  DIM = 15;
+static const int  HORZ = CICERO_HORZ;
+static const int  VERT = CICERO_VERT;
+static const int  SQ_H8 = 112;
 
 // Tile classes:
 typedef int  rack_tile; // 0-26 (26 == Blank)
