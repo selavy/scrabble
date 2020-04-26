@@ -9,6 +9,7 @@
 #include <string_view>
 #include <cicero/cicero.h>
 
+
 // general utilities that might useful
 
 constexpr const char* const SquareNames[225] = {
@@ -152,5 +153,7 @@ bool operator< (const Move& lhs, const Move& rhs) noexcept;
 std::ostream& operator<<(std::ostream& os, const std::vector<Move>& moves);
 bool operator==(const std::vector<Move>& lhs, const std::vector<Move>& rhs) noexcept;
 bool operator!=(const std::vector<Move>& lhs, const std::vector<Move>& rhs) noexcept;
+std::ostream& operator<<(std::ostream& os, const cicero_rack& rack);
+
 
 } // scrabble

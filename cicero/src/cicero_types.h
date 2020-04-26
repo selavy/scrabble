@@ -93,6 +93,8 @@ internal ext_tile to_ext(eng_tile tile) {
         return tile + 'A';
     } else if (BLANK <= tile && tile < 2*BLANK) {
         return (tile - BLANK) + 'a';
+    } else if (tile == EMPTY) {
+        return CICERO_EMPTY_TILE;
     } else {
         // assert(0 && "invalid teng tile");
         __builtin_unreachable();

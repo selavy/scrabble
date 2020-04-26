@@ -10,7 +10,78 @@
 #include <re2/re2.h>
 
 #include <mafsa++.h>
+#include <scrabble.h>
 
+
+re2::RE2 isc_regex(R"(\s*((?:\d{1,2}[A-O])|(?:[A-O]\d{1,2}))\s+([a-zA-Z]+)(?:\s+(\d+))?\s*)");
+re2::RE2 move_line_regex(R"(\s*\"(.*)\", \"(.*)\"\s*)");
+re2::RE2 header_regex(R"(\s*\[(\w+) \"(.*)\"]\s*)");
+re2::RE2 empty_line_regex(R"(\s+)");
+re2::RE2 change_line_regex(R"(\s*"?CHANGE\s+(\d+)\"?\s*)");
+
+
+struct Callbacks
+{
+    using Move = scrabble::Move;
+
+    Callbacks(const Mafsa* m) noexcept : mafsa_{m}, legal_moves_{} {}
+
+    static cicero_edges prefix_edges(void* data, const char* prefix) noexcept
+    {
+        auto* self = reinterpret_cast<const Callbacks*>(data);
+        return self->prefix_edges_(prefix);
+    }
+
+    static void on_legal_move(void* data, const char* word, int square, int direction) noexcept
+    {
+        auto* self = reinterpret_cast<Callbacks*>(data);
+        return self->on_legal_move_(word, square, direction);
+    }
+
+    void clear_legal_moves() noexcept
+    {
+        legal_moves_.clear();
+    }
+
+    std::vector<Move> sorted_legal_moves() const noexcept
+    {
+        auto result = legal_moves_;
+        std::sort(result.begin(), result.end());
+        return result;
+    }
+
+    cicero_callbacks make_callbacks() const noexcept
+    {
+        cicero_callbacks cb;
+        cb.onlegal = &Callbacks::on_legal_move;
+        cb.getedges = &Callbacks::prefix_edges;
+        cb.onlegaldata = this;
+        cb.getedgesdata = this;
+        return cb;
+    }
+
+private:
+    cicero_edges prefix_edges_(const char* prefix) const noexcept
+    {
+        cicero_edges out;
+        auto edges = mafsa_->get_edges(prefix);
+        static_assert(sizeof(edges) == sizeof(out));
+        memcpy(&out, &edges, sizeof(out));
+        return out;
+    }
+
+    void on_legal_move_(const char* word, int square, int direction)
+    {
+        legal_moves_.emplace_back();
+        legal_moves_.back().square = square;
+        legal_moves_.back().direction = static_cast<scrabble::Direction>(direction);
+        legal_moves_.back().word = word;
+        legal_moves_.back().score = -1;
+    }
+
+    const Mafsa*      mafsa_;
+    std::vector<Move> legal_moves_;
+};
 
 std::string stripline(const std::string& line)
 {
@@ -25,7 +96,7 @@ std::string stripline(const std::string& line)
     return line.substr(static_cast<size_type>(pos), static_cast<size_type>(count));
 }
 
-std::ifstream& safe_getline(std::ifstream& ifs, std::string& line) {
+std::ifstream& getline_stripped(std::ifstream& ifs, std::string& line) {
     std::getline(ifs, line);
     line = stripline(line);
     return ifs;
@@ -40,62 +111,65 @@ enum class FileType
 
 struct ReplayMove
 {
-    using scrabble::Direction;
-
     std::string         player;
-    std::array<char, 7> rack;       // ' ' == blank, '?' == unknown
-    int                 square;
-    Direction           direction;
-    std::string         word;       // uppercase = regular tile, lowercase = blank
-    int                 score = -1;
-
+    cicero_rack         rack;
+    scrabble::Move      move;
     int                 change_tiles = 0; // TODO: mark which tiles changed?
 };
 
-re2::RE2 isc_regex(R"(\s*((?:\d{1,2}[A-O])|(?:[A-O]\d{1,2}))\s+([a-zA-Z]+)(?:\s+(\d+))?\s*)");
-re2::RE2 move_line_regex(R"(\s*\"(.*)\", \"(.*)\"\s*)");
-re2::RE2 header_regex(R"(\s*\[(\w+) \"(.*)\"]\s*)");
-re2::RE2 empty_line_regex(R"(\s+)");
-re2::RE2 change_line_regex(R"(\s*"?CHANGE\s+(\d+)\"?\s*)");
-
 std::optional<ReplayMove> parsemove_isc(const std::string& line)
 {
-    assert(isc_regex.ok());
-    assert(move_line_regex.ok());
-    assert(header_regex.ok());
-    assert(empty_line_regex.ok());
-    assert(change_line_regex.ok());
-
     ReplayMove result;
     if (re2::RE2::FullMatch(line, change_line_regex, &result.change_tiles)) {
         return std::nullopt;
     }
-
     std::string rack;
     std::string isc;
     if (!re2::RE2::FullMatch(line, move_line_regex, &rack, &isc)) {
         throw std::runtime_error("invalid line in ISC file");
     }
-
-    auto move = scrabble::Move::from_isc_spec(isc);
-    result.square    = move.square;
-    result.direction = move.direction;
-    result.word      = move.word;
-    result.score     = move.score;
-
-    // std::fill(std::begin(result.rack), std::end(result.rack), '?');
-    // for (const char c : rack) {
-
-    // }
+    result.move = scrabble::Move::from_isc_spec(isc);
+    memset(&result.rack, 0, sizeof(result.rack));
+    for (const char tile : rack) {
+        cicero_rack_add_tile(&result.rack, tile);
+    }
     return result;
 }
+
+struct EngineMove
+{
+    std::vector<char> tiles;
+    std::vector<int>  squares;
+    cicero_move       move;
+
+    static EngineMove make(cicero_movegen* engine, const ReplayMove& m)
+    {
+        EngineMove result;
+        const int step   = static_cast<int>(m.move.direction);
+        const int square = m.move.square;
+        int i = 0;
+        for (auto c : m.move.word) {
+            const int sq = square + i++ * step;
+            const char t = cicero_tile_on_square(engine, sq);
+            if (t == CICERO_EMPTY_TILE) {
+                result.tiles.push_back(c);
+                result.squares.push_back(sq);
+            }
+        }
+        result.move.tiles = &result.tiles[0];
+        result.move.squares = &result.squares[0];
+        result.move.ntiles = static_cast<int>(result.tiles.size());
+        result.move.direction = static_cast<cicero_direction>(m.move.direction);
+        return result;
+    }
+};
 
 bool replay_file(std::ifstream& ifs, const Mafsa& dict)
 {
     FileType type = FileType::eInvalid;
 
     std::string line;
-    while (safe_getline(ifs, line)) {
+    while (getline_stripped(ifs, line)) {
         if (line.empty()) {
             continue;
         }
@@ -104,28 +178,80 @@ bool replay_file(std::ifstream& ifs, const Mafsa& dict)
         } else if (line == "#pragma GCG") {
             type = FileType::eGcg;
         } else {
-            fmt::print(stderr, "error: game file doesn't begin with type identifier");
+            fmt::print(stderr, "error: game file doesn't begin with type identifier\n");
             return false;
         }
         break;
     }
 
-    while (safe_getline(ifs, line)) {
-        line = stripline(line);
+    while (getline_stripped(ifs, line)) {
+        if (line.empty()) {
+            continue;
+        }
+        std::string key;
+        std::string value;
+        if (!re2::RE2::FullMatch(line, header_regex, &key, &value)) {
+            fmt::print(stdout, "Found first non-header line: \"{}\"\n", line);
+            break;
+        }
+        fmt::print(stdout, "PGN Header: key=\"{}\" value=\"{}\"\n", key, value);
+    }
+
+    auto* parse_fn = &parsemove_isc;
+
+    Callbacks cb(&dict);
+    cicero_movegen engine;
+    cicero_movegen_init(&engine, cb.make_callbacks());
+
+    do {
         if (line.empty() || line[0] == '#') {
             std::cout << "skipping line: \"" << line << "\"\n";
             continue;
         }
-
-
-
         std::cout << "line: \"" << line << "\"" << std::endl;
-    }
+        auto maybe_replay_move = parsemove_isc(line);
+        if (!maybe_replay_move) {
+            continue;
+        }
+        auto& replay_move = *maybe_replay_move;
+        using scrabble::operator<<;
+        std::cout << "\t-> " << replay_move.move << " " << replay_move.rack << "\n";
+
+        cicero_movegen_generate(&engine, replay_move.rack);
+        auto legal_moves = cb.sorted_legal_moves();
+
+        auto match_ignoring_score = [&replay_move](const scrabble::Move& move) -> bool
+        {
+            return (
+                replay_move.move.square == move.square &&
+                replay_move.move.direction == move.direction &&
+                replay_move.move.word == move.word
+            );
+        };
+
+        auto it = std::find_if(std::begin(legal_moves), std::end(legal_moves), match_ignoring_score);
+        if (it == std::end(legal_moves)) {
+            std::cerr << "error: did not find played move: " << replay_move.move << ", found moves " << legal_moves << "\n";
+            return false;
+        } else {
+            std::cout << "generated move: " << replay_move.move << " correctly!\n";
+        }
+
+        auto engine_move = EngineMove::make(&engine, replay_move);
+        cicero_movegen_make_move(&engine, &engine_move.move);
+
+    } while (getline_stripped(ifs, line));
     return true;
 }
 
 int main(int argc, char **argv)
 {
+    assert(isc_regex.ok());
+    assert(move_line_regex.ok());
+    assert(header_regex.ok());
+    assert(empty_line_regex.ok());
+    assert(change_line_regex.ok());
+
     // clang-format off
     cxxopts::Options options(
         "integration-test",

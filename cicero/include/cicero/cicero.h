@@ -26,6 +26,13 @@ typedef struct cicero_edges cicero_edges;
 typedef void         (*on_legal_move)(void *data, const char* word, int sq, int dir);
 typedef cicero_edges (*prefix_edges )(void *data, const char* prefix);
 
+// TODO: switch to this:
+// struct cicero_move
+// {
+//     cicero_direction direction;
+//     int              square;
+//     const char      *word;
+// };
 struct cicero_move
 {
     const char      *tiles;      // A-Z=normal tiles, a-z=blank tiles
@@ -67,7 +74,7 @@ struct cicero_movegen
 };
 typedef struct cicero_movegen cicero_movegen;
 
-
+cicero_api char cicero_tile_on_square(const cicero_movegen *m, int square);
 cicero_api void cicero_movegen_init(cicero_movegen *m, cicero_callbacks callbacks);
 // precondition: move is legal and valid
 cicero_api void cicero_movegen_make_move(cicero_movegen *m, const cicero_move *move);

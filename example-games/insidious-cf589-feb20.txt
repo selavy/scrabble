@@ -1,3 +1,4 @@
+#pragma ISC
 [Date "02/01/2020"]
 [Player1 "insidious (1821)"]
 [Player2 "CF589 (1934)"]

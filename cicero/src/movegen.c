@@ -32,6 +32,12 @@ internal int inclusive_length(int beg, int end, int stride) {
     return (end - beg) / stride + 1;
 }
 
+char cicero_tile_on_square(const cicero_movegen *m, int square)
+{
+    assert(0 <= square && square < DIM*DIM);
+    return to_ext(m->vals[square]);
+}
+
 void cicero_movegen_init(cicero_movegen *e, cicero_callbacks callbacks)
 {
     memset(e->vals, EMPTY, sizeof(e->vals));
