@@ -1,3 +1,4 @@
+#pragma ISC
 [Date "02/08/2016"]
 [Player1 "Cruella (1897)"]
 [Player2 "CF589 (1684)"]
