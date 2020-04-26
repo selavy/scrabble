@@ -11,6 +11,14 @@ internal int inclusive_length(int beg, int end, int stride) {
     return (end - beg) / stride + 1;
 }
 
+internal void cicero_clear_scores(cicero *e, const cicero_move *move)
+{
+    for (int i = 0; i < move->ntiles; ++i) {
+        e->double_letter_squares[move->squares[i]] = 1;
+        e->triple_letter_squares[move->squares[i]] = 1;
+    }
+}
+
 char cicero_tile_on_square(const cicero *e, int square)
 {
     assert(0 <= square && square < DIM*DIM);

@@ -78,12 +78,3 @@ int cicero_score_move(const cicero *e, const cicero_move *move)
 
     return score;
 }
-
-
-void cicero_clear_scores(cicero *e, const cicero_move *move)
-{
-    for (int i = 0; i < move->ntiles; ++i) {
-        e->double_letter_squares[move->squares[i]] = 1;
-        e->triple_letter_squares[move->squares[i]] = 1;
-    }
-}
