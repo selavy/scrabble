@@ -116,8 +116,8 @@ TEST_CASE("Cicero first moves")
     };
 
     auto cb = make_callbacks(words);
-    cicero_movegen movegen;
-    cicero_movegen_init(&movegen, cb.make_callbacks());
+    cicero engine;
+    cicero_init(&engine, cb.make_callbacks());
 
     SECTION("First move generate moves")
     {
@@ -146,7 +146,7 @@ TEST_CASE("Cicero first moves")
             { "8H unify" },
         };
         const auto expect = make_move_list(expect_isc);
-        cicero_movegen_generate(&movegen, rack);
+        cicero_generate_legal_moves(&engine, rack);
         auto legal_moves = cb.sorted_legal_moves();
         CHECK(legal_moves == expect);
     }
@@ -169,7 +169,7 @@ TEST_CASE("Cicero first moves")
             { "8H applE" },
         };
         auto expect = make_move_list(expect_isc);
-        cicero_movegen_generate(&movegen, rack);
+        cicero_generate_legal_moves(&engine, rack);
         auto legal_moves = cb.sorted_legal_moves();
         CHECK(legal_moves == expect);
     }
@@ -183,11 +183,11 @@ TEST_CASE("Cicero first moves")
         move.squares = &squares[0];
         move.ntiles  = 5;
         move.direction = CICERO_HORZ;
-        cicero_movegen_make_move(&movegen, &move);
+        cicero_make_move(&engine, &move);
 
         auto rack = make_rack("RDSELUU");
         auto expect = scrabble::Move::from_isc_spec("11E sulfured");
-        cicero_movegen_generate(&movegen, rack);
+        cicero_generate_legal_moves(&engine, rack);
         auto legal_moves = cb.sorted_legal_moves();
         REQUIRE(legal_moves.size() == 1);
         CHECK(legal_moves[0] == expect);

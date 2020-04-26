@@ -11,13 +11,13 @@ internal int inclusive_length(int beg, int end, int stride) {
     return (end - beg) / stride + 1;
 }
 
-char cicero_tile_on_square(const cicero_movegen *m, int square)
+char cicero_tile_on_square(const cicero *e, int square)
 {
     assert(0 <= square && square < DIM*DIM);
-    return to_ext(m->vals[square]);
+    return to_ext(e->vals[square]);
 }
 
-void cicero_movegen_init(cicero_movegen *e, cicero_callbacks callbacks)
+void cicero_init(cicero *e, cicero_callbacks callbacks)
 {
     memset(e->vals, EMPTY, sizeof(e->vals));
     memset(e->vchk, 0xffu, sizeof(e->vchk));
@@ -45,7 +45,7 @@ void cicero_rack_add_tile(cicero_rack* rack, char tile)
     rack->tiles[char_to_rack_tile(tile)]++;
 }
 
-void cicero_movegen_make_move(cicero_movegen *e, const cicero_move *move)
+void cicero_make_move(cicero *e, const cicero_move *move)
 {
     // NOTE(peter): everything in this function is named as if computing
     // the horizontal cross-checks, but it is actually direction agnotistic.
@@ -193,13 +193,13 @@ void cicero_movegen_make_move(cicero_movegen *e, const cicero_move *move)
 
 struct state
 {
-    const cicero_movegen *e;
-    const u32   *xchk;
-    cicero_rack *r;
-    int          anchor;
-    int          start;
-    int          stride;
-    int          stop;
+    const cicero *e;
+    const u32    *xchk;
+    cicero_rack  *r;
+    int           anchor;
+    int           start;
+    int           stride;
+    int           stop;
 };
 typedef struct state state;
 
@@ -236,7 +236,7 @@ internal void revbuf(char* buf, int length)
 internal void extend_right(const state* ss, int lsq, int sq, string* word, int right_part_length)
 {
     word->buf[word->len] = 0;
-    const cicero_movegen* e = ss->e;
+    const cicero* e = ss->e;
     int* rack = ss->r->tiles;
     const cicero_edges edges_ = e->cb.getedges((void*)e->cb.getedgesdata, word->buf);
     const char* edges = edges_.edges;
@@ -311,7 +311,7 @@ internal void left_part(const state* ss, int sq, int limit, string* word)
 {
     word->buf[word->len] = 0; // TEMP?
 
-    const cicero_movegen *e = ss->e;
+    const cicero *e = ss->e;
     const cicero_edges edges_   = e->cb.getedges((void*)e->cb.getedgesdata, word->buf);
     const char *edges    = edges_.edges;
     const int   terminal = edges_.terminal;
@@ -362,7 +362,7 @@ internal void left_part(const state* ss, int sq, int limit, string* word)
 
 internal void extend_right_on_existing_left_part(const state* ss, int anchor, string* word)
 {
-    const cicero_movegen *e = ss->e;
+    const cicero *e = ss->e;
     const char *vals = e->vals;
     const int start  = ss->start;
     const int stride = ss->stride;
@@ -382,7 +382,7 @@ internal void extend_right_on_existing_left_part(const state* ss, int anchor, st
     word->len = 0;
 }
 
-void cicero_movegen_generate(const cicero_movegen *e, cicero_rack rack)
+void cicero_generate_legal_moves(const cicero *e, cicero_rack rack)
 {
     const int dirs[] = { HORZ, VERT };
 

@@ -142,7 +142,7 @@ struct EngineMove
     std::vector<int>  squares;
     cicero_move       move;
 
-    static EngineMove make(cicero_movegen* engine, const ReplayMove& m)
+    static EngineMove make(cicero* engine, const ReplayMove& m)
     {
         EngineMove result;
         const int step   = static_cast<int>(m.move.direction);
@@ -200,8 +200,8 @@ bool replay_file(std::ifstream& ifs, const Mafsa& dict)
     auto* parse_fn = &parsemove_isc;
 
     Callbacks cb(&dict);
-    cicero_movegen engine;
-    cicero_movegen_init(&engine, cb.make_callbacks());
+    cicero engine;
+    cicero_init(&engine, cb.make_callbacks());
 
     do {
         if (line.empty() || line[0] == '#') {
@@ -217,7 +217,7 @@ bool replay_file(std::ifstream& ifs, const Mafsa& dict)
         using scrabble::operator<<;
         std::cout << "\t-> " << replay_move.move << " " << replay_move.rack << "\n";
 
-        cicero_movegen_generate(&engine, replay_move.rack);
+        cicero_generate_legal_moves(&engine, replay_move.rack);
         auto legal_moves = cb.sorted_legal_moves();
 
         auto match_ignoring_score = [&replay_move](const scrabble::Move& move) -> bool
@@ -237,8 +237,15 @@ bool replay_file(std::ifstream& ifs, const Mafsa& dict)
             std::cout << "generated move: " << replay_move.move << " correctly!\n";
         }
 
+        // Desired API:
+        //     if (cicero_legal_move(&engine, &move)) {
+        //         int score = cicero_make_move(&engine, &move);
+        //         // ... do something with it ...
+        //         cicero_undo_move(&engine, &move);
+        //     }
+
         auto engine_move = EngineMove::make(&engine, replay_move);
-        cicero_movegen_make_move(&engine, &engine_move.move);
+        cicero_make_move(&engine, &engine_move.move);
 
         int score = cicero_score_move(&engine, &engine_move.move);
         if (score != replay_move.move.score) {

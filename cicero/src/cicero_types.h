@@ -6,6 +6,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define internal static inline
 
 #define ASIZE(x) (sizeof(x) / sizeof(x[0]))
@@ -27,6 +31,8 @@ typedef char eng_tile; // 0-25 = regular tile, 26-51 = blank tile
 typedef char ext_tile; // A-Z = regular tile, a-z = blank tile
 typedef char tile_num; // 0-25 ignoring blankness, i.e. A=a=0
 
+typedef int (*dimstart)(int sq);
+
 internal int getcol(int sq)   { return sq % DIM; }
 internal int getrow(int sq)   { return sq / DIM; }
 internal int getdim(int dir, int sq) { return dir == HORZ ? getrow(sq) : getcol(sq); } // TEMP TEMP
@@ -34,8 +40,6 @@ internal int rowstart(int sq) { return getcol(sq); }
 internal int colstart(int sq) { return getrow(sq) * DIM; }
 internal int lsb(u64 x)       { return __builtin_ctzll(x); }
 internal u64 clearlsb(u64 x)  { return x & (x - 1); }
-
-typedef int (*dimstart)(int sq);
 
 internal void setasq(u64* asq, int sq)
 {
@@ -135,5 +139,9 @@ internal int findend(const char* vals, const int start, const int stop, const in
     assert(vals[sq - stride] != EMPTY);
     return sq - stride;
 }
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // CICERO_TYPES__H_

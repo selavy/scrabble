@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 
-internal int get_word_score(const int *squares, int nsquares, const cicero_movegen *e)
+internal int get_word_score(const int *squares, int nsquares, const cicero *e)
 {
     const int *double_word_squares = e->double_word_squares;
     const int *triple_word_squares = e->triple_word_squares;
@@ -16,7 +16,7 @@ internal int get_word_score(const int *squares, int nsquares, const cicero_moveg
     return multiplier;
 }
 
-int cicero_score_move(const cicero_movegen *e, const cicero_move *move)
+int cicero_score_move(const cicero *e, const cicero_move *move)
 {
     int score = 0;
     const int *double_letter_squares = e->double_letter_squares;
@@ -80,10 +80,10 @@ int cicero_score_move(const cicero_movegen *e, const cicero_move *move)
 }
 
 
-void cicero_clear_scores(cicero_movegen *m, const cicero_move *move)
+void cicero_clear_scores(cicero *e, const cicero_move *move)
 {
     for (int i = 0; i < move->ntiles; ++i) {
-        m->double_letter_squares[move->squares[i]] = 1;
-        m->triple_letter_squares[move->squares[i]] = 1;
+        e->double_letter_squares[move->squares[i]] = 1;
+        e->triple_letter_squares[move->squares[i]] = 1;
     }
 }

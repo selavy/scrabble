@@ -55,6 +55,7 @@ struct cicero_rack
 };
 typedef struct cicero_rack cicero_rack;
 
+// note: cicero will not touch the user data, however it is passed back to the user as non-const.
 struct cicero_callbacks
 {
     on_legal_move onlegal;
@@ -64,7 +65,7 @@ struct cicero_callbacks
 };
 typedef struct cicero_callbacks cicero_callbacks;
 
-struct cicero_movegen
+struct cicero
 {
     char     vals[225];
     uint32_t hchk[225];
@@ -80,29 +81,29 @@ struct cicero_movegen
     const int *triple_word_squares;
     const int *letter_values;
 };
-typedef struct cicero_movegen cicero_movegen;
+typedef struct cicero cicero;
 
 
 // A-Z = regular tile, a-z = blank, ' ' = empty
-cicero_api char cicero_tile_on_square(const cicero_movegen *m, int square);
+cicero_api char cicero_tile_on_square(const cicero *e, int square);
 
 // precondition: 'A' <= tile <= 'Z' or tile == ' '
 cicero_api void cicero_rack_add_tile(cicero_rack* rack, char tile);
 
-// note: no memory is allocated to intialize `cicero_movegen`
-cicero_api void cicero_movegen_init(cicero_movegen *m, cicero_callbacks callbacks);
+// note: no memory is allocated to intialize `cicero`
+cicero_api void cicero_init(cicero *e, cicero_callbacks callbacks);
 
 // precondition: move is legal and valid
-cicero_api void cicero_movegen_make_move(cicero_movegen *m, const cicero_move *move);
+cicero_api void cicero_make_move(cicero *e, const cicero_move *move);
 
 // will call `onlegal` callback with all legal moves from `rack`
-cicero_api void cicero_movegen_generate(const cicero_movegen *m, cicero_rack rack);
+cicero_api void cicero_generate_legal_moves(const cicero *e, cicero_rack rack);
 
 // precondition: `move` was just played
-cicero_api int  cicero_score_move(const cicero_movegen *s, const cicero_move *move);
+cicero_api int  cicero_score_move(const cicero *e, const cicero_move *move);
 
 // TEMP TEMP
-cicero_api void cicero_clear_scores(cicero_movegen *m, const cicero_move *move);
+cicero_api void cicero_clear_scores(cicero *e, const cicero_move *move);
 
 #ifdef __cplusplus
 }
