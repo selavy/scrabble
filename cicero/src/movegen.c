@@ -6,28 +6,6 @@ internal rack_tile char_to_rack_tile(char tile) {
     return tile == CICERO_BLANK_TILE ? 26 : tile - 'A';
 }
 
-internal int findbeg(const char* vals, const int start, const int stop, const int stride, const int root)
-{
-    assert(vals[root] != EMPTY);
-    int sq = root - stride;
-    while (sq >= start && vals[sq] != EMPTY) {
-        sq -= stride;
-    }
-    assert(vals[sq + stride] != EMPTY);
-    return sq + stride;
-}
-
-internal int findend(const char* vals, const int start, const int stop, const int stride, const int root)
-{
-    assert(vals[root] != EMPTY);
-    int sq = root + stride;
-    while (sq < stop && vals[sq] != EMPTY) {
-        sq += stride;
-    }
-    assert(vals[sq - stride] != EMPTY);
-    return sq - stride;
-}
-
 internal int inclusive_length(int beg, int end, int stride) {
     assert(beg <= end);
     return (end - beg) / stride + 1;

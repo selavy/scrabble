@@ -114,4 +114,26 @@ internal tile_num tilenum(char tile) {
     }
 }
 
+internal int findbeg(const char* vals, const int start, const int stop, const int stride, const int root)
+{
+    assert(vals[root] != EMPTY);
+    int sq = root - stride;
+    while (sq >= start && vals[sq] != EMPTY) {
+        sq -= stride;
+    }
+    assert(vals[sq + stride] != EMPTY);
+    return sq + stride;
+}
+
+internal int findend(const char* vals, const int start, const int stop, const int stride, const int root)
+{
+    assert(vals[root] != EMPTY);
+    int sq = root + stride;
+    while (sq < stop && vals[sq] != EMPTY) {
+        sq += stride;
+    }
+    assert(vals[sq - stride] != EMPTY);
+    return sq - stride;
+}
+
 #endif // CICERO_TYPES__H_

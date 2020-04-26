@@ -194,7 +194,7 @@ bool replay_file(std::ifstream& ifs, const Mafsa& dict)
             fmt::print(stdout, "Found first non-header line: \"{}\"\n", line);
             break;
         }
-        fmt::print(stdout, "PGN Header: key=\"{}\" value=\"{}\"\n", key, value);
+        // fmt::print(stdout, "PGN Header: key=\"{}\" value=\"{}\"\n", key, value);
     }
 
     auto* parse_fn = &parsemove_isc;
@@ -239,6 +239,17 @@ bool replay_file(std::ifstream& ifs, const Mafsa& dict)
 
         auto engine_move = EngineMove::make(&engine, replay_move);
         cicero_movegen_make_move(&engine, &engine_move.move);
+
+        int score = cicero_score_move(&engine, &engine_move.move);
+        if (score != replay_move.move.score) {
+            fmt::print(stderr, "Scores don't match :( => engine={} correct={}\n\n", score, replay_move.move.score);
+            return false;
+        } else {
+            fmt::print(stdout, "Scores match! => engine={} correct={}\n\n", score, replay_move.move.score);
+        }
+
+        cicero_clear_scores(&engine, &engine_move.move);
+
 
     } while (getline_stripped(ifs, line));
     return true;

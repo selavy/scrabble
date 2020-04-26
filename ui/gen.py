@@ -178,13 +178,21 @@ print_array_impl(
 # print(f'    "Invalid",')
 # print("};")
 
-
 letter_values = []
-for i in range(128):
-    c = chr(i)
-    if 'a' <= c <= 'z':
-        c = '?'
-    letter_values.append(VALUES.get(c, 0))
+for i in range(26):
+    c = chr(ord('A') + i)
+    letter_values.append(VALUES[c])
+for i in range(26):
+    # c = chr(ord('A') + i)
+    letter_values.append(VALUES['?'])
+letter_values.append(VALUES['?'])
+
+# letter_values = []
+# for i in range(128):
+#     c = chr(i)
+#     if 'a' <= c <= 'z':
+#         c = '?'
+#     letter_values.append(VALUES.get(c, 0))
 
 print_array(
     name='letter_values',

@@ -99,7 +99,10 @@ cicero_api void cicero_movegen_make_move(cicero_movegen *m, const cicero_move *m
 cicero_api void cicero_movegen_generate(const cicero_movegen *m, cicero_rack rack);
 
 // precondition: `move` was just played
-cicero_api int cicero_score_move(const cicero_movegen *s, const cicero_move *move);
+cicero_api int  cicero_score_move(const cicero_movegen *s, const cicero_move *move);
+
+// TEMP TEMP
+cicero_api void cicero_clear_scores(cicero_movegen *m, const cicero_move *move);
 
 #ifdef __cplusplus
 }

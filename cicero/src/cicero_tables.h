@@ -2,15 +2,12 @@
 #define CICERO_TABLES_H_
 
 
-static const int letter_values[128] = {
+// 26 letters x 2 (blank not / blank) + 1 empty = 53
+static const int letter_values[53] = {
+     1,  3,  3,  2,  1,  4,  2,  4,  1,  8,  5,  1,  3,  1,  1,  3,
+    10,  1,  1,  1,  1,  4,  4,  8,  4, 10,  0,  0,  0,  0,  0,  0,
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-     0,  1,  3,  3,  2,  1,  4,  2,  4,  1,  8,  5,  1,  3,  1,  1,
-     3, 10,  1,  1,  1,  1,  4,  4,  8,  4, 10,  0,  0,  0,  0,  0,
-     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,
 };
 
 // TODO(peter): had 226 entries so that InvalidSquare will return 1, but don't think that I need that anymore
