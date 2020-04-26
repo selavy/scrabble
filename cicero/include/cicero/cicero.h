@@ -94,7 +94,7 @@ cicero_api void cicero_rack_add_tile(cicero_rack* rack, char tile);
 cicero_api void cicero_init(cicero *e, cicero_callbacks callbacks);
 
 // precondition: move is legal and valid
-cicero_api void cicero_make_move(cicero *e, const cicero_move *move);
+cicero_api int  cicero_make_move(cicero *e, const cicero_move *move);
 
 // will call `onlegal` callback with all legal moves from `rack`
 cicero_api void cicero_generate_legal_moves(const cicero *e, cicero_rack rack);

@@ -45,7 +45,7 @@ void cicero_rack_add_tile(cicero_rack* rack, char tile)
     rack->tiles[char_to_rack_tile(tile)]++;
 }
 
-void cicero_make_move(cicero *e, const cicero_move *move)
+int cicero_make_move(cicero *e, const cicero_move *move)
 {
     // NOTE(peter): everything in this function is named as if computing
     // the horizontal cross-checks, but it is actually direction agnotistic.
@@ -175,6 +175,10 @@ void cicero_make_move(cicero *e, const cicero_move *move)
             setasq(asqs, after);
         }
     }
+
+    int score = cicero_score_move(e, move);
+    cicero_clear_scores(e, move);
+    return score;
 }
 
 // Definitions:
