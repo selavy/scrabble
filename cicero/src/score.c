@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 
-int get_word_score(const int *squares, int nsquares, const cicero_movegen *e)
+internal int get_word_score(const int *squares, int nsquares, const cicero_movegen *e)
 {
     const int *double_word_squares = e->double_word_squares;
     const int *triple_word_squares = e->triple_word_squares;
