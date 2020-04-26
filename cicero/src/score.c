@@ -39,11 +39,8 @@ int cicero_score_move(const cicero_movegen *e, const cicero_move *move)
         const int stride = hstride;
         const int stop   = start + DIM * stride;
         const int first  = findbeg(board, start, stop, stride, root);
-        for (int sq = first; sq < stop; sq += stride) {
+        for (int sq = first; sq < stop && board[sq] != EMPTY; sq += stride) {
             const char tile = board[sq];
-            if (tile == EMPTY) {
-                break;
-            }
             const int value = letter_values[tile];
             const int mult  = double_letter_squares[sq] * triple_letter_squares[sq];
             word_score += value * mult;
@@ -62,13 +59,10 @@ int cicero_score_move(const cicero_movegen *e, const cicero_move *move)
             const int stop   = start + DIM * stride;
             const int first  = findbeg(board, start, stop, stride, root);
             int tiles = 0;
-            for (int sq = first; sq < stop; sq += stride, ++tiles) {
+            for (int sq = first; sq < stop && board[sq] != EMPTY; sq += stride, ++tiles) {
                 const char tile = board[sq];
-                if (tile == EMPTY) {
-                    break;
-                }
-                const int  value  = letter_values[tile];
-                const int  mult   = double_letter_squares[sq] * triple_letter_squares[sq];
+                const int value = letter_values[tile];
+                const int mult  = double_letter_squares[sq] * triple_letter_squares[sq];
                 word_score += value * mult;
             }
             if (tiles > 1) {
