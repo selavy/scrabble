@@ -281,6 +281,7 @@ int main(int argc, char **argv)
             fmt::print(stderr, "error: failed replaying game file: {}\n", filename);
             return 1;
         }
+        fmt::print(stdout, "\n\nPassed {}!\n\n", filename);
     }
 
     return 0;

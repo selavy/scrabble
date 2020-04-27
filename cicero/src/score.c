@@ -158,7 +158,7 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
     for (int i = 0; i < ntiles; ++i) {
         const int  square = squares[i];
         const char teng   = to_eng(tiles[i]);
-        if (hscr[square] > 0) {
+        if (hscr[square] < 0xffffu) {
             const int word_mult = double_word_squares[square] * triple_word_squares[square];
             // printf("%s => (%d + %d) x %d\n", SQ[square], hscr[square], letter_values[teng], word_mult);
             const int letter_value = letter_values[teng];
