@@ -103,8 +103,6 @@ internal void remove_tiles(char *board, const cicero_move *move)
     }
 }
 
-#define TRACE(fmt, ...) fprintf(stderr, "[trace]: " fmt "\n", ##__VA_ARGS__);
-
 int cicero_score_move_fast(cicero *e, const cicero_move *move)
 {
     char       *board   = e->vals;
@@ -144,8 +142,8 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
             const int  square = squares[i];
             const int  value  = letter_values[tile];
             // TODO: adjust double/triple_letter_squares to be 1 less
-            const int  mult = (double_letter_squares[square] * triple_letter_squares[square]) - 1;
-            word_score += value * mult;
+            const int  mult = double_letter_squares[square] * triple_letter_squares[square];
+            word_score += value * (mult - 1);
             word_mult  *= double_word_squares[square] * triple_word_squares[square];
             TRACE("%c => %d x %d => %d", to_ext(tile), value, mult, value * mult);
         }
@@ -154,14 +152,6 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
         TRACE("word_mult = %d", word_mult);
         TRACE("total root score = %d x %d = %d", word_score, word_mult, root_score);
     }
-
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Working on fast scoring. The issue is that if there are letters on either side of the tile that
-    // is played, then the left part won't be counted. Look at play "6I ave 21" from CF589 vs whatnoloan
-    // The AVE goes down vertically, where the 'A' forms the horizontal word "KAE". The bug is that the 'K'
-    // isn't counted.
-
 
     // TODO: move into other loop through squares played
     for (int i = 0; i < ntiles; ++i) {
@@ -178,7 +168,7 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
             cross_score += total;
         }
     }
-    TRACE("total cross score = %d\n", cross_score);
+    TRACE("total cross score = %d", cross_score);
 
     remove_tiles(board, move);
 

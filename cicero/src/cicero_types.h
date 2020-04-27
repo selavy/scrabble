@@ -6,6 +6,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+// TEMP TEMP
+// #define DO_TRACE
+#ifdef DO_TRACE
+#include <stdio.h>
+#define TRACE(fmt, ...) fprintf(stderr, "[TRACE (%s)]: " fmt "\n", __func__, ##__VA_ARGS__);
+#else
+#define TRACE(fmt, ...)
+#endif
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -13,6 +24,7 @@ extern "C" {
 #define internal static inline
 
 #define ASIZE(x) (sizeof(x) / sizeof(x[0]))
+
 
 typedef uint8_t  u8;
 typedef uint16_t u16;
