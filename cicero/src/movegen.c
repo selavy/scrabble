@@ -1,6 +1,8 @@
 #include "cicero_types.h"
 #include "cicero_tables.h"
 
+#include <stdio.h>
+
 internal rack_tile char_to_rack_tile(char tile) {
     assert(('A' <= tile && tile <= 'Z') || tile == CICERO_BLANK_TILE);
     return tile == CICERO_BLANK_TILE ? 26 : tile - 'A';
@@ -119,6 +121,7 @@ int cicero_make_move(cicero *e, const cicero_move *move)
             }
             hchk[before] = chk;
             hscr[before] = partial_score;
+            // printf(" -- Updating horizontal score (before=%s root=%s) %s = %d\n", SQ[beg], SQ[root], SQ[before], partial_score); // TEMP TEMP
             setasq(asqs, before);
         }
 
@@ -130,15 +133,9 @@ int cicero_make_move(cicero *e, const cicero_move *move)
             for (const char *edge = edges.edges; *edge != '\0'; ++edge) {
                 chk |= tilemask(tilenum(*edge));
             }
-            // for (char c = 'A'; c <= 'Z'; ++c) {
-            //     buf[len+1] = c;
-            //     cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, &buf[1]);
-            //     if (edges.terminal) {
-            //         chk |= tilemask(tilenum(c));
-            //     }
-            // }
             hchk[after] = chk;
             hscr[after] = partial_score;
+            // printf(" -- Updating horizontal score (after=%s root=%s) %s = %d\n", SQ[end], SQ[root], SQ[after], partial_score); // TEMP TEMP
             setasq(asqs, after);
         }
 
@@ -179,6 +176,7 @@ int cicero_make_move(cicero *e, const cicero_move *move)
             }
             vchk[before] = chk;
             vscr[before] = partial_score;
+            // printf(" -- Updating vertical score (before %s) %s = %d\n", SQ[beg], SQ[before], partial_score); // TEMP TEMP
             setasq(asqs, before);
         }
         if (after < stop) {
@@ -191,15 +189,9 @@ int cicero_make_move(cicero *e, const cicero_move *move)
             for (const char *edge = edges.edges; *edge != '\0'; ++edge) {
                 chk |= tilemask(tilenum(*edge));
             }
-            // for (char c = 'A'; c <= 'Z'; ++c) {
-            //     buf[len+1] = c;
-            //     cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, &buf[1]);
-            //     if (edges.terminal) {
-            //         chk |= tilemask(tilenum(c));
-            //     }
-            // }
             vchk[after] = chk;
             vscr[after] = partial_score;
+            // printf(" -- Updating vertical score (after %s) %s = %d\n", SQ[end], SQ[after], partial_score); // TEMP TEMP
             setasq(asqs, after);
         }
     }
@@ -418,7 +410,6 @@ void cicero_generate_legal_moves(const cicero *e, cicero_rack rack)
 {
     const int dirs[] = { HORZ, VERT };
 
-    // printf("--- BEGIN ENGINE FIND --- rack = %s\n", print_rack(&rack));
     const u64  *asqs = e->asqs;
     const char *vals = e->vals;
     char buf[16];
@@ -471,5 +462,4 @@ void cicero_generate_legal_moves(const cicero *e, cicero_rack rack)
             msk = clearlsb(msk);
         }
     }
-    // printf("--- END ENGINE FIND ---\n");
 }

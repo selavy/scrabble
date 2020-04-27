@@ -132,9 +132,9 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
             const char tile = board[sq];
             const int value = letter_values[tile];
             word_score += value;
-            printf("%c => %d\n", to_ext(tile), value);
+            // printf("%c => %d\n", to_ext(tile), value);
         }
-        printf("Root value: %d\n", word_score);
+        // printf("Root value: %d\n", word_score);
 
         int word_mult = 1;
         for (int i = 0; i < ntiles; ++i) {
@@ -145,22 +145,26 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
             const int  mult = (double_letter_squares[square] * triple_letter_squares[square]) - 1;
             word_score += value * mult;
             word_mult  *= double_word_squares[square] * triple_word_squares[square];
-            printf("%c => %d x %d => %d\n", to_ext(tile), value, mult, value * mult);
+            // printf("%c => %d x %d => %d\n", to_ext(tile), value, mult, value * mult);
         }
 
         root_score = word_score * word_mult;
-        printf("word_mult = %d\n", word_mult);
-        printf("total root score = %d x %d = %d\n", word_score, word_mult, root_score);
+        // printf("word_mult = %d\n", word_mult);
+        // printf("total root score = %d x %d = %d\n", word_score, word_mult, root_score);
     }
 
 
     // TODO: move into other loop through squares played
     for (int i = 0; i < ntiles; ++i) {
-        const int square = squares[i];
-        printf("%s (%d) => %d\n", SQ[square], square, hscr[square]);
-        cross_score += hscr[square];
+        const int  square = squares[i];
+        const char teng   = to_eng(tiles[i]);
+        if (hscr[square] > 0) {
+            const int word_mult = double_word_squares[square] * triple_word_squares[square];
+            // printf("%s => (%d + %d) x %d\n", SQ[square], hscr[square], letter_values[teng], word_mult);
+            cross_score += (hscr[square] + letter_values[teng]) * word_mult;
+        }
     }
-    printf("total cross score = %d\n", cross_score);
+    // printf("total cross score = %d\n", cross_score);
 
     remove_tiles(board, move);
 

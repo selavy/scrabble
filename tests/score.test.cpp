@@ -66,25 +66,35 @@ TEST_CASE("Cicero score second move")
     cicero engine;
     cicero_init(&engine, cb.make_callbacks());
 
-    SECTION("Score 'H8 UNIFY 30', '11E sulfured 98', '12A bazoo 40'")
+    SECTION("Score 'H8 UNIFY 30', '11E sulfured 98', '12A bazoo 40', '13A yea 43'")
     {
         // auto rack1 = make_rack("UNRYFIA");
         auto move1 = scrabble::Move::from_isc_spec("H8 unify 30");
         auto engine_move1 = scrabble::EngineMove::make(&engine, move1);
         int  score1 = cicero_score_move_fast(&engine, &engine_move1.move);
-        REQUIRE(score1 == 30);
+        CHECK(score1 == 30);
         cicero_make_move(&engine, &engine_move1.move);
 
         // auto rack2 = make_rack("RDSELUU");
         auto move2 = scrabble::Move::from_isc_spec("11E sulfured 98");
         auto engine_move2 = scrabble::EngineMove::make(&engine, move2);
         int  score2 = cicero_score_move_fast(&engine, &engine_move2.move);
-        REQUIRE(score2 == 98);
+        CHECK(score2 == 98);
+        cicero_make_move(&engine, &engine_move2.move);
 
         // auto rack3 = make_rack("OBATORZ");
         auto move3 = scrabble::Move::from_isc_spec("12A bazoo 40");
         auto engine_move3 = scrabble::EngineMove::make(&engine, move3);
         int  score3 = cicero_score_move_fast(&engine, &engine_move3.move);
-        REQUIRE(score3 == 40);
+        CHECK(score3 == 40);
+        cicero_make_move(&engine, &engine_move3.move);
+
+        auto move4 = scrabble::Move::from_isc_spec("13A yea 43");
+        auto engine_move4 = scrabble::EngineMove::make(&engine, move4);
+        int  score4 = cicero_score_move_fast(&engine, &engine_move4.move);
+        CHECK(score4 == 43);
+        int  old_score4 = cicero_make_move(&engine, &engine_move4.move);
+        CHECK(old_score4 == 43);
+
     }
 }
