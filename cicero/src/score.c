@@ -161,7 +161,10 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
         if (hscr[square] > 0) {
             const int word_mult = double_word_squares[square] * triple_word_squares[square];
             // printf("%s => (%d + %d) x %d\n", SQ[square], hscr[square], letter_values[teng], word_mult);
-            cross_score += (hscr[square] + letter_values[teng]) * word_mult;
+            const int letter_value = letter_values[teng];
+            const int letter_mult  = (double_letter_squares[square] * triple_letter_squares[square]) - 1;
+            const int value = letter_value + (letter_value * letter_mult);
+            cross_score += (hscr[square] + value) * word_mult;
         }
     }
     // printf("total cross score = %d\n", cross_score);

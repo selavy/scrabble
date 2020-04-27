@@ -218,12 +218,17 @@ bool replay_file(std::ifstream& ifs, const Mafsa& dict)
         //     }
 
         auto engine_move = scrabble::EngineMove::make(&engine, replay_move.move);
+        int fast_score = cicero_score_move_fast(&engine, &engine_move.move);
         int score = cicero_make_move(&engine, &engine_move.move);
         if (score != replay_move.move.score) {
             fmt::print(stderr, "Scores don't match :( => engine={} correct={}\n\n", score, replay_move.move.score);
             return false;
         } else {
             fmt::print(stdout, "Scores match! => engine={} correct={}\n\n", score, replay_move.move.score);
+        }
+        if (fast_score != replay_move.move.score) {
+            fmt::print(stderr, "!!! FAIL !!! FAST score doesn't match :( => engine={} correct={}\n\n", fast_score, replay_move.move.score);
+            return false;
         }
 
     } while (getline_stripped(ifs, line));
