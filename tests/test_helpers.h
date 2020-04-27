@@ -49,6 +49,11 @@ struct Callbacks
         return cb;
     }
 
+    bool isword(const std::string& word) const noexcept
+    {
+        return mafsa_.isword(word);
+    }
+
 private:
     cicero_edges prefix_edges_(const char* prefix) const noexcept
     {
@@ -76,10 +81,11 @@ inline Callbacks make_callbacks(const std::vector<std::string>& words = DICT)
 {
     MafsaBuilder builder;
     for (const auto& word : words) {
-        REQUIRE(builder.insert(word) == true);
+        bool ok = builder.insert(word);
+        assert(ok == true);
     }
     auto maybe_mafsa = builder.finish();
-    REQUIRE(static_cast<bool>(maybe_mafsa) == true);
+    assert(static_cast<bool>(maybe_mafsa) == true);
     return Callbacks(std::move(*maybe_mafsa));
 }
 

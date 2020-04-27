@@ -12,6 +12,8 @@
 #include <mafsa++.h>
 #include <scrabble.h>
 
+#include "test_helpers.h"
+
 
 re2::RE2 isc_regex(R"(\s*((?:\d{1,2}[A-O])|(?:[A-O]\d{1,2}))\s+([a-zA-Z]+)(?:\s+(\d+))?\s*)");
 re2::RE2 move_line_regex(R"(\s*\"(.*)\", \"(.*)\"\s*)");
@@ -19,69 +21,6 @@ re2::RE2 header_regex(R"(\s*\[(\w+) \"(.*)\"]\s*)");
 re2::RE2 empty_line_regex(R"(\s+)");
 re2::RE2 change_line_regex(R"(\s*"?CHANGE\s+(\d+)\"?\s*)");
 
-
-struct Callbacks
-{
-    using Move = scrabble::Move;
-
-    Callbacks(const Mafsa* m) noexcept : mafsa_{m}, legal_moves_{} {}
-
-    static cicero_edges prefix_edges(void* data, const char* prefix) noexcept
-    {
-        auto* self = reinterpret_cast<const Callbacks*>(data);
-        return self->prefix_edges_(prefix);
-    }
-
-    static void on_legal_move(void* data, const char* word, int square, int direction) noexcept
-    {
-        auto* self = reinterpret_cast<Callbacks*>(data);
-        return self->on_legal_move_(word, square, direction);
-    }
-
-    void clear_legal_moves() noexcept
-    {
-        legal_moves_.clear();
-    }
-
-    std::vector<Move> sorted_legal_moves() const noexcept
-    {
-        auto result = legal_moves_;
-        std::sort(result.begin(), result.end());
-        return result;
-    }
-
-    cicero_callbacks make_callbacks() const noexcept
-    {
-        cicero_callbacks cb;
-        cb.onlegal = &Callbacks::on_legal_move;
-        cb.getedges = &Callbacks::prefix_edges;
-        cb.onlegaldata = this;
-        cb.getedgesdata = this;
-        return cb;
-    }
-
-private:
-    cicero_edges prefix_edges_(const char* prefix) const noexcept
-    {
-        cicero_edges out;
-        auto edges = mafsa_->get_edges(prefix);
-        static_assert(sizeof(edges) == sizeof(out));
-        memcpy(&out, &edges, sizeof(out));
-        return out;
-    }
-
-    void on_legal_move_(const char* word, int square, int direction)
-    {
-        legal_moves_.emplace_back();
-        legal_moves_.back().square = square;
-        legal_moves_.back().direction = static_cast<scrabble::Direction>(direction);
-        legal_moves_.back().word = word;
-        legal_moves_.back().score = -1;
-    }
-
-    const Mafsa*      mafsa_;
-    std::vector<Move> legal_moves_;
-};
 
 std::string stripline(const std::string& line)
 {
@@ -137,12 +76,9 @@ std::optional<ReplayMove> parsemove_isc(const std::string& line)
 }
 
 
-bool replay_file(std::ifstream& ifs, const Mafsa& dict)
+bool replay_file(std::ifstream& ifs, Callbacks& cb)
 {
     FileType type = FileType::eInvalid;
-
-    int fails = 0;
-
     std::string line;
     while (getline_stripped(ifs, line)) {
         if (line.empty()) {
@@ -173,7 +109,7 @@ bool replay_file(std::ifstream& ifs, const Mafsa& dict)
 
     auto* parse_fn = &parsemove_isc;
 
-    Callbacks cb(&dict);
+    cb.clear_legal_moves();
     cicero engine;
     cicero_init(&engine, cb.make_callbacks());
 
@@ -191,6 +127,7 @@ bool replay_file(std::ifstream& ifs, const Mafsa& dict)
         using scrabble::operator<<;
         std::cout << "\t-> " << replay_move.move << " " << replay_move.rack << "\n";
 
+        cb.clear_legal_moves();
         cicero_generate_legal_moves(&engine, replay_move.rack);
         auto legal_moves = cb.sorted_legal_moves();
 
@@ -203,14 +140,18 @@ bool replay_file(std::ifstream& ifs, const Mafsa& dict)
             );
         };
 
-
-        auto it = std::find_if(std::begin(legal_moves), std::end(legal_moves), match_ignoring_score);
-        if (it == std::end(legal_moves)) {
-            // std::cerr << "error: did not find played move: " << replay_move.move << ", found moves " << legal_moves << "\n";
-            std::cerr << "error: did not find played move: " << replay_move.move << "\n";
-            ++fails;
+        bool move_played_in_dictionary = cb.isword(replay_move.move.word);
+        if (move_played_in_dictionary) {
+            auto it = std::find_if(std::begin(legal_moves), std::end(legal_moves), match_ignoring_score);
+            if (it == std::end(legal_moves)) {
+                // std::cerr << "error: did not find played move: " << replay_move.move << ", found moves " << legal_moves << "\n";
+                std::cerr << "error: did not find played move: " << replay_move.move << "\n";
+                return false;
+            } else {
+                std::cout << "generated move: " << replay_move.move << " correctly!\n";
+            }
         } else {
-            std::cout << "generated move: " << replay_move.move << " correctly!\n";
+            fmt::print(stderr, "\nwarning: move played that is not in dictionary: '{}'\n\n", replay_move.move.word);
         }
 
         // Desired API:
@@ -225,24 +166,18 @@ bool replay_file(std::ifstream& ifs, const Mafsa& dict)
         int score = cicero_make_move(&engine, &engine_move.move);
         if (score != replay_move.move.score) {
             fmt::print(stderr, "Scores don't match :( => engine={} correct={}\n\n", score, replay_move.move.score);
-            ++fails;
             return false;
         } else {
             fmt::print(stdout, "Scores match! => engine={} correct={}\n\n", score, replay_move.move.score);
         }
         if (fast_score != replay_move.move.score) {
             fmt::print(stderr, "!!! FAIL !!! FAST score doesn't match :( => engine={} correct={}\n\n", fast_score, replay_move.move.score);
-            ++fails;
             return false;
         }
 
     } while (getline_stripped(ifs, line));
 
-    if (fails > 0) {
-        fmt::print(stderr, "!!! FAIL: {} failures\n", fails);
-    }
-
-    return fails == 0;
+    return true;
 }
 
 int main(int argc, char **argv)
@@ -274,12 +209,13 @@ int main(int argc, char **argv)
 
     auto gamefiles = args["file"].as<std::vector<std::string>>();
     auto dictfile  = args["dict"].as<std::string>();
-    const auto maybe_dict = Mafsa::load(dictfile);
+    auto maybe_dict = Mafsa::load(dictfile);
     if (!maybe_dict) {
         std::cerr << "unable to load dictionary from file: " << dictfile << std::endl;
         return 1;
     }
-    const auto& dict = *maybe_dict;
+    auto& dict = *maybe_dict;
+    auto cb = Callbacks{std::move(dict)};
 
     for (const auto& filename : gamefiles) {
         std::ifstream ifs{filename};
@@ -287,7 +223,7 @@ int main(int argc, char **argv)
             fmt::print(stderr, "error: unable to open game file: {}\n", filename);
             return 1;
         }
-        if (!replay_file(ifs, dict)) {
+        if (!replay_file(ifs, cb)) {
             fmt::print(stderr, "error: failed replaying game file: {}\n", filename);
             return 1;
         }
