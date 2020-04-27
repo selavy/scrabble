@@ -3,7 +3,7 @@
 [Player1 "insidious (1821)"]
 [Player2 "CF589 (1934)"]
 [Rersult "1-0"]
-[Dictionary "TWL; ### NOTE: my TWL06 dict doesn't seem to match, have to use sowpods"]
+[Dictionary "TWL; ### NOTE: use csw19"]
 
 "DGZTAAT", "H7  zag     26"
 "IMETRAB", "I6  bam     24"

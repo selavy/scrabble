@@ -141,6 +141,8 @@ bool replay_file(std::ifstream& ifs, const Mafsa& dict)
 {
     FileType type = FileType::eInvalid;
 
+    int fails = 0;
+
     std::string line;
     while (getline_stripped(ifs, line)) {
         if (line.empty()) {
@@ -164,7 +166,6 @@ bool replay_file(std::ifstream& ifs, const Mafsa& dict)
         std::string key;
         std::string value;
         if (!re2::RE2::FullMatch(line, header_regex, &key, &value)) {
-            fmt::print(stdout, "Found first non-header line: \"{}\"\n", line);
             break;
         }
         // fmt::print(stdout, "PGN Header: key=\"{}\" value=\"{}\"\n", key, value);
@@ -202,10 +203,12 @@ bool replay_file(std::ifstream& ifs, const Mafsa& dict)
             );
         };
 
+
         auto it = std::find_if(std::begin(legal_moves), std::end(legal_moves), match_ignoring_score);
         if (it == std::end(legal_moves)) {
-            std::cerr << "error: did not find played move: " << replay_move.move << ", found moves " << legal_moves << "\n";
-            return false;
+            // std::cerr << "error: did not find played move: " << replay_move.move << ", found moves " << legal_moves << "\n";
+            std::cerr << "error: did not find played move: " << replay_move.move << "\n";
+            ++fails;
         } else {
             std::cout << "generated move: " << replay_move.move << " correctly!\n";
         }
@@ -222,17 +225,24 @@ bool replay_file(std::ifstream& ifs, const Mafsa& dict)
         int score = cicero_make_move(&engine, &engine_move.move);
         if (score != replay_move.move.score) {
             fmt::print(stderr, "Scores don't match :( => engine={} correct={}\n\n", score, replay_move.move.score);
+            ++fails;
             return false;
         } else {
             fmt::print(stdout, "Scores match! => engine={} correct={}\n\n", score, replay_move.move.score);
         }
         if (fast_score != replay_move.move.score) {
             fmt::print(stderr, "!!! FAIL !!! FAST score doesn't match :( => engine={} correct={}\n\n", fast_score, replay_move.move.score);
+            ++fails;
             return false;
         }
 
     } while (getline_stripped(ifs, line));
-    return true;
+
+    if (fails > 0) {
+        fmt::print(stderr, "!!! FAIL: {} failures\n", fails);
+    }
+
+    return fails == 0;
 }
 
 int main(int argc, char **argv)
