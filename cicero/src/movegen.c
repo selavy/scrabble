@@ -129,13 +129,6 @@ int cicero_make_move(cicero *e, const cicero_move *move)
             assert(getdim(stride, after) == getdim(stride, root));
             assert(buf[len+1] == '\0');
             u32 chk = 0;
-            // for (char c = 'A'; c <= 'Z'; ++c) {	
-            //     buf[len+1] = c;	
-            //     cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, &buf[1]);	
-            //     if (edges.terminal) {	
-            //         chk |= tilemask(tilenum(c));	
-            //     }	
-            // }
             cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, &buf[1]);
             for (const char *edge = edges.edges; *edge != '\0'; ++edge) {
                 chk |= tilemask(tilenum(*edge));
@@ -192,17 +185,10 @@ int cicero_make_move(cicero *e, const cicero_move *move)
             assert(getdim(stride, after) == getdim(stride, rsq));
             assert(buf[len+1] == '\0');
             u32 chk = 0;
-            for (char c = 'A'; c <= 'Z'; ++c) {
-                buf[len+1] = c;
-                cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, &buf[1]);
-                if (edges.terminal) {
-                    chk |= tilemask(tilenum(c));
-                }
+            cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, &buf[1]);
+            for (const char *edge = edges.edges; *edge != '\0'; ++edge) {
+                chk |= tilemask(tilenum(*edge));
             }
-            // cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, &buf[1]);
-            // for (const char *edge = edges.edges; *edge != '\0'; ++edge) {
-            //     chk |= tilemask(tilenum(*edge));
-            // }
             vchk[after] = chk;
             vscr[after] = partial_score;
             // printf(" -- Updating vertical score (after %s) %s = %d\n", SQ[end], SQ[after], partial_score); // TEMP TEMP
