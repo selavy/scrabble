@@ -144,8 +144,8 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
         if (move_played_in_dictionary) {
             auto it = std::find_if(std::begin(legal_moves), std::end(legal_moves), match_ignoring_score);
             if (it == std::end(legal_moves)) {
-                // std::cerr << "error: did not find played move: " << replay_move.move << ", found moves " << legal_moves << "\n";
-                std::cerr << "error: did not find played move: " << replay_move.move << "\n";
+                std::cerr << "error: did not find played move: " << replay_move.move << ", found moves " << legal_moves << "\n";
+                // std::cerr << "error: did not find played move: " << replay_move.move << "\n";
                 return false;
             } else {
                 std::cout << "generated move: " << replay_move.move << " correctly!\n";
