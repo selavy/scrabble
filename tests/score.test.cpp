@@ -98,3 +98,44 @@ TEST_CASE("Cicero score second move")
 
     }
 }
+
+TEST_CASE("Move played between 2 adjacent tiles")
+{
+    auto cb = make_callbacks({});
+    cicero engine;
+    cicero_init(&engine, cb.make_callbacks());
+
+    struct TestCase { std::string rack; std::string isc; };
+    const std::vector<TestCase> moves = {
+        { "EIFTWRU", "8D fruit     24" },
+        { "LAAOH?O", "D4 aloof     16" },
+        { "BZRWADE", "C1 brazed    52" },
+        { "GE?GWPI", "8A eggfruit  39" },
+        { "?RBKLHA", "5A Shellbark 84" },
+        { "AEDAOSI", "2A aeradios  72" },
+        { "?LWIOPA", "1F plow      39" },
+        { "IDIAORT", "1A dab       29" },
+        { "GIA?EIE", "7G gie       14" },
+        // { "CVEIAL?", "6I ave       21" },
+    };
+    for (auto&& [rack, isc] : moves) {
+        auto move        = scrabble::Move::from_isc_spec(isc);
+        auto engine_move = scrabble::EngineMove::make(&engine, move);
+        auto cicero_move = engine_move.move;
+        auto score       = cicero_score_move_fast(&engine, &cicero_move);
+        CHECK(score == move.score);
+        cicero_make_move(&engine, &cicero_move);
+    }
+
+    {
+        TestCase test_case{ "CVEIAL?", "6I ave       21" };
+        auto&& rack      = test_case.rack;
+        auto&& isc       = test_case.isc;
+        auto move        = scrabble::Move::from_isc_spec(isc);
+        auto engine_move = scrabble::EngineMove::make(&engine, move);
+        auto cicero_move = engine_move.move;
+        auto score       = cicero_score_move_fast(&engine, &cicero_move);
+        CHECK(score == move.score);
+        cicero_make_move(&engine, &cicero_move);
+    }
+}
