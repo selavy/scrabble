@@ -103,6 +103,8 @@ internal void remove_tiles(char *board, const cicero_move *move)
     }
 }
 
+#define TRACE(fmt, ...) fprintf(stderr, "[trace]: " fmt "\n", ##__VA_ARGS__);
+
 int cicero_score_move_fast(cicero *e, const cicero_move *move)
 {
     char       *board   = e->vals;
@@ -132,9 +134,9 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
             const char tile = board[sq];
             const int value = letter_values[tile];
             word_score += value;
-            // printf("%c => %d\n", to_ext(tile), value);
+            TRACE("%c => %d\n", to_ext(tile), value);
         }
-        // printf("Root value: %d\n", word_score);
+        TRACE("Root value: %d\n", word_score);
 
         int word_mult = 1;
         for (int i = 0; i < ntiles; ++i) {
@@ -145,12 +147,12 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
             const int  mult = (double_letter_squares[square] * triple_letter_squares[square]) - 1;
             word_score += value * mult;
             word_mult  *= double_word_squares[square] * triple_word_squares[square];
-            // printf("%c => %d x %d => %d\n", to_ext(tile), value, mult, value * mult);
+            TRACE("%c => %d x %d => %d\n", to_ext(tile), value, mult, value * mult);
         }
 
         root_score = word_score * word_mult;
-        // printf("word_mult = %d\n", word_mult);
-        // printf("total root score = %d x %d = %d\n", word_score, word_mult, root_score);
+        TRACE("word_mult = %d\n", word_mult);
+        TRACE("total root score = %d x %d = %d\n", word_score, word_mult, root_score);
     }
 
 
@@ -160,14 +162,16 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
         const char teng   = to_eng(tiles[i]);
         if (hscr[square] < 0xffffu) {
             const int word_mult = double_word_squares[square] * triple_word_squares[square];
-            // printf("%s => (%d + %d) x %d\n", SQ[square], hscr[square], letter_values[teng], word_mult);
             const int letter_value = letter_values[teng];
-            const int letter_mult  = (double_letter_squares[square] * triple_letter_squares[square]) - 1;
-            const int value = letter_value + (letter_value * letter_mult);
-            cross_score += (hscr[square] + value) * word_mult;
+            const int letter_mult  = double_letter_squares[square] * triple_letter_squares[square];
+            const int value        = letter_value * letter_mult;
+            const int xscore       = hscr[square];
+            const int total        = (hscr[square] + value) * word_mult;
+            TRACE("%s => (%d x %d + %d) x %d = %d\n", SQ[square], letter_value, letter_mult, xscore, word_mult, total);
+            cross_score += total;
         }
     }
-    // printf("total cross score = %d\n", cross_score);
+    TRACE("total cross score = %d\n", cross_score);
 
     remove_tiles(board, move);
 
