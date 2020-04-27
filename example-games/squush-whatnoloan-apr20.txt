@@ -1,0 +1,36 @@
+#pragma ISC
+[Date "04/23/2020"]
+[Player1 "squush (1877)"]
+[Player2 "whatnoloan (1919)"]
+[Rersult "1-0"]
+[Dictionary "TWL; ### NOTE: use csw19"]
+
+"UPCAYKM", "8H mucky    40"
+"CHANGE 4"
+"ASRIMPA", "I4 marsupia 66"
+"LIRRS?T", "11D rEtrials 78"
+"OANPAOW", "H1 anoa     20"
+"WLNGADO", "H11 indow   30"
+"EOHPBRW", "12A bower   31"
+"CHANGE 3"
+"ZHRITEP", "J2 zip      41"
+"EECLSNA", "6B cleanser 68"
+"EHFTADR", "D2 fathered 82"
+"IEYETIF", "C1 fey      33"
+"BDTOUOD", "15E budwood 14"
+"CHANGE 5"
+"ITLJTON", "14J joint   84"
+"RGEGELT", "L4 leggy    20"
+"QTLTEII", "13L qi      37"
+"TERAEVX", "14B retax   85"
+"TIELTNI", "15N it       8"
+"EAIVA?V", "8A vive     30"
+"EINTLOO", "1A oof      18"
+"EAS?IAE", "5D hae      18"
+"ENIUETL", "15A let     13"
+# PASS (2F sunezainS 88)
+"IUEGHEN", "K8 khis     11"
+# PASS (2F ninezuPas 88)
+"EU  ENG", "A8 vug       7"
+# PASS (2F Gunazines 84)
+" EEN   ", "6L gene      7"
