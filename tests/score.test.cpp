@@ -139,3 +139,57 @@ TEST_CASE("Move played between 2 adjacent tiles")
         cicero_make_move(&engine, &cicero_move);
     }
 }
+
+TEST_CASE("Test from CF589 vs whatnoloan")
+{
+    auto cb = make_callbacks({});
+    cicero engine;
+    cicero_init(&engine, cb.make_callbacks());
+
+    struct TestCase { std::string rack; std::string isc; };
+    const std::vector<TestCase> moves = {
+        { "EIFTWRU", "8D fruit     24" },
+        { "LAAOH?O", "D4 aloof     16" },
+        { "BZRWADE", "C1 brazed    52" },
+        { "GE?GWPI", "8A eggfruit  39" },
+        { "?RBKLHA", "5A Shellbark 84" },
+        { "AEDAOSI", "2A aeradios  72" },
+        { "?LWIOPA", "1F plow      39" },
+        { "IDIAORT", "1A dab       29" },
+        { "GIA?EIE", "7G gie       14" },
+        { "CVEIAL?", "6I ave       21" },
+        { "TXROIRR", "K3 oxter     24" },
+        { "HTJCIL?", "L2 chi       39" },
+        { "CRIRUSA", "8K scaur     43" },
+        { "YNNJTL?", "M7 janny     24" },
+        { "SAIREII", "10L inia      6" },
+        { "LE?DITN", "O4 interlaRd 62" },
+        { "TITEORS", "3F to        12" },
+        // { "MOYNIMN", "11I minny    22" },
+    };
+    for (auto&& [rack, isc] : moves) {
+        auto move        = scrabble::Move::from_isc_spec(isc);
+        auto engine_move = scrabble::EngineMove::make(&engine, move);
+        auto cicero_move = engine_move.move;
+        auto score       = cicero_score_move_fast(&engine, &cicero_move);
+        CHECK(score == move.score);
+        cicero_make_move(&engine, &cicero_move);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // WORKING ON THIS TEST CASE. For some reason the cross-score for L11
+    // if 4 instead of 1
+    ////////////////////////////////////////////////////////////////////////
+
+    {
+        TestCase test_case{ "MOYNIMN", "11I minny    22" };
+        auto&& rack      = test_case.rack;
+        auto&& isc       = test_case.isc;
+        auto move        = scrabble::Move::from_isc_spec(isc);
+        auto engine_move = scrabble::EngineMove::make(&engine, move);
+        auto cicero_move = engine_move.move;
+        auto score       = cicero_score_move_fast(&engine, &cicero_move);
+        CHECK(score == move.score);
+        cicero_make_move(&engine, &cicero_move);
+    }
+}

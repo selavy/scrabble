@@ -73,6 +73,8 @@ internal int calc_cached_score(int start, int stop, int stride, int root, const 
 
 int cicero_make_move(cicero *e, const cicero_move *move)
 {
+    TRACE("applying: %.*s", move->ntiles, move->tiles);
+
     // NOTE(peter): everything in this function is named as if computing
     // the horizontal cross-checks, but it is actually direction agnotistic.
     char buf[17];
@@ -150,7 +152,7 @@ int cicero_make_move(cicero *e, const cicero_move *move)
             }
             hchk[after] = chk;
             // hscr[after] = partial_score;
-            hscr[after] = calc_cached_score(start, stop, stride, before, vals);
+            hscr[after] = calc_cached_score(start, stop, stride, after, vals);
             TRACE(" -- Updating horizontal score (after=%s root=%s) %s = %d", SQ[end], SQ[root], SQ[after], hscr[after]); // TEMP TEMP
             setasq(asqs, after);
         }

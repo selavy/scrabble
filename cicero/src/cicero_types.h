@@ -8,7 +8,7 @@
 
 
 // TEMP TEMP
-// #define DO_TRACE
+#define DO_TRACE
 #ifdef DO_TRACE
 #include <stdio.h>
 #define TRACE(fmt, ...) fprintf(stderr, "[TRACE (%s)]: " fmt "\n", __func__, ##__VA_ARGS__);

@@ -164,7 +164,7 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
             const int value        = letter_value * letter_mult;
             const int xscore       = hscr[square];
             const int total        = (hscr[square] + value) * word_mult;
-            TRACE("%s => (%d x %d + %d) x %d = %d", SQ[square], letter_value, letter_mult, xscore, word_mult, total);
+            TRACE("%s => (val=%d x lmult=%d + xscore=%d) x wmult=%d = %d", SQ[square], letter_value, letter_mult, xscore, word_mult, total);
             cross_score += total;
         }
     }
