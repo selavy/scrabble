@@ -1,0 +1,31 @@
+#pragma ISC
+[Date "01/05/2017"]
+[Player1 "whatnoloan (1958)"]
+[Player2 "BingoAce17 (1947)"]
+[Rersult "1-0"]
+[Dictionary "TWL; ### NOTE: use csw19"]
+
+"IOTOTSZ", "H7 zoo      24"
+"RGUOEWI", "7F wuz      16"
+"ITNSSET", "9F stoniest 61"
+"GOERFIJ", "L4 rejigs   32"
+"IEDLEBD", "K3 deb      22"
+"OWOQBFT", "10I oft     31"
+"EIMODSL", "11D meloids 80"
+"BFOIQUW", "J2 qi       34"
+"GGNARVR", "M2 vang     25"
+"OFBYWUI", "12A buoy    38"
+"NRGEOR?", "A12 berg    21"
+"CHANGE 7"
+"NN?ARON", "6E nan      14"
+"ACTTIHD", "5C chit     28"
+"RONOCA?", "C1 coancHor 74"
+"ARTUDEA", "1A arcuated 158"
+"RDEINLV", "H11 ivied   39"
+"K?IRAAE", "4A kina     36"
+"FRNWPLE", "I3 flew     25"
+"EAIREY?", "8A aery     33"
+"EIRUPNM", "14G perineum 78"
+"TLIR?EP", "O8 tripleS  89"
+"HSAXALO", "13J hoax    55"
+"      E", "6I we        7"

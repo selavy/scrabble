@@ -176,11 +176,6 @@ TEST_CASE("Test from CF589 vs whatnoloan")
         cicero_make_move(&engine, &cicero_move);
     }
 
-    ////////////////////////////////////////////////////////////////////////
-    // WORKING ON THIS TEST CASE. For some reason the cross-score for L11
-    // if 4 instead of 1
-    ////////////////////////////////////////////////////////////////////////
-
     {
         TestCase test_case{ "MOYNIMN", "11I minny    22" };
         auto&& rack      = test_case.rack;
