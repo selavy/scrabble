@@ -67,7 +67,7 @@ private:
     void on_legal_move_(const char* word, int square, int direction)
     {
         legal_moves_.emplace_back();
-        legal_moves_.back().square = square;
+        legal_moves_.back().square = scrabble::Square{square};
         legal_moves_.back().direction = static_cast<scrabble::Direction>(direction);
         legal_moves_.back().word = word;
         legal_moves_.back().score = -1;

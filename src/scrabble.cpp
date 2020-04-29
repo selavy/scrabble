@@ -29,20 +29,11 @@ std::string InvertWordCase(std::string word)
 
 re2::RE2 isc_regex_(R"(\s*((?:\d{1,2}[A-O])|(?:[A-O]\d{1,2}))\s+([a-zA-Z]{2,15})(?:\s+(\d+))?\s*)");
 
-Move Move::from_isc_spec(const std::string& spec)
+std::optional<Square> Square::from_isc(std::string_view sqspec) noexcept
 {
-    assert(isc_regex_.ok());
-
-    std::string sqspec;
-    std::string root;
-    int score = -1;
-    re2::RE2::FullMatch(spec.c_str(), isc_regex_, &sqspec, &root, &score);
-    if (sqspec.empty() || root.empty()) {
-        throw std::runtime_error("invalid ISC move");
+    if (sqspec.size() < 2) {
+        return std::nullopt;
     }
-    assert(2 <= sqspec.size() && sqspec.size() <= 3);
-    assert(2 <= root.size() && root.size() <= 15);
-
     const Direction dir = ('A' <= sqspec[0] && sqspec[0] <= 'O') ? Direction::Horz : Direction::Vert;
     int row = 0;
     int col = 0;
@@ -58,12 +49,34 @@ Move Move::from_isc_spec(const std::string& spec)
     col--;
     row = dir == Direction::Horz ? (sqspec[0] - 'A') : (sqspec[col2+1] - 'A');
     if (!(0 <= row && row < 15) || !(0 <= col && col < 15)) {
-        throw std::runtime_error("invalid square in ISC move");
+        return std::nullopt;
+    }
+    return Square{row*Dim + col};
+}
+
+Move Move::from_isc_spec(const std::string& spec)
+{
+    assert(isc_regex_.ok());
+
+    std::string sqspec;
+    std::string root;
+    int score = -1;
+    re2::RE2::FullMatch(spec.c_str(), isc_regex_, &sqspec, &root, &score);
+    if (sqspec.empty() || root.empty()) {
+        throw std::runtime_error("invalid ISC move");
+    }
+    assert(2 <= sqspec.size() && sqspec.size() <= 3);
+    assert(2 <= root.size() && root.size() <= 15);
+
+    const Direction dir = ('A' <= sqspec[0] && sqspec[0] <= 'O') ? Direction::Horz : Direction::Vert;
+    const auto maybe_square = Square::from_isc(sqspec);
+    if (!maybe_square) {
+        throw std::runtime_error("invalid square spec");
     }
 
     Move result;
     result.direction = dir;
-    result.square = row*Dim + col;
+    result.square = *maybe_square;
     result.word = InvertWordCase(std::move(root));
     result.score = score;
     return result;
@@ -71,7 +84,7 @@ Move Move::from_isc_spec(const std::string& spec)
 
 std::ostream& operator<<(std::ostream& os, const Move& move)
 {
-    os << "\"" << IscSqName(move.direction, move.square) << " " << InvertWordCase(move.word);
+    os << "\"" << IscSqName(move.direction, move.square.value()) << " " << InvertWordCase(move.word);
     if (move.score >= 0) {
         os << " " << move.score;
     }
@@ -160,7 +173,7 @@ EngineMove EngineMove::make(cicero* engine, const scrabble::Move& move)
 {
     EngineMove result;
     const int step   = static_cast<int>(move.direction);
-    const int square = move.square;
+    const int square = move.square.value();
     int i = 0;
     for (auto c : move.word) {
         const int sq = square + i++ * step;

@@ -7,6 +7,7 @@
 #include <vector>
 #include <iosfwd>
 #include <string_view>
+#include <optional>
 #include <cicero/cicero.h>
 
 
@@ -135,9 +136,56 @@ enum class Direction
     Vert = CICERO_VERT,
 };
 
+struct Square
+{
+    constexpr Square() noexcept : val{-1} {}
+    constexpr explicit Square(int square) noexcept : val{square} { assert(valid()); }
+    constexpr Square(const Square& other) noexcept : val{other.val} {}
+    constexpr Square(Square&& other) noexcept : val{other.val} { other.val = -1; }
+    constexpr Square& operator=(const Square& other) noexcept {
+        val = other.val;
+        return *this;
+    }
+    constexpr Square& operator=(Square&& other) noexcept {
+        val = other.val;
+        other.val = -1;
+        return *this;
+    }
+    constexpr bool valid() const noexcept { return 0 <= val && val < 225; }
+
+    constexpr const char* name() const noexcept {
+        if (valid()) {
+            return SquareNames[val];
+        } else {
+            return "InvalidSquare";
+        }
+    }
+
+    static std::optional<Square> from_isc(std::string_view spec) noexcept;
+
+    constexpr int value() const noexcept { return val; }
+
+    int val;
+};
+
+constexpr bool operator==(Square lhs, Square rhs) noexcept
+{
+    return lhs.val == rhs.val;
+}
+
+constexpr bool operator!=(Square lhs, Square rhs) noexcept
+{
+    return !(lhs.val == rhs.val);
+}
+
+constexpr bool operator<(Square lhs, Square rhs) noexcept
+{
+    return lhs.val < rhs.val;
+}
+
 struct Move
 {
-    int         square;
+    Square      square;
     Direction   direction;
     std::string word;       // upper case is regular tile, lower case is blank
     int         score;      // -1 if unset
