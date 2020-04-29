@@ -76,7 +76,7 @@ std::optional<ReplayMove> parsemove_isc(const std::string& line, const cicero* e
     return result;
 }
 
-#if 0
+#if 1
 std::optional<ReplayMove> parsemove_gcg(const std::string& line, const cicero* engine)
 {
 
@@ -90,12 +90,12 @@ std::optional<ReplayMove> parsemove_gcg(const std::string& line, const cicero* e
 
     std::string nick;
     std::string rack;
-    std::string exch;
+    std::string word;
     std::string sqspec; // NOTE: gcg square spec is row/col flipped from ISC
     int score;
     int total;
 
-    if (re2::RE2::FullMatch(line, gcg_tile_exch_regex, &nick, &rack, &exch, &total)) {
+    if (re2::RE2::FullMatch(line, gcg_tile_exch_regex, &nick, &rack, &word, &total)) {
         fmt::print(stderr, "info: skipping tile exchange: \"{}\"\n", line);
         return std::nullopt;
     }
@@ -106,19 +106,35 @@ std::optional<ReplayMove> parsemove_gcg(const std::string& line, const cicero* e
     }
 
     nick.clear();
+    word.clear();
     rack.clear();
     score = -1;
     total = -1;
-    if (!re2::RE2::FullMatch(line, gcg_move_regex, &nick, &rack, &sqspec, &rack, &score, &total)) {
+    if (!re2::RE2::FullMatch(line, gcg_move_regex, &nick, &rack, &sqspec, &word, &score, &total)) {
         fmt::print(stderr, "error: malformed GCG move line: \"{}\"\n", line);
         throw std::runtime_error("invalid gcg line");
     }
 
     cicero_make_rack(&result.rack, rack.c_str());
-
-    // EngineRack rack = make_engine_rack(gcg_move.rack);
-    // auto board_copy = std::make_unique<Board>(board);
-    // auto maybe_gui_move = make_gui_move_from_gcg(board, gcg_move);
+    auto maybe_square = scrabble::Square::from_gcg(sqspec);
+    if (!maybe_square) {
+        throw std::runtime_error("invalid gcg square specification");
+    }
+    result.move.square = *maybe_square;
+    result.move.direction = scrabble::gcg_direction(sqspec);
+    result.move.word = "";
+    int stride = static_cast<int>(result.move.direction);
+    int start  = result.move.square.value();
+    int step   = 0;
+    for (char ch : word) {
+        if (ch == '.') {
+            ch = cicero_tile_on_square(engine, start + step * stride);
+        }
+        result.move.word += ch;
+        ++step;
+    }
+    result.move.score = score;
+    return result;
 }
 #endif
 
@@ -126,6 +142,7 @@ std::optional<ReplayMove> parsemove_gcg(const std::string& line, const cicero* e
 bool replay_file(std::ifstream& ifs, Callbacks& cb)
 {
     FileType type = FileType::eInvalid;
+    // TODO: could have parse_header_gcg / parse_header_isc, but this is fine for now
     std::string line;
     while (getline_stripped(ifs, line)) {
         if (line.empty()) {
@@ -160,7 +177,7 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
         getline_stripped(ifs, line);
     }
 
-    auto* parse_fn = &parsemove_isc;
+    auto* parse_fn = type == FileType::eIsc ? &parsemove_isc : &parsemove_gcg;
 
     cb.clear_legal_moves();
     cicero engine;

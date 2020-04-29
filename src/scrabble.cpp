@@ -34,7 +34,7 @@ std::optional<Square> Square::from_isc(std::string_view sqspec) noexcept
     if (sqspec.size() < 2) {
         return std::nullopt;
     }
-    const Direction dir = ('A' <= sqspec[0] && sqspec[0] <= 'O') ? Direction::Horz : Direction::Vert;
+    const Direction dir = isc_direction(sqspec);
     int row = 0;
     int col = 0;
     std::size_t col1 = dir == Direction::Horz ? 1 : 0;
@@ -54,6 +54,18 @@ std::optional<Square> Square::from_isc(std::string_view sqspec) noexcept
     return Square{row*Dim + col};
 }
 
+std::optional<Square> Square::from_gcg(std::string_view sqspec) noexcept
+{
+    auto maybe_square = from_isc(sqspec);
+    if (!maybe_square) {
+        return maybe_square;
+    }
+    auto& square = *maybe_square;
+    auto row = square.col();
+    auto col = square.row();
+    return Square{row*Dim + col};
+}
+
 Move Move::from_isc_spec(const std::string& spec)
 {
     assert(isc_regex_.ok());
@@ -68,7 +80,7 @@ Move Move::from_isc_spec(const std::string& spec)
     assert(2 <= sqspec.size() && sqspec.size() <= 3);
     assert(2 <= root.size() && root.size() <= 15);
 
-    const Direction dir = ('A' <= sqspec[0] && sqspec[0] <= 'O') ? Direction::Horz : Direction::Vert;
+    const Direction dir = isc_direction(sqspec);
     const auto maybe_square = Square::from_isc(sqspec);
     if (!maybe_square) {
         throw std::runtime_error("invalid square spec");

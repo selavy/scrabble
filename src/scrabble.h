@@ -136,6 +136,15 @@ enum class Direction
     Vert = CICERO_VERT,
 };
 
+// TODO: make these safer
+constexpr Direction isc_direction(std::string_view sqspec) noexcept {
+    return ('A' <= sqspec[0] && sqspec[0] <= 'O') ? Direction::Horz : Direction::Vert;
+}
+
+constexpr Direction gcg_direction(std::string_view sqspec) noexcept {
+    return ('A' <= sqspec[0] && sqspec[0] <= 'O') ? Direction::Vert : Direction::Horz;
+}
+
 struct Square
 {
     constexpr Square() noexcept : val{-1} {}
@@ -152,7 +161,8 @@ struct Square
         return *this;
     }
     constexpr bool valid() const noexcept { return 0 <= val && val < 225; }
-
+    constexpr int row() const noexcept { return val / Dim; }
+    constexpr int col() const noexcept { return val % Dim; }
     constexpr const char* name() const noexcept {
         if (valid()) {
             return SquareNames[val];
@@ -160,11 +170,10 @@ struct Square
             return "InvalidSquare";
         }
     }
-
     static std::optional<Square> from_isc(std::string_view spec) noexcept;
-
+    static std::optional<Square> from_gcg(std::string_view spec) noexcept;
+    explicit operator int() const noexcept { return val; }
     constexpr int value() const noexcept { return val; }
-
     int val;
 };
 
