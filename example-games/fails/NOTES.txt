@@ -1,0 +1,3 @@
+Failed on ../example-games/anno12538.gcg
+error: failed replaying game file: ../example-games/anno33076.gcg
+error: failed replaying game file: ../example-games/anno32614.gcg
