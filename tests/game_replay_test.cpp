@@ -21,6 +21,7 @@ re2::RE2 header_regex(R"(\s*\[(\w+) \"(.*)\"]\s*)");
 re2::RE2 empty_line_regex(R"(\s+)");
 re2::RE2 change_line_regex(R"(\s*"?CHANGE\s+(\d+)\"?\s*)");
 re2::RE2 gcg_pragma_player_regex(R"(#player(\d)\s+(\w+).*)");
+re2::RE2 gcg_take_back_regex(R"(>\w+:\s+[A-Z\?]+\s+--\s+[-+]?\d+\s+[-+]?\d+)");
 re2::RE2 gcg_move_regex(R"(>(\w+):\s+([A-Z\?]+) (\w+)\s+([A-Za-z\.]+)\s+([+-]?\d+) ([+-]?\d+))");
 re2::RE2 gcg_final_move_regex(R"(>(\w+):\s+\(([A-Z\.]+)\)\s+([+-]?\d+)\s+([+-]?\d+)\s*)");
 re2::RE2 gcg_tile_exch_regex(R"(>(\w+):\s+([A-Z\?]+)\s+-([A-Z\?]+)\s+\+0\s+(\d+)\s*)");
@@ -84,8 +85,11 @@ std::optional<ReplayMove> parsemove_gcg(const std::string& line, const cicero* e
     if (line[0] == '#') {
         return std::nullopt;
     } else if (line[0] != '>') {
-        fmt::print(stderr, "invalid line: \"{}\"\n", line);
-        throw std::runtime_error("invalid gcg line");
+        // fmt::print(stderr, "invalid line: \"{}\"\n", line);
+        // throw std::runtime_error("invalid gcg line");
+
+        // lot's of non-sense in cross-tables.com's inputs
+        return std::nullopt;
     }
 
     std::string nick;
@@ -102,6 +106,11 @@ std::optional<ReplayMove> parsemove_gcg(const std::string& line, const cicero* e
 
     if (re2::RE2::FullMatch(line, gcg_final_move_regex, &nick, &rack, &score, &total)) {
         fmt::print(stderr, "info: skipping final move: \"{}\"\n", line);
+        return std::nullopt;
+    }
+
+    if (re2::RE2::FullMatch(line, gcg_take_back_regex)) {
+        fmt::print(stdout, "info: skipping withdrawn move: \"{}\"\n", line);
         return std::nullopt;
     }
 
@@ -261,6 +270,7 @@ int main(int argc, char **argv)
     assert(gcg_move_regex.ok());
     assert(gcg_final_move_regex.ok());
     assert(gcg_tile_exch_regex.ok());
+    assert(gcg_take_back_regex.ok());
 
     // clang-format off
     cxxopts::Options options(
