@@ -47,7 +47,14 @@ std::optional<Square> Square::from_isc(std::string_view sqspec) noexcept
         col2 = col1;
     }
     col--;
-    row = dir == Direction::Horz ? (sqspec[0] - 'A') : (sqspec[col2+1] - 'A');
+    std::size_t idx = dir == Direction::Horz ? 0 : col2 + 1;
+    if (inrange(sqspec[idx], 'A', 'O')) {
+        row = sqspec[idx] - 'A';
+    } else if (inrange(sqspec[idx], 'a', 'o')) {
+        row = sqspec[idx] - 'a';
+    } else {
+        return std::nullopt;
+    }
     if (!(0 <= row && row < 15) || !(0 <= col && col < 15)) {
         return std::nullopt;
     }
@@ -56,7 +63,7 @@ std::optional<Square> Square::from_isc(std::string_view sqspec) noexcept
 
 std::optional<Square> Square::from_gcg(std::string_view sqspec) noexcept
 {
-    auto maybe_square = from_isc(sqspec);
+    auto maybe_square = Square::from_isc(sqspec);
     if (!maybe_square) {
         return maybe_square;
     }

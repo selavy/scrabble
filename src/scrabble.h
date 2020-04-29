@@ -136,13 +136,17 @@ enum class Direction
     Vert = CICERO_VERT,
 };
 
+constexpr bool inrange(char c, char first, char last) noexcept { return first <= c && c <= last; }
+
 // TODO: make these safer
 constexpr Direction isc_direction(std::string_view sqspec) noexcept {
-    return ('A' <= sqspec[0] && sqspec[0] <= 'O') ? Direction::Horz : Direction::Vert;
+    const auto c = sqspec[0];
+    return inrange(c, 'A', 'O') || inrange(c, 'a', 'o') ? Direction::Horz : Direction::Vert;
 }
 
 constexpr Direction gcg_direction(std::string_view sqspec) noexcept {
-    return ('A' <= sqspec[0] && sqspec[0] <= 'O') ? Direction::Vert : Direction::Horz;
+    const auto c = sqspec[0];
+    return inrange(c, 'A', 'O') || inrange(c, 'a', 'o') ? Direction::Vert : Direction::Horz;
 }
 
 struct Square

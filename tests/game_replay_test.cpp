@@ -21,10 +21,11 @@ re2::RE2 header_regex(R"(\s*\[(\w+) \"(.*)\"]\s*)");
 re2::RE2 empty_line_regex(R"(\s+)");
 re2::RE2 change_line_regex(R"(\s*"?CHANGE\s+(\d+)\"?\s*)");
 re2::RE2 gcg_pragma_player_regex(R"(#player(\d)\s+(\w+).*)");
-re2::RE2 gcg_take_back_regex(R"(>\w+:\s+[A-Z\?]+\s+--\s+[-+]?\d+\s+[-+]?\d+)");
-re2::RE2 gcg_move_regex(R"(>(\w+):\s+([A-Z\?]+) (\w+)\s+([A-Za-z\.]+)\s+([+-]?\d+) ([+-]?\d+))");
-re2::RE2 gcg_final_move_regex(R"(>(\w+):\s+\(([A-Z\.]+)\)\s+([+-]?\d+)\s+([+-]?\d+)\s*)");
+re2::RE2 gcg_take_back_regex(R"(>\w+:\s+[A-Z\?]+\s+--?\s+[-+]?\d+\s+[-+]?\d+)");
+re2::RE2 gcg_move_regex(R"(>(\w+):\s+([A-Z\?]+)\s+(\w+)\s+([A-Za-z\.]+)\s+([+-]?\d+)\s+([+-]?\d+).*)");
+// re2::RE2 gcg_final_move_regex(R"(>(\w+):\s+\(([A-Z\.]+)\)\s+([+-]?\d+)\s+([+-]?\d+)\s*)");
 re2::RE2 gcg_tile_exch_regex(R"(>(\w+):\s+([A-Z\?]+)\s+-([A-Z\?]+)\s+\+0\s+(\d+)\s*)");
+re2::RE2 gcg_final_move_regex(R"(>\w+:\s+\([A-Z\?]+\)\s+[+-]?\d+\s+[+-]?\d+)");
 
 
 std::string stripline(const std::string& line)
@@ -104,7 +105,7 @@ std::optional<ReplayMove> parsemove_gcg(const std::string& line, const cicero* e
         return std::nullopt;
     }
 
-    if (re2::RE2::FullMatch(line, gcg_final_move_regex, &nick, &rack, &score, &total)) {
+    if (re2::RE2::FullMatch(line, gcg_final_move_regex)) {
         fmt::print(stderr, "info: skipping final move: \"{}\"\n", line);
         return std::nullopt;
     }
