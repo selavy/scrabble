@@ -20,6 +20,10 @@ re2::RE2 move_line_regex(R"(\s*\"(.*)\", \"(.*)\"\s*)");
 re2::RE2 header_regex(R"(\s*\[(\w+) \"(.*)\"]\s*)");
 re2::RE2 empty_line_regex(R"(\s+)");
 re2::RE2 change_line_regex(R"(\s*"?CHANGE\s+(\d+)\"?\s*)");
+re2::RE2 gcg_pragma_player_regex(R"(#player(\d)\s+(\w+).*)");
+re2::RE2 gcg_move_regex(R"(>(\w+):\s+([A-Z\?]+) (\w+)\s+([A-Za-z\.]+)\s+([+-]?\d+) ([+-]?\d+))");
+re2::RE2 gcg_final_move_regex(R"(>(\w+):\s+\(([A-Z\.]+)\)\s+([+-]?\d+)\s+([+-]?\d+)\s*)");
+re2::RE2 gcg_tile_exch_regex(R"(>(\w+):\s+([A-Z\?]+)\s+-([A-Z\?]+)\s+\+0\s+(\d+)\s*)");
 
 
 std::string stripline(const std::string& line)
@@ -68,12 +72,53 @@ std::optional<ReplayMove> parsemove_isc(const std::string& line)
         throw std::runtime_error("invalid line in ISC file");
     }
     result.move = scrabble::Move::from_isc_spec(isc);
-    memset(&result.rack, 0, sizeof(result.rack));
-    for (const char tile : rack) {
-        cicero_rack_add_tile(&result.rack, tile);
-    }
+    cicero_make_rack(&result.rack, rack.c_str());
     return result;
 }
+
+#if 0
+std::optional<ReplayMove> parsemove_gcg(const std::string& line)
+{
+
+    ReplayMove result;
+    if (line[0] == '#') {
+        return std::nullopt;
+    } else if (line[0] != '>') {
+        fmt::print(stderr, "invalid line: \"{}\"\n", line);
+        throw std::runtime_error("invalid gcg line");
+    }
+
+    std::string nick;
+    std::string tiles;
+    std::string exch;
+    std::string sqspec; // NOTE: gcg square spec is row/col flipped from ISC
+    int score;
+    int total;
+
+    if (re2::RE2::FullMatch(line, gcg_tile_exch_regex, &nick, &tiles, &exch, &total)) {
+        fmt::print(stderr, "info: skipping tile exchange: \"{}\"\n", line);
+        return std::nullopt;
+    }
+
+    if (re2::RE2::FullMatch(line, gcg_final_move_regex, &nick, &tiles, &score, &total)) {
+        fmt::print(stderr, "info: skipping final move: \"{}\"\n", line);
+        return std::nullopt;
+    }
+
+    nick.clear();
+    tiles.clear();
+    score = -1;
+    total = -1;
+    if (!re2::RE2::FullMatch(line, gcg_move_regex, &nick, &rack, &sqspec, &tiles, &score, &total)) {
+        fmt::print(stderr, "error: malformed GCG move line: \"{}\"\n", line);
+        throw std::runtime_error("invalid gcg line");
+    }
+
+    EngineRack rack = make_engine_rack(gcg_move.rack);
+    auto board_copy = std::make_unique<Board>(board);
+    auto maybe_gui_move = make_gui_move_from_gcg(board, gcg_move);
+}
+#endif
 
 
 bool replay_file(std::ifstream& ifs, Callbacks& cb)
@@ -89,22 +134,28 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
         } else if (line == "#pragma GCG") {
             type = FileType::eGcg;
         } else {
-            fmt::print(stderr, "error: game file doesn't begin with type identifier\n");
-            return false;
+            // fmt::print(stderr, "error: game file doesn't begin with type identifier\n");
+            // return false;
+            fmt::print(stdout, "warning: game file doesn't have an identifier. assuming gcg\n");
+            type = FileType::eGcg;
         }
         break;
     }
 
-    while (getline_stripped(ifs, line)) {
-        if (line.empty()) {
-            continue;
+    if (type == FileType::eIsc) {
+        while (getline_stripped(ifs, line)) {
+            if (line.empty()) {
+                continue;
+            }
+            std::string key;
+            std::string value;
+            if (!re2::RE2::FullMatch(line, header_regex, &key, &value)) {
+                break;
+            }
+            // fmt::print(stdout, "PGN Header: key=\"{}\" value=\"{}\"\n", key, value);
         }
-        std::string key;
-        std::string value;
-        if (!re2::RE2::FullMatch(line, header_regex, &key, &value)) {
-            break;
-        }
-        // fmt::print(stdout, "PGN Header: key=\"{}\" value=\"{}\"\n", key, value);
+    } else {
+        getline_stripped(ifs, line);
     }
 
     auto* parse_fn = &parsemove_isc;
@@ -119,7 +170,7 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
             continue;
         }
         std::cout << "line: \"" << line << "\"" << std::endl;
-        auto maybe_replay_move = parsemove_isc(line);
+        auto maybe_replay_move = parse_fn(line);
         if (!maybe_replay_move) {
             continue;
         }
@@ -187,6 +238,10 @@ int main(int argc, char **argv)
     assert(header_regex.ok());
     assert(empty_line_regex.ok());
     assert(change_line_regex.ok());
+    assert(gcg_pragma_player_regex.ok());
+    assert(gcg_move_regex.ok());
+    assert(gcg_final_move_regex.ok());
+    assert(gcg_tile_exch_regex.ok());
 
     // clang-format off
     cxxopts::Options options(

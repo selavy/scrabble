@@ -90,8 +90,10 @@ typedef struct cicero cicero;
 // A-Z = regular tile, a-z = blank, ' ' = empty
 cicero_api char cicero_tile_on_square(const cicero *e, int square);
 
+cicero_api void cicero_make_rack(cicero_rack *rack, const char *const tiles);
+
 // precondition: 'A' <= tile <= 'Z' or tile == ' '
-cicero_api void cicero_rack_add_tile(cicero_rack* rack, char tile);
+cicero_api void cicero_rack_add_tile(cicero_rack *rack, char tile);
 
 // note: no memory is allocated to intialize `cicero`
 cicero_api void cicero_init(cicero *e, cicero_callbacks callbacks);

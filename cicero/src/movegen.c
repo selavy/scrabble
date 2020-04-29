@@ -3,11 +3,6 @@
 
 #include <stdio.h>
 
-internal rack_tile char_to_rack_tile(char tile) {
-    assert(('A' <= tile && tile <= 'Z') || tile == CICERO_BLANK_TILE);
-    return tile == CICERO_BLANK_TILE ? 26 : tile - 'A';
-}
-
 internal int inclusive_length(int beg, int end, int stride) {
     assert(beg <= end);
     return (end - beg) / stride + 1;
@@ -46,15 +41,6 @@ void cicero_init(cicero *e, cicero_callbacks callbacks)
     e->double_word_squares   = &double_word_squares[0];
     e->triple_word_squares   = &triple_word_squares[0];
     e->letter_values         = &letter_values[0];
-}
-
-void cicero_rack_add_tile(cicero_rack* rack, char tile)
-{
-    if (tile == CICERO_UNKNOWN_TILE) {
-        return;
-    }
-    assert(('A' <= tile && tile <= 'Z') || tile == CICERO_BLANK_TILE);
-    rack->tiles[char_to_rack_tile(tile)]++;
 }
 
 internal int calc_cached_score(int start, int stop, int stride, int root, const char *board)
