@@ -132,9 +132,7 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
             const char tile = board[sq];
             const int value = letter_values[tile];
             word_score += value;
-            TRACE("%c => %d", to_ext(tile), value);
         }
-        TRACE("Root value: %d", word_score);
 
         int word_mult = 1;
         for (int i = 0; i < ntiles; ++i) {
@@ -145,12 +143,9 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
             const int  mult = double_letter_squares[square] * triple_letter_squares[square];
             word_score += value * (mult - 1);
             word_mult  *= double_word_squares[square] * triple_word_squares[square];
-            TRACE("%c => %d x %d => %d", to_ext(tile), value, mult, value * mult);
         }
 
         root_score = word_score * word_mult;
-        TRACE("word_mult = %d", word_mult);
-        TRACE("total root score = %d x %d = %d", word_score, word_mult, root_score);
     }
 
     // TODO: move into other loop through squares played
@@ -164,13 +159,10 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
             const int value        = letter_value * letter_mult;
             const int xscore       = hscr[square];
             const int total        = (hscr[square] + value) * word_mult;
-            TRACE("%s => (val=%d x lmult=%d + xscore=%d) x wmult=%d = %d", SQ[square], letter_value, letter_mult, xscore, word_mult, total);
             cross_score += total;
         }
     }
-    TRACE("total cross score = %d", cross_score);
 
     remove_tiles(board, move);
-
     return root_score + cross_score + bingo_bonus;
 }

@@ -96,13 +96,11 @@ int cicero_make_move(cicero *e, const cicero_move *move)
         const int stop = start + DIM * stride;
         assert(vals[root] == EMPTY);
         vals[root] = teng;
-        // int partial_score = 0;
         const int beg = findbeg(vals, start, stop, stride, root);
         const int end = findend(vals, start, stop, stride, root);
         const int len = inclusive_length(beg, end, stride);
         for (int i = 0; i < len; ++i) {
             const char tile = vals[beg + i * stride];
-            // partial_score += letter_values[tile];
             buf[i+1] = to_ext(tile);
             assert(('A' <= buf[i+1] && buf[i+1] <= 'Z') || ('a' <= buf[i+1] && buf[i+1] <= 'z'));
         }
@@ -122,9 +120,7 @@ int cicero_make_move(cicero *e, const cicero_move *move)
                 }
             }
             hchk[before] = chk;
-            // hscr[before] = partial_score;
             hscr[before] = calc_cached_score(start, stop, stride, before, vals);
-            TRACE(" -- Updating horizontal score (before=%s root=%s) %s = %d", SQ[beg], SQ[root], SQ[before], hscr[before]); // TEMP TEMP
             setasq(asqs, before);
         }
 
@@ -137,9 +133,7 @@ int cicero_make_move(cicero *e, const cicero_move *move)
                 chk |= tilemask(tilenum(*edge));
             }
             hchk[after] = chk;
-            // hscr[after] = partial_score;
             hscr[after] = calc_cached_score(start, stop, stride, after, vals);
-            TRACE(" -- Updating horizontal score (after=%s root=%s) %s = %d", SQ[end], SQ[root], SQ[after], hscr[after]); // TEMP TEMP
             setasq(asqs, after);
         }
 
@@ -153,11 +147,9 @@ int cicero_make_move(cicero *e, const cicero_move *move)
         const int beg = findbeg(vals, start, stop, stride, lsq);
         const int end = findend(vals, start, stop, stride, rsq);
         const int len = inclusive_length(beg, end, stride);
-        // int partial_score = 0;
         assert(getdim(stride, lsq) == getdim(stride, rsq)); // move must be on exactly 1 row or col
         for (int i = 0; i < len; ++i) {
             const char tile = vals[beg+i*stride];
-            // partial_score += letter_values[tile];
             buf[i+1] = to_ext(tile);
             assert(('A' <= buf[i+1] && buf[i+1] <= 'Z') || ('a' <= buf[i+1] && buf[i+1] <= 'z'));
         }
@@ -179,9 +171,7 @@ int cicero_make_move(cicero *e, const cicero_move *move)
                 }
             }
             vchk[before] = chk;
-            // vscr[before] = partial_score;
             vscr[before] = calc_cached_score(start, stop, stride, before, vals);
-            TRACE(" -- Updating vertical score (before %s) %s = %d", SQ[beg], SQ[before], vscr[before]); // TEMP TEMP
             setasq(asqs, before);
         }
         if (after < stop) {
@@ -195,9 +185,7 @@ int cicero_make_move(cicero *e, const cicero_move *move)
                 chk |= tilemask(tilenum(*edge));
             }
             vchk[after] = chk;
-            // vscr[after] = partial_score;
             vscr[after] = calc_cached_score(start, stop, stride, after, vals);
-            TRACE(" -- Updating vertical score (after %s) %s = %d", SQ[end], SQ[after], vscr[after]); // TEMP TEMP
             setasq(asqs, after);
         }
     }

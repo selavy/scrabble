@@ -111,6 +111,7 @@ std::optional<ReplayMove> parsemove_gcg(const std::string& line, const cicero* e
     }
 
     if (re2::RE2::FullMatch(line, gcg_take_back_regex)) {
+        throw std::runtime_error("withdrawn moves not supported yet");
         fmt::print(stdout, "info: skipping withdrawn move: \"{}\"\n", line);
         return std::nullopt;
     }
@@ -308,9 +309,14 @@ int main(int argc, char **argv)
             fmt::print(stderr, "error: unable to open game file: {}\n", filename);
             return 1;
         }
-        if (!replay_file(ifs, cb)) {
-            fmt::print(stderr, "error: failed replaying game file: {}\n", filename);
-            return 1;
+        try {
+            if (!replay_file(ifs, cb)) {
+                fmt::print(stderr, "error: failed replaying game file: {}\n", filename);
+                return 1;
+            }
+        } catch (...) {
+            fmt::print(stderr, "Failed in: {}\n", filename);
+            throw;
         }
         fmt::print(stdout, "\n\nPassed {}!\n\n", filename);
     }
