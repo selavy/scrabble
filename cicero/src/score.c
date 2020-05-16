@@ -16,6 +16,7 @@ internal int get_word_score(const int *squares, int nsquares, const cicero *e)
     return multiplier;
 }
 
+#if 0
 int cicero_score_move_slow(const cicero *e, const cicero_move *move)
 {
     int score = 0;
@@ -78,6 +79,7 @@ int cicero_score_move_slow(const cicero *e, const cicero_move *move)
 
     return score;
 }
+#endif
 
 // TODO: remove
 internal void place_tiles(char *board, const cicero_move *move)

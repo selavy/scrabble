@@ -8,6 +8,7 @@ internal int inclusive_length(int beg, int end, int stride) {
     return (end - beg) / stride + 1;
 }
 
+#if 0
 internal void cicero_clear_scores(cicero *e, const cicero_move *move)
 {
     for (int i = 0; i < move->ntiles; ++i) {
@@ -15,6 +16,7 @@ internal void cicero_clear_scores(cicero *e, const cicero_move *move)
         e->triple_letter_squares[move->squares[i]] = 1;
     }
 }
+#endif
 
 char cicero_tile_on_square(const cicero *e, int square)
 {
@@ -32,12 +34,8 @@ void cicero_init(cicero *e, cicero_callbacks callbacks)
     memset(e->asqs, 0x00u, sizeof(e->asqs));
     setasq(e->asqs, SQ_H8);
     e->cb = callbacks;
-
-    memcpy(&e->dlsq[0], &double_letter_squares[0], sizeof(e->dlsq));
-    memcpy(&e->tlsq[0], &triple_letter_squares[0], sizeof(e->tlsq));
-
-    e->double_letter_squares = &e->dlsq[0];
-    e->triple_letter_squares = &e->tlsq[0];
+    e->double_letter_squares = &double_letter_squares[0];
+    e->triple_letter_squares = &triple_letter_squares[0];
     e->double_word_squares   = &double_word_squares[0];
     e->triple_word_squares   = &triple_word_squares[0];
     e->letter_values         = &letter_values[0];

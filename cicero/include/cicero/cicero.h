@@ -76,16 +76,13 @@ struct cicero
     uint64_t asqs[4];
     cicero_callbacks cb;
 
-    int        dlsq[225]; // TODO: remove
-    int        tlsq[225]; // TODO: remove
-    int       *double_letter_squares;
-    int       *triple_letter_squares;
+    const int *double_letter_squares;
+    const int *triple_letter_squares;
     const int *double_word_squares;
     const int *triple_word_squares;
     const int *letter_values;
 };
 typedef struct cicero cicero;
-
 
 // A-Z = regular tile, a-z = blank, ' ' = empty
 cicero_api char cicero_tile_on_square(const cicero *e, int square);
@@ -103,10 +100,6 @@ cicero_api int  cicero_make_move(cicero *e, const cicero_move *move);
 
 // will call `onlegal` callback with all legal moves from `rack`
 cicero_api void cicero_generate_legal_moves(const cicero *e, cicero_rack rack);
-
-// TODO: remove, just for testing
-// precondition: `move` was just played
-cicero_api int  cicero_score_move_slow(const cicero *e, const cicero_move *move);
 
 // precondition: `move` was just played
 cicero_api int  cicero_score_move(const cicero *e, const cicero_move *move);
