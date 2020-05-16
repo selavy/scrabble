@@ -24,6 +24,23 @@ char cicero_tile_on_square(const cicero *e, int square)
     return to_ext(e->vals[square]);
 }
 
+// TODO: weird interface for now because `sp` will alias
+// `e->sp`
+void cicero_savepos_copy(cicero_savepos *sp, const cicero* e)
+{
+#define SAVEPOS_SAFE_COPY
+#if defined(SAVEPOS_SAFE_COPY)
+    memcpy(sp->vals, e->vals, sizeof(sp->vals));
+    memcpy(sp->hscr, e->hscr, sizeof(sp->hscr));
+    memcpy(sp->vscr, e->vscr, sizeof(sp->vscr));
+    memcpy(sp->hchk, e->hchk, sizeof(sp->hchk));
+    memcpy(sp->vchk, e->vchk, sizeof(sp->vchk));
+    memcpy(sp->asqs, e->asqs, sizeof(sp->asqs));
+#else
+    memcpy(sp, e->vals, sizeof(*sp));
+#endif
+}
+
 void cicero_init(cicero *e, cicero_callbacks callbacks)
 {
     memset(e->vals, EMPTY, sizeof(e->vals));
@@ -33,6 +50,9 @@ void cicero_init(cicero *e, cicero_callbacks callbacks)
     memset(e->hchk, 0xffu, sizeof(e->hchk));
     memset(e->asqs, 0x00u, sizeof(e->asqs));
     setasq(e->asqs, SQ_H8);
+
+    cicero_savepos_copy(&e->sp, e);
+
     e->cb = callbacks;
     e->double_letter_squares = &double_letter_squares[0];
     e->triple_letter_squares = &triple_letter_squares[0];
@@ -41,7 +61,8 @@ void cicero_init(cicero *e, cicero_callbacks callbacks)
     e->letter_values         = &letter_values[0];
 }
 
-internal int calc_cached_score(int start, int stop, int stride, int root, const char *board)
+internal int calc_cached_score(int start, int stop, int stride,
+        int root, const char *board)
 {
     int partial_score = 0;
     // walk left
@@ -53,6 +74,33 @@ internal int calc_cached_score(int start, int stop, int stride, int root, const 
         partial_score += letter_values[board[sq]];
     }
     return partial_score;
+}
+
+void cicero_undo_move(cicero *e, const cicero_savepos* sp,
+        const cicero_move *move)
+{
+    char* board = e->vals;
+
+    // remove tiles
+    const int   ntiles  = move->ntiles;
+    const int  *squares = move->squares;
+    for (int i = 0; i < ntiles; ++i) {
+        const int square = squares[i];
+        assert(to_ext(board[square]) == move->tiles[i]);
+        board[squares[i]] = EMPTY;
+    }
+
+    // restore cached state
+#define SAFE_SAVEPOS_RESTORE
+#if defined(SAFE_SAVEPOS_RESTORE)
+    memcpy(e->hscr, sp->hscr, sizeof(e->hscr));
+    memcpy(e->vscr, sp->vscr, sizeof(e->vscr));
+    memcpy(e->hchk, sp->hchk, sizeof(e->hchk));
+    memcpy(e->vchk, sp->vchk, sizeof(e->vchk));
+    memcpy(e->asqs, sp->asqs, sizeof(e->asqs));
+#else
+    memcpy(e->hscr, sp->hscr, sizeof(*sp));
+#endif
 }
 
 int cicero_make_move(cicero *e, const cicero_move *move)
@@ -83,6 +131,8 @@ int cicero_make_move(cicero *e, const cicero_move *move)
     assert(ntiles > 0);
     assert(squares != NULL);
     assert(tiles != NULL);
+
+    cicero_savepos_copy(&e->sp, e);
 
     // update vertical cross-checks
     for (int tidx = 0; tidx < ntiles; ++tidx) {

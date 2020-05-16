@@ -118,6 +118,9 @@ TEST_CASE("Move played between 2 adjacent tiles")
         auto cicero_move = engine_move.move;
         auto score       = cicero_make_move(&engine, &cicero_move);
         CHECK(score == move.score);
+        cicero_undo_move(&engine, &engine.sp, &cicero_move);
+        auto score2 = cicero_make_move(&engine, &cicero_move);
+        CHECK(score2 == score);
     }
 
     {
@@ -129,6 +132,9 @@ TEST_CASE("Move played between 2 adjacent tiles")
         auto cicero_move = engine_move.move;
         auto score       = cicero_make_move(&engine, &cicero_move);
         CHECK(score == move.score);
+        cicero_undo_move(&engine, &engine.sp, &cicero_move);
+        auto score2 = cicero_make_move(&engine, &cicero_move);
+        CHECK(score2 == score);
     }
 }
 
@@ -176,5 +182,9 @@ TEST_CASE("Test from CF589 vs whatnoloan")
         auto cicero_move = engine_move.move;
         auto score       = cicero_make_move(&engine, &cicero_move);
         CHECK(score == move.score);
+
+        cicero_undo_move(&engine, &engine.sp, &cicero_move);
+        auto score2 = cicero_make_move(&engine, &cicero_move);
+        CHECK(score2 == score);
     }
 }

@@ -165,3 +165,71 @@ TEST_CASE("Parse ISC moves")
         REQUIRE(move.score     == -1);
     }
 }
+
+TEST_CASE("Undo move should return to old state")
+{
+    auto cb = make_callbacks({});
+    cicero engine;
+    cicero_init(&engine, cb.make_callbacks());
+
+    SECTION("Score 'H8 UNIFY 30' first move")
+    {
+        auto rack = make_rack("UNRYFIA");
+        auto move = scrabble::Move::from_isc_spec("H8 unify");
+        auto engine_move = scrabble::EngineMove::make(&engine, move);
+        cicero engine_copy;
+        memcpy(&engine_copy, &engine, sizeof(engine_copy));
+        auto score = cicero_make_move(&engine, &engine_move.move);
+        REQUIRE(score == 30);
+
+        cicero_undo_move(&engine, &engine.sp, &engine_move.move);
+        CHECK(memcmp(engine.vals, engine_copy.vals, sizeof(engine.vals)) == 0);
+        CHECK(memcmp(engine.hscr, engine_copy.hscr, sizeof(engine.hscr)) == 0);
+        CHECK(memcmp(engine.vscr, engine_copy.vscr, sizeof(engine.vscr)) == 0);
+        CHECK(memcmp(engine.hchk, engine_copy.hchk, sizeof(engine.hchk)) == 0);
+        CHECK(memcmp(engine.vchk, engine_copy.vchk, sizeof(engine.vchk)) == 0);
+        CHECK(memcmp(engine.asqs, engine_copy.asqs, sizeof(engine.asqs)) == 0);
+
+        auto score2 = cicero_make_move(&engine, &engine_move.move);
+        CHECK(score2 == score);
+    }
+
+    SECTION("Score 'H4 hazer 42' first move")
+    {
+        auto rack = make_rack("AREHAUZ");
+        auto move = scrabble::Move::from_isc_spec("H4 hazer 42");
+        auto engine_move = scrabble::EngineMove::make(&engine, move);
+        auto score = cicero_make_move(&engine, &engine_move.move);
+        REQUIRE(score == 42);
+
+        cicero_undo_move(&engine, &engine.sp, &engine_move.move);
+        auto score2 = cicero_make_move(&engine, &engine_move.move);
+        CHECK(score2 == score);
+    }
+
+    SECTION("Score '8D where 30' first move")
+    {
+        auto rack = make_rack("HRWERIE");
+        auto move = scrabble::Move::from_isc_spec("8D where 30");
+        auto engine_move = scrabble::EngineMove::make(&engine, move);
+        auto score = cicero_make_move(&engine, &engine_move.move);
+        REQUIRE(score == 30);
+
+        cicero_undo_move(&engine, &engine.sp, &engine_move.move);
+        auto score2 = cicero_make_move(&engine, &engine_move.move);
+        CHECK(score2 == score);
+    }
+
+    SECTION("Score 'H7 quIz 42' first move")
+    {
+        auto rack = make_rack("UTI?GQZ");
+        auto move = scrabble::Move::from_isc_spec("H7 quIz 42");
+        auto engine_move = scrabble::EngineMove::make(&engine, move);
+        auto score = cicero_make_move(&engine, &engine_move.move);
+        REQUIRE(score == 42);
+
+        cicero_undo_move(&engine, &engine.sp, &engine_move.move);
+        auto score2 = cicero_make_move(&engine, &engine_move.move);
+        CHECK(score2 == score);
+    }
+}
