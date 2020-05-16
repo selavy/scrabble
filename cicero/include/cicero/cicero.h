@@ -68,7 +68,6 @@ typedef struct cicero_callbacks cicero_callbacks;
 struct cicero_savepos
 {
     // TODO: see if I can reduce how much state is saved
-    char     vals[225];
     uint16_t hscr[225]; // if playing horizontally at square, how many additional points you'd score
     uint16_t vscr[225];
     uint32_t hchk[225]; // if playing horizontally, need to check hchk

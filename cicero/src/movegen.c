@@ -30,7 +30,6 @@ void cicero_savepos_copy(cicero_savepos *sp, const cicero* e)
 {
 #define SAVEPOS_SAFE_COPY
 #if defined(SAVEPOS_SAFE_COPY)
-    memcpy(sp->vals, e->vals, sizeof(sp->vals));
     memcpy(sp->hscr, e->hscr, sizeof(sp->hscr));
     memcpy(sp->vscr, e->vscr, sizeof(sp->vscr));
     memcpy(sp->hchk, e->hchk, sizeof(sp->hchk));
@@ -91,8 +90,8 @@ void cicero_undo_move(cicero *e, const cicero_savepos* sp,
     }
 
     // restore cached state
-#define SAFE_SAVEPOS_RESTORE
-#if defined(SAFE_SAVEPOS_RESTORE)
+#define SAVEPOS_SAFE_RESTORE
+#if defined(SAVEPOS_SAFE_RESTORE)
     memcpy(e->hscr, sp->hscr, sizeof(e->hscr));
     memcpy(e->vscr, sp->vscr, sizeof(e->vscr));
     memcpy(e->hchk, sp->hchk, sizeof(e->hchk));
