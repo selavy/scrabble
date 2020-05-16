@@ -109,7 +109,7 @@ cicero_api void cicero_generate_legal_moves(const cicero *e, cicero_rack rack);
 cicero_api int  cicero_score_move_slow(const cicero *e, const cicero_move *move);
 
 // precondition: `move` was just played
-cicero_api int  cicero_score_move_fast(const cicero *e, const cicero_move *move);
+cicero_api int  cicero_score_move(const cicero *e, const cicero_move *move);
 
 #ifdef __cplusplus
 }

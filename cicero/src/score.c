@@ -105,7 +105,7 @@ internal void remove_tiles(char *board, const cicero_move *move)
     }
 }
 
-int cicero_score_move_fast(const cicero *e, const cicero_move *move)
+int cicero_score_move(const cicero *e, const cicero_move *move)
 {
     const char *board   = e->vals;
     const u16  *hscr    = move->direction == CICERO_HORZ ? e->hscr : e->vscr;

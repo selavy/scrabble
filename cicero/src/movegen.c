@@ -190,7 +190,7 @@ int cicero_make_move(cicero *e, const cicero_move *move)
         }
     }
 
-    return cicero_score_move_fast(e, move);
+    return cicero_score_move(e, move);
 }
 
 // Definitions:
