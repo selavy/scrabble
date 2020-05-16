@@ -226,3 +226,8 @@ bool operator!=(const std::vector<Move>& lhs, const std::vector<Move>& rhs) noex
 std::ostream& operator<<(std::ostream& os, const cicero_rack& rack);
 
 } // scrabble
+
+constexpr scrabble::Square IXSQ(const char *const name) noexcept
+{
+    return scrabble::Square{IX(name)};
+}
