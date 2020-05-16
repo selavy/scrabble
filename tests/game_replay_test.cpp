@@ -56,6 +56,7 @@ enum class FileType
 
 struct ReplayMove
 {
+    bool                previous_move_withdrawn = false;
     std::string         player;
     cicero_rack         rack;
     scrabble::Move      move;
@@ -111,9 +112,12 @@ std::optional<ReplayMove> parsemove_gcg(const std::string& line, const cicero* e
     }
 
     if (re2::RE2::FullMatch(line, gcg_take_back_regex)) {
-        throw std::runtime_error("withdrawn moves not supported yet");
-        fmt::print(stdout, "info: skipping withdrawn move: \"{}\"\n", line);
-        return std::nullopt;
+        // throw std::runtime_error("withdrawn moves not supported yet");
+        // fmt::print(stdout, "info: skipping withdrawn move: \"{}\"\n", line);
+        // return std::nullopt;
+        fmt::print(stdout, "info: previous move withdrawn\n");
+        result.previous_move_withdrawn = true;
+        return result;
     }
 
     nick.clear();
@@ -193,6 +197,7 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
     cb.clear_legal_moves();
     cicero engine;
     cicero_init(&engine, cb.make_callbacks());
+    scrabble::EngineMove engine_move;
 
     do {
         if (line.empty() || line[0] == '#') {
@@ -205,6 +210,14 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
             continue;
         }
         auto& replay_move = *maybe_replay_move;
+        if (replay_move.previous_move_withdrawn) {
+            // TODO: this will only work correctly if previous move was played
+            // correctly
+            fmt::print(stdout, "info: withdrawing previous move\n");
+            cicero_undo_move(&engine, &engine.sp, &engine_move.move);
+            continue;
+        }
+
         using scrabble::operator<<;
         std::cout << "\t-> " << replay_move.move << " " << replay_move.rack << "\n";
 
@@ -242,7 +255,7 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
         //         cicero_undo_move(&engine, &move);
         //     }
 
-        auto engine_move = scrabble::EngineMove::make(&engine, replay_move.move);
+        engine_move = scrabble::EngineMove::make(&engine, replay_move.move);
         int score = cicero_make_move(&engine, &engine_move.move);
         if (score != replay_move.move.score) {
             fmt::print(stderr, "Scores don't match :( => engine={} correct={}\n\n",
