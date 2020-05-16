@@ -16,7 +16,7 @@ internal int get_word_score(const int *squares, int nsquares, const cicero *e)
     return multiplier;
 }
 
-int cicero_score_move(const cicero *e, const cicero_move *move)
+int cicero_score_move_slow(const cicero *e, const cicero_move *move)
 {
     int score = 0;
     const int *double_letter_squares = e->double_letter_squares;
@@ -79,6 +79,7 @@ int cicero_score_move(const cicero *e, const cicero_move *move)
     return score;
 }
 
+// TODO: remove
 internal void place_tiles(char *board, const cicero_move *move)
 {
     const int   ntiles  = move->ntiles;
@@ -92,6 +93,7 @@ internal void place_tiles(char *board, const cicero_move *move)
     }
 }
 
+// TODO: remove
 internal void remove_tiles(char *board, const cicero_move *move)
 {
     const int   ntiles  = move->ntiles;
@@ -103,9 +105,9 @@ internal void remove_tiles(char *board, const cicero_move *move)
     }
 }
 
-int cicero_score_move_fast(cicero *e, const cicero_move *move)
+int cicero_score_move_fast(const cicero *e, const cicero_move *move)
 {
-    char       *board   = e->vals;
+    const char *board   = e->vals;
     const u16  *hscr    = move->direction == CICERO_HORZ ? e->hscr : e->vscr;
     const int  *squares = move->squares;
     const char *tiles   = move->tiles;
@@ -113,13 +115,10 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
     const int   hstride = move->direction;
     const int   vstride = flip_dir(move->direction);
     const dimstart hstart = move->direction == CICERO_HORZ ? colstart : rowstart;
-    // const dimstart vstart = move->direction == CICERO_HORZ ? rowstart : colstart;
 
     int root_score  = 0;
     int cross_score = 0;
-    int bingo_bonus = ntiles == 7 ? 50 : 0;
-
-    place_tiles(board, move);
+    const int bingo_bonus = ntiles == 7 ? 50 : 0;
 
     {
         int word_score = 0;
@@ -163,6 +162,5 @@ int cicero_score_move_fast(cicero *e, const cicero_move *move)
         }
     }
 
-    remove_tiles(board, move);
     return root_score + cross_score + bingo_bonus;
 }

@@ -104,11 +104,12 @@ cicero_api int  cicero_make_move(cicero *e, const cicero_move *move);
 // will call `onlegal` callback with all legal moves from `rack`
 cicero_api void cicero_generate_legal_moves(const cicero *e, cicero_rack rack);
 
+// TODO: remove, just for testing
 // precondition: `move` was just played
-cicero_api int  cicero_score_move(const cicero *e, const cicero_move *move);
+cicero_api int  cicero_score_move_slow(const cicero *e, const cicero_move *move);
 
-// precondition: `move` is legal (and therefore has not been played yet)
-cicero_api int  cicero_score_move_fast(cicero *e, const cicero_move *move);
+// precondition: `move` was just played
+cicero_api int  cicero_score_move_fast(const cicero *e, const cicero_move *move);
 
 #ifdef __cplusplus
 }
