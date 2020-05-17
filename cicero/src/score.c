@@ -1,9 +1,6 @@
 #include "cicero_types.h"
-#include "cicero_tables.h"
 
-#include <stdio.h>
-
-
+#if 0
 internal int get_word_score(const int *squares, int nsquares, const cicero *e)
 {
     const int *double_word_squares = e->double_word_squares;
@@ -15,6 +12,7 @@ internal int get_word_score(const int *squares, int nsquares, const cicero *e)
     }
     return multiplier;
 }
+#endif
 
 #if 0
 int cicero_score_move_slow(const cicero *e, const cicero_move *move)
@@ -117,6 +115,11 @@ int cicero_score_move(const cicero *e, const cicero_move *move)
     const int   hstride = move->direction;
     const int   vstride = flip_dir(move->direction);
     const dimstart hstart = move->direction == CICERO_HORZ ? colstart : rowstart;
+    const int *double_letter_squares = e->s.double_letter_squares;
+    const int *triple_letter_squares = e->s.triple_letter_squares;
+    const int *double_word_squares   = e->s.double_word_squares;
+    const int *triple_word_squares   = e->s.triple_word_squares;
+    const int *letter_values         = e->s.letter_values;
 
     int root_score  = 0;
     int cross_score = 0;

@@ -38,7 +38,8 @@ void cicero_savepos_copy(cicero_savepos *sp, const cicero* e)
 #endif
 }
 
-void cicero_init(cicero *e, cicero_callbacks callbacks)
+void cicero_init_ex(cicero *e, cicero_callbacks callbacks,
+        cicero_scoring scoring)
 {
     memset(e->vals, EMPTY, sizeof(e->vals));
     memset(e->hscr, 0xffu, sizeof(e->hscr));
@@ -48,11 +49,28 @@ void cicero_init(cicero *e, cicero_callbacks callbacks)
     memset(e->asqs, 0x00u, sizeof(e->asqs));
     setasq(e->asqs, SQ_H8);
     e->cb = callbacks;
-    e->double_letter_squares = &double_letter_squares[0];
-    e->triple_letter_squares = &triple_letter_squares[0];
-    e->double_word_squares   = &double_word_squares[0];
-    e->triple_word_squares   = &triple_word_squares[0];
-    e->letter_values         = &letter_values[0];
+
+    e->s.double_letter_squares = scoring.double_letter_squares ?
+        scoring.double_letter_squares : &double_letter_squares[0];
+    e->s.triple_letter_squares = scoring.triple_letter_squares ?
+        scoring.triple_letter_squares : &triple_letter_squares[0];
+    e->s.double_word_squares = scoring.double_word_squares ?
+        scoring.double_word_squares : &double_word_squares[0];
+    e->s.triple_word_squares = scoring.triple_word_squares ?
+        scoring.triple_word_squares : &triple_word_squares[0];
+    e->s.letter_values = scoring.letter_values ?
+        scoring.letter_values : &letter_values[0];
+}
+
+void cicero_init(cicero *e, cicero_callbacks callbacks)
+{
+    cicero_scoring defaults;
+    defaults.double_letter_squares = NULL;
+    defaults.triple_letter_squares = NULL;
+    defaults.double_word_squares   = NULL;
+    defaults.triple_word_squares   = NULL;
+    defaults.letter_values         = NULL;
+    cicero_init_ex(e, callbacks, defaults);
 }
 
 internal int calc_cached_score(int start, int stop, int stride,

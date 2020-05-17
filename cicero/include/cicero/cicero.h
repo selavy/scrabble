@@ -65,6 +65,16 @@ struct cicero_callbacks
 };
 typedef struct cicero_callbacks cicero_callbacks;
 
+struct cicero_scoring
+{
+    const int *double_letter_squares;
+    const int *triple_letter_squares;
+    const int *double_word_squares;
+    const int *triple_word_squares;
+    const int *letter_values;
+};
+typedef struct cicero_scoring cicero_scoring;
+
 struct cicero_savepos
 {
     // TODO: see if I can reduce how much state is saved
@@ -90,14 +100,7 @@ struct cicero
     uint64_t asqs[4];
 
     cicero_callbacks cb;
-    // TODO: pull out of cicero struct so only need 1 copy
-    cicero_savepos   sp;
-
-    const int *double_letter_squares;
-    const int *triple_letter_squares;
-    const int *double_word_squares;
-    const int *triple_word_squares;
-    const int *letter_values;
+    cicero_scoring   s;
 };
 typedef struct cicero cicero;
 
@@ -115,6 +118,10 @@ cicero_api void cicero_make_rack(cicero_rack *rack, const char *const tiles);
 cicero_api void cicero_rack_add_tile(cicero_rack *rack, char tile);
 
 // note: no memory is allocated to intialize `cicero`
+// if `scoring` is NULL, then uses default values
+cicero_api void cicero_init_ex(cicero *e, cicero_callbacks callbacks,
+        cicero_scoring scoring);
+
 cicero_api void cicero_init(cicero *e, cicero_callbacks callbacks);
 
 // precondition: move is legal and valid
