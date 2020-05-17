@@ -24,8 +24,6 @@ char cicero_tile_on_square(const cicero *e, int square)
     return to_ext(e->vals[square]);
 }
 
-// TODO: weird interface for now because `sp` will alias
-// `e->sp`
 void cicero_savepos_copy(cicero_savepos *sp, const cicero* e)
 {
 #define SAVEPOS_SAFE_COPY
@@ -49,9 +47,6 @@ void cicero_init(cicero *e, cicero_callbacks callbacks)
     memset(e->hchk, 0xffu, sizeof(e->hchk));
     memset(e->asqs, 0x00u, sizeof(e->asqs));
     setasq(e->asqs, SQ_H8);
-
-    cicero_savepos_copy(&e->sp, e);
-
     e->cb = callbacks;
     e->double_letter_squares = &double_letter_squares[0];
     e->triple_letter_squares = &triple_letter_squares[0];
@@ -102,7 +97,7 @@ void cicero_undo_move(cicero *e, const cicero_savepos* sp,
 #endif
 }
 
-int cicero_make_move(cicero *e, const cicero_move *move)
+int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
 {
     TRACE("applying: %.*s", move->ntiles, move->tiles);
 
@@ -131,7 +126,7 @@ int cicero_make_move(cicero *e, const cicero_move *move)
     assert(squares != NULL);
     assert(tiles != NULL);
 
-    cicero_savepos_copy(&e->sp, e);
+    cicero_savepos_copy(sp, e);
 
     // update vertical cross-checks
     for (int tidx = 0; tidx < ntiles; ++tidx) {

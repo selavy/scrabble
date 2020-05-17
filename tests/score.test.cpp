@@ -12,6 +12,7 @@ TEST_CASE("Cicero score first move")
     };
 
     auto cb = make_callbacks(words);
+    cicero_savepos sp;
     cicero engine;
     cicero_init(&engine, cb.make_callbacks());
 
@@ -20,7 +21,7 @@ TEST_CASE("Cicero score first move")
         auto rack = make_rack("UNRYFIA");
         auto move = scrabble::Move::from_isc_spec("H8 unify");
         auto engine_move = scrabble::EngineMove::make(&engine, move);
-        auto score = cicero_make_move(&engine, &engine_move.move);
+        auto score = cicero_make_move(&engine, &sp, &engine_move.move);
         REQUIRE(score == 30);
     }
 
@@ -29,7 +30,7 @@ TEST_CASE("Cicero score first move")
         auto rack = make_rack("AREHAUZ");
         auto move = scrabble::Move::from_isc_spec("H4 hazer 42");
         auto engine_move = scrabble::EngineMove::make(&engine, move);
-        auto score = cicero_make_move(&engine, &engine_move.move);
+        auto score = cicero_make_move(&engine, &sp, &engine_move.move);
         REQUIRE(score == 42);
     }
 
@@ -38,7 +39,7 @@ TEST_CASE("Cicero score first move")
         auto rack = make_rack("HRWERIE");
         auto move = scrabble::Move::from_isc_spec("8D where 30");
         auto engine_move = scrabble::EngineMove::make(&engine, move);
-        auto score = cicero_make_move(&engine, &engine_move.move);
+        auto score = cicero_make_move(&engine, &sp, &engine_move.move);
         REQUIRE(score == 30);
     }
 
@@ -47,7 +48,7 @@ TEST_CASE("Cicero score first move")
         auto rack = make_rack("UTI?GQZ");
         auto move = scrabble::Move::from_isc_spec("H7 quIz 42");
         auto engine_move = scrabble::EngineMove::make(&engine, move);
-        auto score = cicero_make_move(&engine, &engine_move.move);
+        auto score = cicero_make_move(&engine, &sp, &engine_move.move);
         REQUIRE(score == 42);
     }
 }
@@ -63,6 +64,7 @@ TEST_CASE("Cicero score second move")
     };
 
     auto cb = make_callbacks(words);
+    cicero_savepos sp;
     cicero engine;
     cicero_init(&engine, cb.make_callbacks());
 
@@ -71,24 +73,24 @@ TEST_CASE("Cicero score second move")
         // auto rack1 = make_rack("UNRYFIA");
         auto move1 = scrabble::Move::from_isc_spec("H8 unify 30");
         auto engine_move1 = scrabble::EngineMove::make(&engine, move1);
-        auto score1 = cicero_make_move(&engine, &engine_move1.move);
+        auto score1 = cicero_make_move(&engine, &sp, &engine_move1.move);
         CHECK(score1 == 30);
 
         // auto rack2 = make_rack("RDSELUU");
         auto move2 = scrabble::Move::from_isc_spec("11E sulfured 98");
         auto engine_move2 = scrabble::EngineMove::make(&engine, move2);
-        auto score2 = cicero_make_move(&engine, &engine_move2.move);
+        auto score2 = cicero_make_move(&engine, &sp, &engine_move2.move);
         CHECK(score2 == 98);
 
         // auto rack3 = make_rack("OBATORZ");
         auto move3 = scrabble::Move::from_isc_spec("12A bazoo 40");
         auto engine_move3 = scrabble::EngineMove::make(&engine, move3);
-        auto score3 = cicero_make_move(&engine, &engine_move3.move);
+        auto score3 = cicero_make_move(&engine, &sp, &engine_move3.move);
         CHECK(score3 == 40);
 
         auto move4 = scrabble::Move::from_isc_spec("13A yea 43");
         auto engine_move4 = scrabble::EngineMove::make(&engine, move4);
-        auto score4 = cicero_make_move(&engine, &engine_move4.move);
+        auto score4 = cicero_make_move(&engine, &sp, &engine_move4.move);
         CHECK(score4 == 43);
     }
 }
@@ -96,6 +98,7 @@ TEST_CASE("Cicero score second move")
 TEST_CASE("Move played between 2 adjacent tiles")
 {
     auto cb = make_callbacks({});
+    cicero_savepos sp;
     cicero engine;
     cicero_init(&engine, cb.make_callbacks());
 
@@ -116,10 +119,10 @@ TEST_CASE("Move played between 2 adjacent tiles")
         auto move        = scrabble::Move::from_isc_spec(isc);
         auto engine_move = scrabble::EngineMove::make(&engine, move);
         auto cicero_move = engine_move.move;
-        auto score       = cicero_make_move(&engine, &cicero_move);
+        auto score       = cicero_make_move(&engine, &sp, &cicero_move);
         CHECK(score == move.score);
-        cicero_undo_move(&engine, &engine.sp, &cicero_move);
-        auto score2 = cicero_make_move(&engine, &cicero_move);
+        cicero_undo_move(&engine, &sp, &cicero_move);
+        auto score2 = cicero_make_move(&engine, &sp, &cicero_move);
         CHECK(score2 == score);
     }
 
@@ -130,10 +133,10 @@ TEST_CASE("Move played between 2 adjacent tiles")
         auto move        = scrabble::Move::from_isc_spec(isc);
         auto engine_move = scrabble::EngineMove::make(&engine, move);
         auto cicero_move = engine_move.move;
-        auto score       = cicero_make_move(&engine, &cicero_move);
+        auto score       = cicero_make_move(&engine, &sp, &cicero_move);
         CHECK(score == move.score);
-        cicero_undo_move(&engine, &engine.sp, &cicero_move);
-        auto score2 = cicero_make_move(&engine, &cicero_move);
+        cicero_undo_move(&engine, &sp, &cicero_move);
+        auto score2 = cicero_make_move(&engine, &sp, &cicero_move);
         CHECK(score2 == score);
     }
 }
@@ -141,6 +144,7 @@ TEST_CASE("Move played between 2 adjacent tiles")
 TEST_CASE("Test from CF589 vs whatnoloan")
 {
     auto cb = make_callbacks({});
+    cicero_savepos sp;
     cicero engine;
     cicero_init(&engine, cb.make_callbacks());
 
@@ -169,7 +173,7 @@ TEST_CASE("Test from CF589 vs whatnoloan")
         auto move        = scrabble::Move::from_isc_spec(isc);
         auto engine_move = scrabble::EngineMove::make(&engine, move);
         auto cicero_move = engine_move.move;
-        auto score       = cicero_make_move(&engine, &cicero_move);
+        auto score       = cicero_make_move(&engine, &sp, &cicero_move);
         CHECK(score == move.score);
     }
 
@@ -180,11 +184,11 @@ TEST_CASE("Test from CF589 vs whatnoloan")
         auto move        = scrabble::Move::from_isc_spec(isc);
         auto engine_move = scrabble::EngineMove::make(&engine, move);
         auto cicero_move = engine_move.move;
-        auto score       = cicero_make_move(&engine, &cicero_move);
+        auto score       = cicero_make_move(&engine, &sp, &cicero_move);
         CHECK(score == move.score);
 
-        cicero_undo_move(&engine, &engine.sp, &cicero_move);
-        auto score2 = cicero_make_move(&engine, &cicero_move);
+        cicero_undo_move(&engine, &sp, &cicero_move);
+        auto score2 = cicero_make_move(&engine, &sp, &cicero_move);
         CHECK(score2 == score);
     }
 }

@@ -16,6 +16,7 @@ TEST_CASE("Cicero first moves")
 
     auto cb = make_callbacks(words);
     cicero engine;
+    cicero_savepos sp;
     cicero_init(&engine, cb.make_callbacks());
 
     SECTION("First move generate moves")
@@ -82,7 +83,7 @@ TEST_CASE("Cicero first moves")
         move.squares = &squares[0];
         move.ntiles  = 5;
         move.direction = CICERO_HORZ;
-        cicero_make_move(&engine, &move);
+        cicero_make_move(&engine, &sp, &move);
 
         auto rack = make_rack("RDSELUU");
         auto expect = scrabble::Move::from_isc_spec("11E sulfured");
@@ -169,6 +170,7 @@ TEST_CASE("Parse ISC moves")
 TEST_CASE("Undo move should return to old state")
 {
     auto cb = make_callbacks({});
+    cicero_savepos sp;
     cicero engine;
     cicero_init(&engine, cb.make_callbacks());
 
@@ -179,10 +181,10 @@ TEST_CASE("Undo move should return to old state")
         auto engine_move = scrabble::EngineMove::make(&engine, move);
         cicero engine_copy;
         memcpy(&engine_copy, &engine, sizeof(engine_copy));
-        auto score = cicero_make_move(&engine, &engine_move.move);
+        auto score = cicero_make_move(&engine, &sp, &engine_move.move);
         REQUIRE(score == 30);
 
-        cicero_undo_move(&engine, &engine.sp, &engine_move.move);
+        cicero_undo_move(&engine, &sp, &engine_move.move);
         CHECK(memcmp(engine.vals, engine_copy.vals, sizeof(engine.vals)) == 0);
         CHECK(memcmp(engine.hscr, engine_copy.hscr, sizeof(engine.hscr)) == 0);
         CHECK(memcmp(engine.vscr, engine_copy.vscr, sizeof(engine.vscr)) == 0);
@@ -190,7 +192,7 @@ TEST_CASE("Undo move should return to old state")
         CHECK(memcmp(engine.vchk, engine_copy.vchk, sizeof(engine.vchk)) == 0);
         CHECK(memcmp(engine.asqs, engine_copy.asqs, sizeof(engine.asqs)) == 0);
 
-        auto score2 = cicero_make_move(&engine, &engine_move.move);
+        auto score2 = cicero_make_move(&engine, &sp, &engine_move.move);
         CHECK(score2 == score);
     }
 
@@ -199,11 +201,11 @@ TEST_CASE("Undo move should return to old state")
         auto rack = make_rack("AREHAUZ");
         auto move = scrabble::Move::from_isc_spec("H4 hazer 42");
         auto engine_move = scrabble::EngineMove::make(&engine, move);
-        auto score = cicero_make_move(&engine, &engine_move.move);
+        auto score = cicero_make_move(&engine, &sp, &engine_move.move);
         REQUIRE(score == 42);
 
-        cicero_undo_move(&engine, &engine.sp, &engine_move.move);
-        auto score2 = cicero_make_move(&engine, &engine_move.move);
+        cicero_undo_move(&engine, &sp, &engine_move.move);
+        auto score2 = cicero_make_move(&engine, &sp, &engine_move.move);
         CHECK(score2 == score);
     }
 
@@ -212,11 +214,11 @@ TEST_CASE("Undo move should return to old state")
         auto rack = make_rack("HRWERIE");
         auto move = scrabble::Move::from_isc_spec("8D where 30");
         auto engine_move = scrabble::EngineMove::make(&engine, move);
-        auto score = cicero_make_move(&engine, &engine_move.move);
+        auto score = cicero_make_move(&engine, &sp, &engine_move.move);
         REQUIRE(score == 30);
 
-        cicero_undo_move(&engine, &engine.sp, &engine_move.move);
-        auto score2 = cicero_make_move(&engine, &engine_move.move);
+        cicero_undo_move(&engine, &sp, &engine_move.move);
+        auto score2 = cicero_make_move(&engine, &sp, &engine_move.move);
         CHECK(score2 == score);
     }
 
@@ -225,11 +227,11 @@ TEST_CASE("Undo move should return to old state")
         auto rack = make_rack("UTI?GQZ");
         auto move = scrabble::Move::from_isc_spec("H7 quIz 42");
         auto engine_move = scrabble::EngineMove::make(&engine, move);
-        auto score = cicero_make_move(&engine, &engine_move.move);
+        auto score = cicero_make_move(&engine, &sp, &engine_move.move);
         REQUIRE(score == 42);
 
-        cicero_undo_move(&engine, &engine.sp, &engine_move.move);
-        auto score2 = cicero_make_move(&engine, &engine_move.move);
+        cicero_undo_move(&engine, &sp, &engine_move.move);
+        auto score2 = cicero_make_move(&engine, &sp, &engine_move.move);
         CHECK(score2 == score);
     }
 }

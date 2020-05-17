@@ -118,7 +118,8 @@ cicero_api void cicero_rack_add_tile(cicero_rack *rack, char tile);
 cicero_api void cicero_init(cicero *e, cicero_callbacks callbacks);
 
 // precondition: move is legal and valid
-cicero_api int  cicero_make_move(cicero *e, const cicero_move *move);
+cicero_api int  cicero_make_move(cicero *e, cicero_savepos* sp,
+        const cicero_move *move);
 
 // precondition: `move` was just played via cicero_make_move() and `sp`
 // was passed to corresponding call to cicero_make_move

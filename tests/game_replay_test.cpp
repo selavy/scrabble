@@ -195,6 +195,7 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
     auto* parse_fn = type == FileType::eIsc ? &parsemove_isc : &parsemove_gcg;
 
     cb.clear_legal_moves();
+    cicero_savepos sp;
     cicero engine;
     cicero_init(&engine, cb.make_callbacks());
     scrabble::EngineMove engine_move;
@@ -214,7 +215,7 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
             // TODO: this will only work correctly if previous move was played
             // correctly
             fmt::print(stdout, "info: withdrawing previous move\n");
-            cicero_undo_move(&engine, &engine.sp, &engine_move.move);
+            cicero_undo_move(&engine, &sp, &engine_move.move);
             continue;
         }
 
@@ -256,7 +257,7 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
         //     }
 
         engine_move = scrabble::EngineMove::make(&engine, replay_move.move);
-        int score = cicero_make_move(&engine, &engine_move.move);
+        int score = cicero_make_move(&engine, &sp, &engine_move.move);
         if (score != replay_move.move.score) {
             fmt::print(stderr, "Scores don't match :( => engine={} correct={}\n\n",
                     score, replay_move.move.score);
@@ -267,8 +268,8 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
         }
 
         // TEMP -- check undo_move
-        cicero_undo_move(&engine, &engine.sp, &engine_move.move);
-        auto score2 = cicero_make_move(&engine, &engine_move.move);
+        cicero_undo_move(&engine, &sp, &engine_move.move);
+        auto score2 = cicero_make_move(&engine, &sp, &engine_move.move);
         if (score != score2) {
             fmt::print(stderr, "!!! FAIL !!! after undo move scores don't match; old={} new={}\n",
                     score2, score);
