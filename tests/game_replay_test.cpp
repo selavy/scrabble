@@ -257,6 +257,12 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
         //     }
 
         engine_move = scrabble::EngineMove::make(&engine, replay_move.move);
+        int rc = cicero_legal_move(&engine, &engine_move.move);
+        if (rc != CICERO_LEGAL_MOVE) {
+            fmt::print(stderr, "error: cicero_legal move returned: {}",
+                    cicero_legal_move_errnum_to_string(rc));
+        }
+
         int score = cicero_make_move(&engine, &sp, &engine_move.move);
         if (score != replay_move.move.score) {
             fmt::print(stderr, "Scores don't match :( => engine={} correct={}\n\n",
