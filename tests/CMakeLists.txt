@@ -4,6 +4,7 @@ add_executable(cicero_tests
     mafsa.test.cpp
     movegen.test.cpp
     score.test.cpp
+    legality.test.cpp
 )
 
 target_link_libraries(cicero_tests

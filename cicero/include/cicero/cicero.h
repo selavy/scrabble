@@ -23,8 +23,24 @@ struct cicero_edges
 };
 typedef struct cicero_edges cicero_edges;
 
-typedef void         (*on_legal_move)(void *data, const char* word, int sq, int dir);
-typedef cicero_edges (*prefix_edges )(void *data, const char* prefix);
+// TODO: prefix these typedefs
+typedef void (*on_legal_move)(void *data, const char *word, int sq, int dir);
+typedef cicero_edges (*prefix_edges)(void *data, const char *prefix);
+// non-zero indicates is valid word
+typedef int (*cicero_is_word)(const void *data, const char *word);
+
+enum cicero_legal_move_errnum
+{
+    CICERO_LEGAL_MOVE                 =  0,
+    CICERO_MOVE_NOT_IN_SAME_DIRECTION = -1,
+    CICERO_MOVE_LEAVES_EMPTY_SQUARES  = -2,
+    CICERO_INVALID_ROOT_WORD          = -3,
+    CICERO_INVALID_CROSS_WORD         = -4,
+    CICERO_NO_TILES_PLAYED            = -5,
+    CICERO_TOO_MANY_TILES             = -6,
+    CICERO_WORD_TOO_SHORT             = -7,
+    CICERO_FIRST_MOVE_MUST_OCCUPY_H8  = -8,
+};
 
 // TODO: switch to this?
 // struct cicero_move
@@ -59,12 +75,13 @@ typedef struct cicero_rack cicero_rack;
 struct cicero_callbacks
 {
     on_legal_move onlegal;
-    const void*   onlegaldata;
+    const void   *onlegaldata;
     prefix_edges  getedges;
-    const void*   getedgesdata;
+    const void   *getedgesdata;
 };
 typedef struct cicero_callbacks cicero_callbacks;
 
+// TODO: document the requirements of this struct
 struct cicero_scoring
 {
     const int *double_letter_squares;
@@ -108,7 +125,6 @@ typedef struct cicero cicero;
 // Public API
 // -------------------------------------------------------------------------- //
 
-
 // A-Z = regular tile, a-z = blank, ' ' = empty
 cicero_api char cicero_tile_on_square(const cicero *e, int square);
 
@@ -139,6 +155,12 @@ cicero_api void cicero_generate_legal_moves(const cicero *e, cicero_rack rack);
 // precondition: `move` was just played
 cicero_api int  cicero_score_move(const cicero *e, const cicero_move *move);
 
+cicero_api int  cicero_legal_move_ex(const cicero *e, const cicero_move *move,
+        cicero_is_word is_word, const void *udata);
+
+cicero_api int  cicero_legal_move(const cicero *e, const cicero_move *move);
+
+cicero_api const char *cicero_legal_move_errnum_to_string(int errnum);
 
 // -------------------------------------------------------------------------- //
 

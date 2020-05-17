@@ -5,6 +5,7 @@ add_library(Cicero
     src/rack.c
     src/movegen.c
     src/score.c
+    src/legal.c
 )
 target_link_libraries(Cicero
     PRIVATE

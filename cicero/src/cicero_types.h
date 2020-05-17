@@ -79,7 +79,8 @@ internal int getasq(const u64* asq, int sq)
     return (asq[m] & ((u64)(1ull << n))) != 0;
 }
 
-internal int flip_dir(int d) {
+internal int flip_dir(int d)
+{
     switch (d) {
         case CICERO_HORZ: return VERT;
         case CICERO_VERT: return HORZ;
@@ -87,13 +88,15 @@ internal int flip_dir(int d) {
     return 0;
 }
 
-internal u32 tilemask(char tile) {
+internal u32 tilemask(char tile)
+{
     assert(0 <= tile && tile < 26);
     return 1u << tile;
 }
 
 // TODO: make table based
-internal eng_tile to_eng(char tile) {
+internal eng_tile to_eng(char tile)
+{
     if ('A' <= tile && tile <= 'Z') {
         return (tile - 'A');
     } else if ('a' <= tile && tile <= 'z') {
@@ -106,7 +109,8 @@ internal eng_tile to_eng(char tile) {
 }
 
 // TODO: make table based
-internal ext_tile to_ext(eng_tile tile) {
+internal ext_tile to_ext(eng_tile tile)
+{
     if (0 <= tile && tile < BLANK) {
         return tile + 'A';
     } else if (BLANK <= tile && tile < 2*BLANK) {
@@ -115,6 +119,18 @@ internal ext_tile to_ext(eng_tile tile) {
         return CICERO_EMPTY_TILE;
     } else {
         // assert(0 && "invalid teng tile");
+        __builtin_unreachable();
+        return 0;
+    }
+}
+
+internal ext_tile to_uppercase(ext_tile tile)
+{
+    if ('A' <= tile && tile <= 'Z') {
+        return tile;
+    } else if ('a' <= tile && tile <= 'z') {
+        return 'A' + (tile - 'a');
+    } else {
         __builtin_unreachable();
         return 0;
     }
@@ -133,26 +149,29 @@ internal tile_num tilenum(char tile) {
 }
 
 // precondition: `root` is the left-most square trying to be played
-internal int findbeg(const char* vals, const int start, const int stop, const int stride, const int root)
+internal int findbeg(const char* vals, const int start, const int stop,
+        const int stride, const int root)
 {
-    assert(vals[root] != EMPTY);
     int sq = root - stride;
     while (sq >= start && vals[sq] != EMPTY) {
         sq -= stride;
     }
-    assert(vals[sq + stride] != EMPTY);
-    return sq + stride;
+    sq += stride;
+    assert(vals[sq] != EMPTY || sq == root);
+    return sq;
 }
 
-internal int findend(const char* vals, const int start, const int stop, const int stride, const int root)
+// precondition: `root` should be the right-most square trying to be played
+internal int findend(const char* vals, const int start, const int stop,
+        const int stride, const int root)
 {
-    assert(vals[root] != EMPTY);
     int sq = root + stride;
     while (sq < stop && vals[sq] != EMPTY) {
         sq += stride;
     }
-    assert(vals[sq - stride] != EMPTY);
-    return sq - stride;
+    sq -= stride;
+    assert(vals[sq] != EMPTY || sq == root);
+    return sq;
 }
 
 #ifdef __cplusplus
