@@ -26,6 +26,7 @@ re2::RE2 gcg_move_regex(R"(>(\w+):\s+([A-Z\?]+)\s+(\w+)\s+([A-Za-z\.]+)\s+([+-]?
 // re2::RE2 gcg_final_move_regex(R"(>(\w+):\s+\(([A-Z\.]+)\)\s+([+-]?\d+)\s+([+-]?\d+)\s*)");
 re2::RE2 gcg_tile_exch_regex(R"(>(\w+):\s+([A-Z\?]+)\s+-([A-Z\?]+)\s+\+0\s+(\d+)\s*)");
 re2::RE2 gcg_final_move_regex(R"(>\w+:\s+\([A-Z\?]+\)\s+[+-]?\d+\s+[+-]?\d+)");
+re2::RE2 gcg_passed_turn_regex(R"(>(\w+):\s+([A-Z\?]+)\s+-\s+\+0\s+(\d+)\s*)");
 
 
 std::string stripline(const std::string& line)
@@ -79,7 +80,6 @@ std::optional<ReplayMove> parsemove_isc(const std::string& line, const cicero* e
     return result;
 }
 
-#if 1
 std::optional<ReplayMove> parsemove_gcg(const std::string& line, const cicero* engine)
 {
 
@@ -108,6 +108,11 @@ std::optional<ReplayMove> parsemove_gcg(const std::string& line, const cicero* e
 
     if (re2::RE2::FullMatch(line, gcg_final_move_regex)) {
         fmt::print(stderr, "info: skipping final move: \"{}\"\n", line);
+        return std::nullopt;
+    }
+
+    if (re2::RE2::FullMatch(line, gcg_passed_turn_regex)) {
+        fmt::print(stderr, "info: skipping passed turn: \"{}\"\n", line);
         return std::nullopt;
     }
 
@@ -151,8 +156,26 @@ std::optional<ReplayMove> parsemove_gcg(const std::string& line, const cicero* e
     result.move.score = score;
     return result;
 }
-#endif
 
+std::ostream& operator<<(std::ostream& os, const cicero& engine)
+{
+    auto print_row = [&os](const cicero& e, int row) {
+        for (int col = 0; col < Dim - 1; ++col) {
+            os << cicero_tile_on_square(&e, row*Dim + col) << " | ";
+        }
+        os << cicero_tile_on_square(&e, row*Dim + (Dim - 1));
+    };
+    const auto* b = engine.vals;
+    os << "     1   2   3   4   5   6   7   8   9   0   1   2   3   4   5  \n";
+    os << "   -------------------------------------------------------------\n";
+    for (int row = 0; row < Dim; ++row) {
+        os << static_cast<char>('A' + row) << "  | ";
+        print_row(engine, row);
+        os << " |\n";
+        os << "   -------------------------------------------------------------\n";
+    }
+    return os;
+}
 
 bool replay_file(std::ifstream& ifs, Callbacks& cb)
 {
@@ -221,6 +244,7 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
 
         using scrabble::operator<<;
         std::cout << "\t-> " << replay_move.move << " " << replay_move.rack << "\n";
+        std::cout << "\n\nBOARD:\n" << engine << "\n\n";
 
         cb.clear_legal_moves();
         cicero_generate_legal_moves(&engine, replay_move.rack);
@@ -274,12 +298,15 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
         }
 
         // TEMP -- check undo_move
-        cicero_undo_move(&engine, &sp, &engine_move.move);
-        auto score2 = cicero_make_move(&engine, &sp, &engine_move.move);
-        if (score != score2) {
-            fmt::print(stderr, "!!! FAIL !!! after undo move scores don't match; old={} new={}\n",
-                    score2, score);
-            return false;
+        constexpr bool check_undo_move = true;
+        if (check_undo_move) {
+            cicero_undo_move(&engine, &sp, &engine_move.move);
+            auto score2 = cicero_make_move(&engine, &sp, &engine_move.move);
+            if (score != score2) {
+                fmt::print(stderr, "!!! FAIL !!! after undo move scores don't match; old={} new={}\n",
+                        score2, score);
+                return false;
+            }
         }
 
     } while (getline_stripped(ifs, line));
