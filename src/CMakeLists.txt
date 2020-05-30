@@ -9,7 +9,7 @@ target_link_libraries(Mafsa++
 )
 target_include_directories(Mafsa++ PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_library(Scrabble scrabble.h scrabble.cpp)
+add_library(Scrabble scrabble.h scrabble.cpp gcg.cpp)
 target_link_libraries(Scrabble
     PRIVATE
         cxx_project_options

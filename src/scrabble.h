@@ -130,6 +130,14 @@ constexpr int IX(const char *const name) noexcept
 
 namespace scrabble {
 
+// // TODO: implement
+// struct Rack
+// {
+//     std::string tiles;
+// };
+
+using Rack = std::string;
+
 enum class Direction
 {
     Horz = CICERO_HORZ,
@@ -231,3 +239,4 @@ constexpr scrabble::Square IXSQ(const char *const name) noexcept
 {
     return scrabble::Square{IX(name)};
 }
+

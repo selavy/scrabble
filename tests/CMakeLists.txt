@@ -5,6 +5,7 @@ add_executable(cicero_tests
     movegen.test.cpp
     score.test.cpp
     legality.test.cpp
+    gcg.test.cpp
 )
 
 target_link_libraries(cicero_tests
