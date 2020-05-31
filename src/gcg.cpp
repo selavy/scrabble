@@ -16,11 +16,16 @@ struct Parser::Data
         = R"(>(\w+):\s+([A-Z\?]+)\s+-\s+\+0\s+(\d+)\s*)";
     const re2::RE2 tile_exchange_known_regex
         = R"(>(\w+):\s+([A-Z\?]+)\s+-([A-Z\?]+)\s+\+0\s+(\d+)\s*)";
-    // re2::RE2 tile_exchange_count_regex;
-    // re2::RE2 phoney_removed_regex;
-    // re2::RE2 challenge_bonus_regex;
-    // re2::RE2 last_rack_points_regex;
-    // re2::RE2 time_penalty_regex;
+    const re2::RE2 tile_exchange_count_regex =
+        R"(>(\w+):\s+([A-Z\?]+)\s+-([1-7])\s+\+0\s+(\d+)\s*)";
+    const re2::RE2 phoney_removed_regex =
+        R"(>(\w+):\s+([A-Z\?]+)\s+--\s+(-\d+)\s+(\d+)\s*)";
+    const re2::RE2 challenge_bonus_regex =
+        R"(>(\w+):\s+([A-Z\?]+)\s+\(challenge\)\s+([+-]?\d+)\s+([+-]?\d+)\s*)";
+    const re2::RE2 last_rack_points_regex =
+        R"(>(\w+):\s+\(([A-Z\?]+)\)\s+([+-]?\d+)\s+([+-]?\d+)\s*)";
+    const re2::RE2 time_penalty_regex =
+        R"(>(\w+):\s+([A-Z\?]+)\s+\(time\)\s+([+-]?\d+)\s+([+-]?\d+)\s*)";
 };
 
 Parser::Parser() : data(std::make_unique<Data>()) {}
@@ -38,6 +43,21 @@ std::optional<Move> Parser::parse_line(std::string_view line)
         return *result;
     }
     if (auto result = parse_tile_exchange_known(line)) {
+        return *result;
+    }
+    if (auto result = parse_tile_exchange_count(line)) {
+        return *result;
+    }
+    if (auto result = parse_phoney_removed(line)) {
+        return *result;
+    }
+    if (auto result = parse_challenge_bonus(line)) {
+        return *result;
+    }
+    if (auto result = parse_last_rack_points(line)) {
+        return *result;
+    }
+    if (auto result = parse_time_penalty(line)) {
         return *result;
     }
     return std::nullopt;
@@ -122,6 +142,80 @@ std::optional<TileExchangeKnown> Parser::parse_tile_exchange_known(
     }
     result.rack = rack;
     result.tiles_exchanged = exchanged;
+    return result;
+}
+
+std::optional<TileExchangeCount> Parser::parse_tile_exchange_count(
+        std::string_view line)
+{
+    TileExchangeCount result;
+    auto& regex = data->tile_exchange_count_regex;
+    assert(regex.ok());
+    std::string rack;
+    if (!re2::RE2::FullMatch(line, regex, &result.player, &rack,
+                &result.num_tiles, &result.total_score)) {
+        return std::nullopt;
+    }
+    result.rack = rack;
+    return result;
+}
+
+std::optional<PhoneyRemoved> Parser::parse_phoney_removed(
+        std::string_view line)
+{
+    PhoneyRemoved result;
+    auto& regex = data->phoney_removed_regex;
+    assert(regex.ok());
+    std::string rack;
+    if (!re2::RE2::FullMatch(line, regex, &result.player, &rack,
+                &result.score, &result.total_score)) {
+        return std::nullopt;
+    }
+    result.rack = rack;
+    return result;
+}
+
+std::optional<ChallengeBonus> Parser::parse_challenge_bonus(
+        std::string_view line)
+{
+    ChallengeBonus result;
+    auto& regex = data->challenge_bonus_regex;
+    assert(regex.ok());
+    std::string rack;
+    if (!re2::RE2::FullMatch(line, regex, &result.player, &rack,
+                &result.bonus, &result.total_score)) {
+        return std::nullopt;
+    }
+    result.rack = rack;
+    return result;
+}
+
+std::optional<LastRackPoints> Parser::parse_last_rack_points(
+        std::string_view line)
+{
+    LastRackPoints result;
+    auto& regex = data->last_rack_points_regex;
+    assert(regex.ok());
+    std::string rack;
+    if (!re2::RE2::FullMatch(line, regex, &result.player, &rack,
+                &result.score, &result.total_score)) {
+        return std::nullopt;
+    }
+    result.rack = rack;
+    return result;
+}
+
+std::optional<TimePenalty> Parser::parse_time_penalty(std::string_view line)
+{
+    TimePenalty result;
+    auto& regex = data->time_penalty_regex;
+    assert(regex.ok());
+    std::string rack;
+    if (!re2::RE2::FullMatch(line, regex, &result.player, &rack,
+                &result.penalty, &result.total_score)) {
+        return std::nullopt;
+    }
+    result.rack = rack;
     return result;
 }
 

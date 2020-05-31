@@ -75,7 +75,7 @@ struct ChallengeBonus
 struct LastRackPoints
 {
     std::string player;
-    Rack        tiles;
+    Rack        rack;
     int         score;
     int         total_score;
 };
@@ -114,12 +114,12 @@ struct Parser
     std::optional<PassedTurn> parse_passed_turn(std::string_view line);
     std::optional<TileExchangeKnown> parse_tile_exchange_known(
             std::string_view line);
-    // std::optional<TileExchangeCount> parse_tile_exchange_count(
-    //         std::string_view line);
-    // std::optional<PhoneyRemoved> parse_phoney_removed(std::string_view line);
-    // std::optional<ChallengeBonus> parse_challenge_bonus(std::string_view line);
-    // std::optional<LastRackPoints> parse_last_rack_points(std::string_view line);
-    // std::optional<TimePenalty> parse_time_penalty(std::string_view line);
+    std::optional<TileExchangeCount> parse_tile_exchange_count(
+            std::string_view line);
+    std::optional<PhoneyRemoved> parse_phoney_removed(std::string_view line);
+    std::optional<ChallengeBonus> parse_challenge_bonus(std::string_view line);
+    std::optional<LastRackPoints> parse_last_rack_points(std::string_view line);
+    std::optional<TimePenalty> parse_time_penalty(std::string_view line);
 
 private:
     struct Data;

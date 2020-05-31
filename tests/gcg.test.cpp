@@ -118,3 +118,89 @@ TEST_CASE("Tile Exchange Known", "[gcg]")
         CHECK(xchg->total_score == 268);
     }
 }
+
+TEST_CASE("Tile Exchange Count", "[gcg]")
+{
+    SECTION(">Marlon: SEQSPO? -2 +0 268")
+    {
+        std::string line = ">Marlon: SEQSPO? -2 +0 268";
+        gcg::Parser p;
+        auto result = p.parse_line(line);
+        REQUIRE(result.has_value());
+        auto* xchg = std::get_if<gcg::TileExchangeCount>(&*result);
+        REQUIRE(xchg != nullptr);
+        CHECK(xchg->player == "Marlon");
+        CHECK(xchg->rack == "SEQSPO?");
+        CHECK(xchg->num_tiles == 2);
+        CHECK(xchg->total_score == 268);
+    }
+}
+
+TEST_CASE("Phoney Removed", "[gcg]")
+{
+    SECTION(">Ron: MOULAGD -- -76 354")
+    {
+        std::string line = ">Ron: MOULAGD -- -76 354";
+        gcg::Parser p;
+        auto result = p.parse_line(line);
+        REQUIRE(result.has_value());
+        auto* move = std::get_if<gcg::PhoneyRemoved>(&*result);
+        REQUIRE(move != nullptr);
+        CHECK(move->player == "Ron");
+        CHECK(move->rack == "MOULAGD");
+        CHECK(move->score == -76);
+        CHECK(move->total_score == 354);
+    }
+}
+
+TEST_CASE("Challenge Bonus", "[gcg]")
+{
+    SECTION(">Joel: DROWNUG (challenge) +5 289")
+    {
+        std::string line = ">Joel: DROWNUG (challenge) +5 289";
+        gcg::Parser p;
+        auto result = p.parse_line(line);
+        REQUIRE(result.has_value());
+        auto* move = std::get_if<gcg::ChallengeBonus>(&*result);
+        REQUIRE(move != nullptr);
+        CHECK(move->player == "Joel");
+        CHECK(move->rack == "DROWNUG");
+        CHECK(move->bonus == 5);
+        CHECK(move->total_score == 289);
+    }
+}
+
+TEST_CASE("Last Rack Points", "[gcg]")
+{
+    SECTION(">Dave: (G) +4 539")
+    {
+        std::string line = ">Dave: (G) +4 539";
+        gcg::Parser p;
+        auto result = p.parse_line(line);
+        REQUIRE(result.has_value());
+        auto* move = std::get_if<gcg::LastRackPoints>(&*result);
+        REQUIRE(move != nullptr);
+        CHECK(move->player == "Dave");
+        CHECK(move->rack == "G");
+        CHECK(move->score == 4);
+        CHECK(move->total_score == 539);
+    }
+}
+
+TEST_CASE("Time Penalty", "[gcg]")
+{
+    SECTION(">Pakorn: ISBALI (time) -10 409")
+    {
+        std::string line = ">Pakorn: ISBALI (time) -10 409";
+        gcg::Parser p;
+        auto result = p.parse_line(line);
+        REQUIRE(result.has_value());
+        auto* pen = std::get_if<gcg::TimePenalty>(&*result);
+        REQUIRE(pen != nullptr);
+        CHECK(pen->player == "Pakorn");
+        CHECK(pen->rack == "ISBALI");
+        CHECK(pen->penalty == -10);
+        CHECK(pen->total_score == 409);
+    }
+}
+
