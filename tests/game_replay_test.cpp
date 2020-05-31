@@ -11,6 +11,7 @@
 
 #include <mafsa++.h>
 #include <scrabble.h>
+#include <gcg.h>
 
 #include "test_helpers.h"
 
@@ -177,6 +178,137 @@ std::ostream& operator<<(std::ostream& os, const cicero& engine)
     return os;
 }
 
+bool apply_move(ReplayMove& replay_move, scrabble::EngineMove& engine_move,
+        cicero& engine, cicero_savepos& sp, Callbacks& cb)
+{
+    using scrabble::operator<<;
+    std::cout << "\t-> " << replay_move.move << " " << replay_move.rack << "\n";
+    std::cout << "\n\nBOARD:\n" << engine << "\n\n";
+
+    cb.clear_legal_moves();
+    cicero_generate_legal_moves(&engine, replay_move.rack);
+    auto legal_moves = cb.sorted_legal_moves();
+
+    auto match_ignoring_score = [&replay_move](const scrabble::Move& move) -> bool
+    {
+        return (
+            replay_move.move.square == move.square &&
+            replay_move.move.direction == move.direction &&
+            replay_move.move.word == move.word
+        );
+    };
+
+    bool move_played_in_dictionary = cb.isword(replay_move.move.word);
+    if (move_played_in_dictionary) {
+        auto it = std::find_if(std::begin(legal_moves), std::end(legal_moves), match_ignoring_score);
+        if (it == std::end(legal_moves)) {
+            std::cerr << "error: did not find played move: " << replay_move.move << ", found moves " << legal_moves << "\n";
+            // std::cerr << "error: did not find played move: " << replay_move.move << "\n";
+            return false;
+        } else {
+            std::cout << "generated move: " << replay_move.move << " correctly!\n";
+        }
+    } else {
+        fmt::print(stderr, "\nwarning: move played that is not in dictionary: '{}'\n\n", replay_move.move.word);
+    }
+
+    // Desired API:
+    //     if (cicero_legal_move(&engine, &move)) {
+    //         int score = cicero_make_move(&engine, &move);
+    //         // ... do something with it ...
+    //         cicero_undo_move(&engine, &move);
+    //     }
+
+    engine_move = scrabble::EngineMove::make(&engine, replay_move.move);
+    int rc = cicero_legal_move(&engine, &engine_move.move);
+    if (rc != CICERO_LEGAL_MOVE) {
+        fmt::print(stderr, "error: cicero_legal move returned: {}",
+                cicero_legal_move_errnum_to_string(rc));
+    }
+
+    int score = cicero_make_move(&engine, &sp, &engine_move.move);
+    if (score != replay_move.move.score) {
+        fmt::print(stderr, "Scores don't match :( => engine={} correct={}\n\n",
+                score, replay_move.move.score);
+        return false;
+    } else {
+        fmt::print(stdout, "Scores match! => engine={} correct={}\n\n",
+                score, replay_move.move.score);
+    }
+
+    // TEMP -- check undo_move
+    constexpr bool check_undo_move = true;
+    if (check_undo_move) {
+        cicero_undo_move(&engine, &sp, &engine_move.move);
+        auto score2 = cicero_make_move(&engine, &sp, &engine_move.move);
+        if (score != score2) {
+            fmt::print(stderr, "!!! FAIL !!! after undo move scores don't match; old={} new={}\n",
+                    score2, score);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool replay_file_gcg(std::ifstream& ifs, Callbacks& cb, cicero& engine)
+{
+    std::string line;
+    cicero_savepos sp;
+    scrabble::EngineMove engine_move;
+    hume::gcg::Parser parser;
+
+    while (getline_stripped(ifs, line)) {
+        auto move = parser.parse_line(line);
+        if (!move) {
+            std::cout << "skipping malformed line: \"" << line << "\"\n";
+            continue;
+        }
+        if (auto* m = std::get_if<hume::gcg::Pragmata>(&*move)) {
+            std::cout << "skipping pragma: \"" << line << "\"\n";
+            continue;
+        }
+        else if (auto* m = std::get_if<hume::gcg::Play>(&*move)) {
+            std::cout << "skipping play: \"" << line << "\"\n";
+            continue;
+        }
+        else if (auto* m = std::get_if<hume::gcg::PassedTurn>(&*move)) {
+            std::cout << "skipping passed turn: \"" << line << "\"\n";
+            continue;
+        }
+        else if (auto* m = std::get_if<hume::gcg::TileExchangeKnown>(&*move)) {
+            std::cout << "skipping tile exchange known: \"" << line << "\"\n";
+            continue;
+        }
+        else if (auto* m = std::get_if<hume::gcg::TileExchangeCount>(&*move)) {
+            std::cout << "skipping tile exchange count: \"" << line << "\"\n";
+            continue;
+        }
+        else if (auto* m = std::get_if<hume::gcg::PhoneyRemoved>(&*move)) {
+            // TODO: implement
+            std::cout << "skipping phoney removed: \"" << line << "\"\n";
+            continue;
+        }
+        else if (auto* m = std::get_if<hume::gcg::ChallengeBonus>(&*move)) {
+            std::cout << "skipping challenge bonus: \"" << line << "\"\n";
+            continue;
+        }
+        else if (auto* m = std::get_if<hume::gcg::LastRackPoints>(&*move)) {
+            std::cout << "skipping last rack points: \"" << line << "\"\n";
+            continue;
+        }
+        else if (auto* m = std::get_if<hume::gcg::TimePenalty>(&*move)) {
+            std::cout << "skipping time penalty: \"" << line << "\"\n";
+            continue;
+        }
+        else {
+            throw std::runtime_error("Didn't handle all variant cases");
+        }
+    }
+
+    return true;
+}
+
 bool replay_file(std::ifstream& ifs, Callbacks& cb)
 {
     FileType type = FileType::eInvalid;
@@ -211,106 +343,41 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
             }
             // fmt::print(stdout, "PGN Header: key=\"{}\" value=\"{}\"\n", key, value);
         }
-    } else {
-        getline_stripped(ifs, line);
-    }
-
-    auto* parse_fn = type == FileType::eIsc ? &parsemove_isc : &parsemove_gcg;
+    }//  else {
+        // getline_stripped(ifs, line);
+    // }
 
     cb.clear_legal_moves();
     cicero_savepos sp;
     cicero engine;
     cicero_init(&engine, cb.make_callbacks());
     scrabble::EngineMove engine_move;
-
-    do {
-        if (line.empty() || line[0] == '#') {
-            std::cout << "skipping line: \"" << line << "\"\n";
-            continue;
-        }
-        std::cout << "line: \"" << line << "\"" << std::endl;
-        auto maybe_replay_move = parse_fn(line, &engine);
-        if (!maybe_replay_move) {
-            continue;
-        }
-        auto& replay_move = *maybe_replay_move;
-        if (replay_move.previous_move_withdrawn) {
-            // TODO: this will only work correctly if previous move was played
-            // correctly
-            fmt::print(stdout, "info: withdrawing previous move\n");
-            cicero_undo_move(&engine, &sp, &engine_move.move);
-            continue;
-        }
-
-        using scrabble::operator<<;
-        std::cout << "\t-> " << replay_move.move << " " << replay_move.rack << "\n";
-        std::cout << "\n\nBOARD:\n" << engine << "\n\n";
-
-        cb.clear_legal_moves();
-        cicero_generate_legal_moves(&engine, replay_move.rack);
-        auto legal_moves = cb.sorted_legal_moves();
-
-        auto match_ignoring_score = [&replay_move](const scrabble::Move& move) -> bool
-        {
-            return (
-                replay_move.move.square == move.square &&
-                replay_move.move.direction == move.direction &&
-                replay_move.move.word == move.word
-            );
-        };
-
-        bool move_played_in_dictionary = cb.isword(replay_move.move.word);
-        if (move_played_in_dictionary) {
-            auto it = std::find_if(std::begin(legal_moves), std::end(legal_moves), match_ignoring_score);
-            if (it == std::end(legal_moves)) {
-                std::cerr << "error: did not find played move: " << replay_move.move << ", found moves " << legal_moves << "\n";
-                // std::cerr << "error: did not find played move: " << replay_move.move << "\n";
-                return false;
-            } else {
-                std::cout << "generated move: " << replay_move.move << " correctly!\n";
+    if (type == FileType::eIsc) {
+        do {
+            if (line.empty() || line[0] == '#') {
+                std::cout << "skipping line: \"" << line << "\"\n";
+                continue;
             }
-        } else {
-            fmt::print(stderr, "\nwarning: move played that is not in dictionary: '{}'\n\n", replay_move.move.word);
-        }
-
-        // Desired API:
-        //     if (cicero_legal_move(&engine, &move)) {
-        //         int score = cicero_make_move(&engine, &move);
-        //         // ... do something with it ...
-        //         cicero_undo_move(&engine, &move);
-        //     }
-
-        engine_move = scrabble::EngineMove::make(&engine, replay_move.move);
-        int rc = cicero_legal_move(&engine, &engine_move.move);
-        if (rc != CICERO_LEGAL_MOVE) {
-            fmt::print(stderr, "error: cicero_legal move returned: {}",
-                    cicero_legal_move_errnum_to_string(rc));
-        }
-
-        int score = cicero_make_move(&engine, &sp, &engine_move.move);
-        if (score != replay_move.move.score) {
-            fmt::print(stderr, "Scores don't match :( => engine={} correct={}\n\n",
-                    score, replay_move.move.score);
-            return false;
-        } else {
-            fmt::print(stdout, "Scores match! => engine={} correct={}\n\n",
-                    score, replay_move.move.score);
-        }
-
-        // TEMP -- check undo_move
-        constexpr bool check_undo_move = true;
-        if (check_undo_move) {
-            cicero_undo_move(&engine, &sp, &engine_move.move);
-            auto score2 = cicero_make_move(&engine, &sp, &engine_move.move);
-            if (score != score2) {
-                fmt::print(stderr, "!!! FAIL !!! after undo move scores don't match; old={} new={}\n",
-                        score2, score);
+            std::cout << "line: \"" << line << "\"" << std::endl;
+            auto maybe_replay_move = parsemove_isc(line, &engine);
+            if (!maybe_replay_move) {
+                continue;
+            }
+            auto& replay_move = *maybe_replay_move;
+            if (replay_move.previous_move_withdrawn) {
+                // TODO: this will only work correctly if previous move was played
+                // correctly
+                fmt::print(stdout, "info: withdrawing previous move\n");
+                cicero_undo_move(&engine, &sp, &engine_move.move);
+                continue;
+            }
+            if (!apply_move(replay_move, engine_move, engine, sp, cb)) {
                 return false;
             }
-        }
-
-    } while (getline_stripped(ifs, line));
-
+        } while (getline_stripped(ifs, line));
+    } else {
+        return replay_file_gcg(ifs, cb, engine);
+    }
     return true;
 }
 
