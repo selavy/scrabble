@@ -2,6 +2,7 @@ add_executable(cicero_tests
     ${CATCH_MAIN}
     test_helpers.h
     mafsa.test.cpp
+    square.test.cpp
     movegen.test.cpp
     score.test.cpp
     legality.test.cpp

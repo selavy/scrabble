@@ -67,3 +67,23 @@ TEST_CASE("Parse pragmata")
         CHECK(pragma->arguments.size() == 1);
     }
 }
+
+TEST_CASE("Play")
+{
+    SECTION(">David: ANTHER? n8 ANoTHER +73 416	")
+    {
+        std::string line = ">David: ANTHER? n8 ANoTHER +73 416	";
+        gcg::Parser p;
+        auto result = p.parse_line(line);
+        REQUIRE(static_cast<bool>(result) == true);
+        auto* move = std::get_if<gcg::Play>(&*result);
+        REQUIRE(move != nullptr);
+        CHECK(move->player == "David");
+        CHECK(move->rack   == "ANTHER?");
+        auto correct_square = scrabble::Square::from_gcg("n8");
+        CHECK(move->square == *correct_square);
+        CHECK(move->word   == "anOther");
+        CHECK(move->score  == 73);
+        CHECK(move->total_score == 416);
+    }
+}
