@@ -1,6 +1,8 @@
 #pragma once
 
 #include "scrabble.h"
+#include "square.h"
+#include "rack.h"
 
 #include <variant>
 #include <vector>
@@ -10,7 +12,7 @@
 #include <memory>
 
 
-namespace scrabble {
+namespace hume {
 
 namespace gcg {
 
@@ -41,6 +43,7 @@ struct PassedTurn
 struct TileExchangeKnown
 {
     std::string player;
+    Rack        rack;
     Rack        tiles_exchanged;
     int         total_score; // cumulative score after turn
 };
@@ -48,6 +51,7 @@ struct TileExchangeKnown
 struct TileExchangeCount
 {
     std::string player;
+    Rack        rack;
     int         num_tiles;
     int         total_score;
 };
@@ -101,16 +105,15 @@ struct Parser
     Parser();
     ~Parser() noexcept;
 
-    std::optional<Move> parse_line(const std::string& line)
-    {
-        return parse_line(line.c_str());
-    }
-    std::optional<Move> parse_line(const char* line);
-    // std::optional<Pragmata> parse_pragmata(std::string_view line);
-    // std::optional<Play> parse_play(std::string_view line);
-    // std::optional<PassedTurn> parse_passed_turn(std::string_view line);
-    // std::optional<TileExchangeKnown> parse_tile_exchange_known(
-    //         std::string_view line);
+    std::optional<Move> parse_line(const char* line)
+    { return parse_line(std::string_view{line}); }
+    std::optional<Move> parse_line(std::string_view line);
+
+    std::optional<Pragmata> parse_pragmata(std::string_view line);
+    std::optional<Play> parse_play(std::string_view line);
+    std::optional<PassedTurn> parse_passed_turn(std::string_view line);
+    std::optional<TileExchangeKnown> parse_tile_exchange_known(
+            std::string_view line);
     // std::optional<TileExchangeCount> parse_tile_exchange_count(
     //         std::string_view line);
     // std::optional<PhoneyRemoved> parse_phoney_removed(std::string_view line);
@@ -125,4 +128,4 @@ private:
 
 } // ~gcg
 
-} // ~scrabble
+} // ~hume

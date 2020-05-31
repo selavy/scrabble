@@ -1,9 +1,9 @@
 #include <catch2/catch.hpp>
 #include "gcg.h"
 
-using namespace scrabble;
+using namespace hume;
 
-TEST_CASE("Parse pragmata")
+TEST_CASE("Parse pragmata", "[gcg]")
 {
     SECTION("Player")
     {
@@ -55,7 +55,6 @@ TEST_CASE("Parse pragmata")
 
     SECTION("Rack")
     {
-
         std::string line = "#rack2 RETAIN?	";
         gcg::Parser p;
         auto result = p.parse_line(line);
@@ -68,7 +67,7 @@ TEST_CASE("Parse pragmata")
     }
 }
 
-TEST_CASE("Play")
+TEST_CASE("Play", "[gcg]")
 {
     SECTION(">David: ANTHER? n8 ANoTHER +73 416	")
     {
@@ -80,10 +79,42 @@ TEST_CASE("Play")
         REQUIRE(move != nullptr);
         CHECK(move->player == "David");
         CHECK(move->rack   == "ANTHER?");
-        auto correct_square = scrabble::Square::from_gcg("n8");
-        CHECK(move->square == *correct_square);
+        CHECK(move->square == *Square::make(118));
         CHECK(move->word   == "anOther");
         CHECK(move->score  == 73);
         CHECK(move->total_score == 416);
+    }
+}
+
+TEST_CASE("Passed Turn", "[gcg]")
+{
+    SECTION(">Randy: U - +0 380")
+    {
+        std::string line = ">Randy: U - +0 380";
+        gcg::Parser p;
+        auto result = p.parse_line(line);
+        REQUIRE(result.has_value());
+        auto* pass = std::get_if<gcg::PassedTurn>(&*result);
+        REQUIRE(pass != nullptr);
+        CHECK(pass->player == "Randy");
+        CHECK(pass->rack == "U");
+        CHECK(pass->total_score == 380);
+    }
+}
+
+TEST_CASE("Tile Exchange Known", "[gcg]")
+{
+    SECTION(">Marlon: SEQSPO? -QO +0 268")
+    {
+        std::string line = ">Marlon: SEQSPO? -QO +0 268";
+        gcg::Parser p;
+        auto result = p.parse_line(line);
+        REQUIRE(result.has_value());
+        auto* xchg = std::get_if<gcg::TileExchangeKnown>(&*result);
+        REQUIRE(xchg != nullptr);
+        CHECK(xchg->player == "Marlon");
+        CHECK(xchg->rack == "SEQSPO?");
+        CHECK(xchg->tiles_exchanged == "QO");
+        CHECK(xchg->total_score == 268);
     }
 }
