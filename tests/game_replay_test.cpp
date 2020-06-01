@@ -58,7 +58,6 @@ enum class FileType
 
 struct ReplayMove
 {
-    bool                previous_move_withdrawn = false;
     std::string         player;
     cicero_rack         rack;
     scrabble::Move      move;
@@ -81,6 +80,7 @@ std::optional<ReplayMove> parsemove_isc(const std::string& line, const cicero* e
     return result;
 }
 
+#if 0
 std::optional<ReplayMove> parsemove_gcg(const std::string& line, const cicero* engine)
 {
 
@@ -157,6 +157,7 @@ std::optional<ReplayMove> parsemove_gcg(const std::string& line, const cicero* e
     result.move.score = score;
     return result;
 }
+#endif
 
 std::ostream& operator<<(std::ostream& os, const cicero& engine)
 {
@@ -251,6 +252,29 @@ bool apply_move(ReplayMove& replay_move, scrabble::EngineMove& engine_move,
     return true;
 }
 
+
+ReplayMove make_replay_move(const hume::gcg::Play& move, cicero* engine)
+{
+    ReplayMove result;
+    cicero_make_rack(&result.rack, move.rack.c_str());
+    result.move.square = scrabble::Square(move.square.value());
+    result.move.direction = move.direction == hume::Direction::Horz ? scrabble::Direction::Horz : scrabble::Direction::Vert;
+    // result.move.word = move.word;
+    result.move.word = "";
+    int stride = static_cast<int>(result.move.direction);
+    int start  = result.move.square.value();
+    int step   = 0;
+    for (char ch : move.word) {
+        if (ch == '.') {
+            ch = cicero_tile_on_square(engine, start + step * stride);
+        }
+        result.move.word += ch;
+        ++step;
+    }
+    result.move.score = move.score;
+    return result;
+}
+
 bool replay_file_gcg(std::ifstream& ifs, Callbacks& cb, cicero& engine)
 {
     std::string line;
@@ -261,47 +285,54 @@ bool replay_file_gcg(std::ifstream& ifs, Callbacks& cb, cicero& engine)
     while (getline_stripped(ifs, line)) {
         auto move = parser.parse_line(line);
         if (!move) {
-            std::cout << "skipping malformed line: \"" << line << "\"\n";
+            // std::cout << "skipping malformed line: \"" << line << "\"\n";
+            fmt::print(stderr, "malformed line: \"{}\"\n", line);
+            throw std::runtime_error("malformed line");
             continue;
         }
+
         if (auto* m = std::get_if<hume::gcg::Pragmata>(&*move)) {
-            std::cout << "skipping pragma: \"" << line << "\"\n";
+            fmt::print(stdout, "skipping pragma: \"{}\"\n", line);
             continue;
         }
         else if (auto* m = std::get_if<hume::gcg::Play>(&*move)) {
-            std::cout << "skipping play: \"" << line << "\"\n";
+            auto replay_move = make_replay_move(*m, &engine);
+            if (!apply_move(replay_move, engine_move, engine, sp, cb)) {
+                return false;
+            }
             continue;
         }
         else if (auto* m = std::get_if<hume::gcg::PassedTurn>(&*move)) {
-            std::cout << "skipping passed turn: \"" << line << "\"\n";
+            fmt::print(stdout, "skipping passed turn: \"{}\"\n", line);
             continue;
         }
         else if (auto* m = std::get_if<hume::gcg::TileExchangeKnown>(&*move)) {
-            std::cout << "skipping tile exchange known: \"" << line << "\"\n";
+            fmt::print(stdout, "skipping tile exchange known: \"{}\"\n", line);
             continue;
         }
         else if (auto* m = std::get_if<hume::gcg::TileExchangeCount>(&*move)) {
-            std::cout << "skipping tile exchange count: \"" << line << "\"\n";
+            fmt::print(stdout, "skipping tile exchange count: \"{}\"\n", line);
             continue;
         }
         else if (auto* m = std::get_if<hume::gcg::PhoneyRemoved>(&*move)) {
-            // TODO: implement
-            std::cout << "skipping phoney removed: \"" << line << "\"\n";
+            fmt::print(stdout, "info: withdrawing previous move\n");
+            cicero_undo_move(&engine, &sp, &engine_move.move);
             continue;
         }
         else if (auto* m = std::get_if<hume::gcg::ChallengeBonus>(&*move)) {
-            std::cout << "skipping challenge bonus: \"" << line << "\"\n";
+            fmt::print(stdout, "skipping challenge bonus: \"{}\"\n", line);
             continue;
         }
         else if (auto* m = std::get_if<hume::gcg::LastRackPoints>(&*move)) {
-            std::cout << "skipping last rack points: \"" << line << "\"\n";
+            fmt::print(stdout, "skipping last rack points: \"{}\"\n", line);
             continue;
         }
         else if (auto* m = std::get_if<hume::gcg::TimePenalty>(&*move)) {
-            std::cout << "skipping time penalty: \"" << line << "\"\n";
+            fmt::print(stdout, "skipping time penalty: \"{}\"\n", line);
             continue;
         }
         else {
+            fmt::print(stderr, "unknown line type: \"{}\"\n", line);
             throw std::runtime_error("Didn't handle all variant cases");
         }
     }
@@ -343,9 +374,7 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
             }
             // fmt::print(stdout, "PGN Header: key=\"{}\" value=\"{}\"\n", key, value);
         }
-    }//  else {
-        // getline_stripped(ifs, line);
-    // }
+    }
 
     cb.clear_legal_moves();
     cicero_savepos sp;
@@ -364,13 +393,6 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
                 continue;
             }
             auto& replay_move = *maybe_replay_move;
-            if (replay_move.previous_move_withdrawn) {
-                // TODO: this will only work correctly if previous move was played
-                // correctly
-                fmt::print(stdout, "info: withdrawing previous move\n");
-                cicero_undo_move(&engine, &sp, &engine_move.move);
-                continue;
-            }
             if (!apply_move(replay_move, engine_move, engine, sp, cb)) {
                 return false;
             }

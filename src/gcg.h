@@ -27,6 +27,7 @@ struct Play
     std::string player;
     Rack        rack;
     Square      square;
+    Direction   direction;
     std::string word;
     int         score;
     int         total_score; // cumulative score after turn

@@ -97,19 +97,18 @@ std::optional<Play> Parser::parse_play(std::string_view line)
     if (!square) {
         return std::nullopt;
     }
-
-    for (auto& c : result.word) {
-        if (c == '?') {
-            continue;
-        } else if ('A' <= c && c <= 'Z') {
-            c = static_cast<char>((c - 'A') + 'a');
-        } else if ('a' <= c && c <= 'z') {
-            c = static_cast<char>((c - 'a') + 'A');
-        } else {
-            return std::nullopt;
-        }
-    }
-
+    result.direction = gcg_direction(sqname);
+    // for (auto& c : result.word) {
+    //     if (c == '?') {
+    //         continue;
+    //     } else if ('A' <= c && c <= 'Z') {
+    //         c = static_cast<char>((c - 'A') + 'a');
+    //     } else if ('a' <= c && c <= 'z') {
+    //         c = static_cast<char>((c - 'a') + 'A');
+    //     } else {
+    //         return std::nullopt;
+    //     }
+    // }
     result.square = *square;
     return result;
 }

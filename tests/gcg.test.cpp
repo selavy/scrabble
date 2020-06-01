@@ -80,7 +80,8 @@ TEST_CASE("Play", "[gcg]")
         CHECK(move->player == "David");
         CHECK(move->rack   == "ANTHER?");
         CHECK(move->square == *Square::make(118));
-        CHECK(move->word   == "anOther");
+        // CHECK(move->word   == "anOther");
+        CHECK(move->word   == "ANoTHER");
         CHECK(move->score  == 73);
         CHECK(move->total_score == 416);
     }
