@@ -213,6 +213,7 @@ int main(int argc, char** argv)
 
         ImGui::Begin("Scrabble", &show_scrabble_window, ImGuiWindowFlags_MenuBar);
 
+        ImGui::BeginGroup();
         int index = 0;
         for (int col = 0; col < 15; ++col) {
             ImGui::BeginGroup();
@@ -231,9 +232,11 @@ int main(int argc, char** argv)
             ImGui::EndGroup();
             ImGui::NewLine();
         }
-
+        ImGui::EndGroup();
+        ImGui::NewLine();
 
         ImGui::End();
+
 
         // Rendering
         ImGui::Render();
