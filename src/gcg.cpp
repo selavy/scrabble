@@ -8,8 +8,10 @@ namespace gcg {
 
 struct Parser::Data
 {
-    const re2::RE2 pragmata_regex
-        = R"(#(\w+) (.*))";
+    // const re2::RE2 pragmata1_regex
+    //     = R"(#(\w+)\s*)";
+    // const re2::RE2 pragmata2_regex =
+    //     = R"(#(\w+)\s+(.*))";
     const re2::RE2 play_regex
         = R"(>(\w+):\s+([A-Z\?]+)\s+(\w+)\s+([A-Za-z\.]+)\s+([+-]?\d+)\s+([+-]?\d+)\s*)";
     const re2::RE2 passed_turn_regex
@@ -66,18 +68,27 @@ std::optional<Move> Parser::parse_line(std::string_view line)
 std::optional<Pragmata> Parser::parse_pragmata(std::string_view line)
 {
     Pragmata result;
-    auto& regex = data->pragmata_regex;
-    assert(regex.ok());
-    std::string rest;
-    if (!re2::RE2::FullMatch(line, regex, &result.keyword, &rest)) {
+    if (line.empty() || line[0] != '#') {
         return std::nullopt;
     }
+    // auto& regex = data->pragmata_regex;
+    // assert(regex.ok());
+    // std::string rest;
+    // if (!re2::RE2::FullMatch(line, regex, &result.keyword, &rest)) {
+    //     return std::nullopt;
+    // }
     // TODO: better string split. maybe ranges?
+    std::string rest{line.data(), line.size()};
     std::stringstream ss{rest};
     std::string token;
+    ss >> result.keyword;
     while (ss >> token) {
         result.arguments.emplace_back(std::move(token));
     }
+    if (result.keyword.empty()) {
+        return std::nullopt;
+    }
+    result.keyword.erase(0, 1);
     return result;
 }
 

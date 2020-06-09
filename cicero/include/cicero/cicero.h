@@ -134,7 +134,7 @@ cicero_api void cicero_make_rack(cicero_rack *rack, const char *const tiles);
 cicero_api void cicero_rack_add_tile(cicero_rack *rack, char tile);
 
 // note: no memory is allocated to intialize `cicero`
-// if `scoring` is NULL, then uses default values
+// if `scoring` is NULL, then uses default official Scrabble values
 cicero_api void cicero_init_ex(cicero *e, cicero_callbacks callbacks,
         cicero_scoring scoring);
 

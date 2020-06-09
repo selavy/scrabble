@@ -65,6 +65,18 @@ TEST_CASE("Parse pragmata", "[gcg]")
         CHECK(pragma->arguments.at(0) == "RETAIN?");
         CHECK(pragma->arguments.size() == 1);
     }
+
+    SECTION("Style")
+    {
+        std::string line = "#style";
+        gcg::Parser p;
+        auto result = p.parse_line(line);
+        REQUIRE(static_cast<bool>(result) == true);
+        auto* pragma = std::get_if<gcg::Pragmata>(&*result);
+        REQUIRE(pragma != nullptr);
+        CHECK(pragma->keyword == "style");
+        CHECK(pragma->arguments.empty());
+    }
 }
 
 TEST_CASE("Play", "[gcg]")
