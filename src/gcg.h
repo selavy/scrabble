@@ -89,6 +89,8 @@ struct TimePenalty
     int         total_score;
 };
 
+using Comment = std::string;
+
 using Move = std::variant<
     Pragmata,
     Play,
@@ -98,7 +100,8 @@ using Move = std::variant<
     PhoneyRemoved,
     ChallengeBonus,
     LastRackPoints,
-    TimePenalty
+    TimePenalty,
+    Comment
 >;
 
 struct Parser
@@ -106,9 +109,9 @@ struct Parser
     Parser();
     ~Parser() noexcept;
 
-    std::optional<Move> parse_line(const char* line)
+    Move parse_line(const char* line)
     { return parse_line(std::string_view{line}); }
-    std::optional<Move> parse_line(std::string_view line);
+    Move parse_line(std::string_view line);
 
     std::optional<Pragmata> parse_pragmata(std::string_view line);
     std::optional<Play> parse_play(std::string_view line);

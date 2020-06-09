@@ -10,8 +10,7 @@ TEST_CASE("Parse pragmata", "[gcg]")
         std::string line = "#player1 Jamie James Chew";
         gcg::Parser p;
         auto result = p.parse_line(line);
-        REQUIRE(static_cast<bool>(result) == true);
-        auto* pragma = std::get_if<gcg::Pragmata>(&*result);
+        auto* pragma = std::get_if<gcg::Pragmata>(&result);
         REQUIRE(pragma != nullptr);
         CHECK(pragma->keyword == "player1");
         CHECK(pragma->arguments.at(0) == "Jamie");
@@ -25,8 +24,7 @@ TEST_CASE("Parse pragmata", "[gcg]")
         std::string line = "#title Sample Game";
         gcg::Parser p;
         auto result = p.parse_line(line);
-        REQUIRE(static_cast<bool>(result) == true);
-        auto* pragma = std::get_if<gcg::Pragmata>(&*result);
+        auto* pragma = std::get_if<gcg::Pragmata>(&result);
         REQUIRE(pragma != nullptr);
         CHECK(pragma->keyword == "title");
         CHECK(pragma->arguments.at(0) == "Sample");
@@ -58,8 +56,7 @@ TEST_CASE("Parse pragmata", "[gcg]")
         std::string line = "#rack2 RETAIN?	";
         gcg::Parser p;
         auto result = p.parse_line(line);
-        REQUIRE(static_cast<bool>(result) == true);
-        auto* pragma = std::get_if<gcg::Pragmata>(&*result);
+        auto* pragma = std::get_if<gcg::Pragmata>(&result);
         REQUIRE(pragma != nullptr);
         CHECK(pragma->keyword == "rack2");
         CHECK(pragma->arguments.at(0) == "RETAIN?");
@@ -71,8 +68,7 @@ TEST_CASE("Parse pragmata", "[gcg]")
         std::string line = "#style";
         gcg::Parser p;
         auto result = p.parse_line(line);
-        REQUIRE(static_cast<bool>(result) == true);
-        auto* pragma = std::get_if<gcg::Pragmata>(&*result);
+        auto* pragma = std::get_if<gcg::Pragmata>(&result);
         REQUIRE(pragma != nullptr);
         CHECK(pragma->keyword == "style");
         CHECK(pragma->arguments.empty());
@@ -86,8 +82,7 @@ TEST_CASE("Play", "[gcg]")
         std::string line = ">David: ANTHER? n8 ANoTHER +73 416	";
         gcg::Parser p;
         auto result = p.parse_line(line);
-        REQUIRE(static_cast<bool>(result) == true);
-        auto* move = std::get_if<gcg::Play>(&*result);
+        auto* move = std::get_if<gcg::Play>(&result);
         REQUIRE(move != nullptr);
         CHECK(move->player == "David");
         CHECK(move->rack   == "ANTHER?");
@@ -106,8 +101,7 @@ TEST_CASE("Passed Turn", "[gcg]")
         std::string line = ">Randy: U - +0 380";
         gcg::Parser p;
         auto result = p.parse_line(line);
-        REQUIRE(result.has_value());
-        auto* pass = std::get_if<gcg::PassedTurn>(&*result);
+        auto* pass = std::get_if<gcg::PassedTurn>(&result);
         REQUIRE(pass != nullptr);
         CHECK(pass->player == "Randy");
         CHECK(pass->rack == "U");
@@ -122,8 +116,7 @@ TEST_CASE("Tile Exchange Known", "[gcg]")
         std::string line = ">Marlon: SEQSPO? -QO +0 268";
         gcg::Parser p;
         auto result = p.parse_line(line);
-        REQUIRE(result.has_value());
-        auto* xchg = std::get_if<gcg::TileExchangeKnown>(&*result);
+        auto* xchg = std::get_if<gcg::TileExchangeKnown>(&result);
         REQUIRE(xchg != nullptr);
         CHECK(xchg->player == "Marlon");
         CHECK(xchg->rack == "SEQSPO?");
@@ -139,8 +132,7 @@ TEST_CASE("Tile Exchange Count", "[gcg]")
         std::string line = ">Marlon: SEQSPO? -2 +0 268";
         gcg::Parser p;
         auto result = p.parse_line(line);
-        REQUIRE(result.has_value());
-        auto* xchg = std::get_if<gcg::TileExchangeCount>(&*result);
+        auto* xchg = std::get_if<gcg::TileExchangeCount>(&result);
         REQUIRE(xchg != nullptr);
         CHECK(xchg->player == "Marlon");
         CHECK(xchg->rack == "SEQSPO?");
@@ -156,8 +148,7 @@ TEST_CASE("Phoney Removed", "[gcg]")
         std::string line = ">Ron: MOULAGD -- -76 354";
         gcg::Parser p;
         auto result = p.parse_line(line);
-        REQUIRE(result.has_value());
-        auto* move = std::get_if<gcg::PhoneyRemoved>(&*result);
+        auto* move = std::get_if<gcg::PhoneyRemoved>(&result);
         REQUIRE(move != nullptr);
         CHECK(move->player == "Ron");
         CHECK(move->rack == "MOULAGD");
@@ -173,8 +164,7 @@ TEST_CASE("Challenge Bonus", "[gcg]")
         std::string line = ">Joel: DROWNUG (challenge) +5 289";
         gcg::Parser p;
         auto result = p.parse_line(line);
-        REQUIRE(result.has_value());
-        auto* move = std::get_if<gcg::ChallengeBonus>(&*result);
+        auto* move = std::get_if<gcg::ChallengeBonus>(&result);
         REQUIRE(move != nullptr);
         CHECK(move->player == "Joel");
         CHECK(move->rack == "DROWNUG");
@@ -190,8 +180,7 @@ TEST_CASE("Last Rack Points", "[gcg]")
         std::string line = ">Dave: (G) +4 539";
         gcg::Parser p;
         auto result = p.parse_line(line);
-        REQUIRE(result.has_value());
-        auto* move = std::get_if<gcg::LastRackPoints>(&*result);
+        auto* move = std::get_if<gcg::LastRackPoints>(&result);
         REQUIRE(move != nullptr);
         CHECK(move->player == "Dave");
         CHECK(move->rack == "G");
@@ -207,8 +196,7 @@ TEST_CASE("Time Penalty", "[gcg]")
         std::string line = ">Pakorn: ISBALI (time) -10 409";
         gcg::Parser p;
         auto result = p.parse_line(line);
-        REQUIRE(result.has_value());
-        auto* pen = std::get_if<gcg::TimePenalty>(&*result);
+        auto* pen = std::get_if<gcg::TimePenalty>(&result);
         REQUIRE(pen != nullptr);
         CHECK(pen->player == "Pakorn");
         CHECK(pen->rack == "ISBALI");

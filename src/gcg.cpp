@@ -12,8 +12,10 @@ struct Parser::Data
     //     = R"(#(\w+)\s*)";
     // const re2::RE2 pragmata2_regex =
     //     = R"(#(\w+)\s+(.*))";
+    const re2::RE2 only_whitespace_regex =
+        R"(\s*)";
     const re2::RE2 play_regex
-        = R"(>(\w+):\s+([A-Z\?]+)\s+(\w+)\s+([A-Za-z\.]+)\s+([+-]?\d+)\s+([+-]?\d+)\s*)";
+        = R"(>(\w+):\s+([A-Z\?]+)\s+(\w+)\s+([A-Za-z\.]+)\s+([+-]?\d+)\s+([+-]?\d+)\s*(?:.*))";
     const re2::RE2 passed_turn_regex
         = R"(>(\w+):\s+([A-Z\?]+)\s+-\s+\+0\s+(\d+)\s*)";
     const re2::RE2 tile_exchange_known_regex
@@ -33,7 +35,7 @@ struct Parser::Data
 Parser::Parser() : data(std::make_unique<Data>()) {}
 Parser::~Parser() noexcept {}
 
-std::optional<Move> Parser::parse_line(std::string_view line)
+Move Parser::parse_line(std::string_view line)
 {
     if (auto result = parse_pragmata(line)) {
         return *result;
@@ -62,12 +64,18 @@ std::optional<Move> Parser::parse_line(std::string_view line)
     if (auto result = parse_time_penalty(line)) {
         return *result;
     }
-    return std::nullopt;
+    return Comment{line};
 }
 
 std::optional<Pragmata> Parser::parse_pragmata(std::string_view line)
 {
     Pragmata result;
+    auto& regex = data->only_whitespace_regex;
+    assert(regex.ok());
+    if (re2::RE2::FullMatch(line, regex)) {
+        // TODO: for now returning a blank line as a pragmata
+        return result;
+    }
     if (line.empty() || line[0] != '#') {
         return std::nullopt;
     }

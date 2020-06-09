@@ -284,50 +284,47 @@ bool replay_file_gcg(std::ifstream& ifs, Callbacks& cb, cicero& engine)
 
     while (getline_stripped(ifs, line)) {
         auto move = parser.parse_line(line);
-        if (!move) {
-            // std::cout << "skipping malformed line: \"" << line << "\"\n";
-            fmt::print(stderr, "malformed line: \"{}\"\n", line);
-            throw std::runtime_error("malformed line");
+        if (auto* m = std::get_if<hume::gcg::Comment>(&move)) {
+            fmt::print(stdout, "skipping comment: \"{}\"\n", *m);
             continue;
         }
-
-        if (auto* m = std::get_if<hume::gcg::Pragmata>(&*move)) {
+        else if (auto* m = std::get_if<hume::gcg::Pragmata>(&move)) {
             fmt::print(stdout, "skipping pragma: \"{}\"\n", line);
             continue;
         }
-        else if (auto* m = std::get_if<hume::gcg::Play>(&*move)) {
+        else if (auto* m = std::get_if<hume::gcg::Play>(&move)) {
             auto replay_move = make_replay_move(*m, &engine);
             if (!apply_move(replay_move, engine_move, engine, sp, cb)) {
                 return false;
             }
             continue;
         }
-        else if (auto* m = std::get_if<hume::gcg::PassedTurn>(&*move)) {
+        else if (auto* m = std::get_if<hume::gcg::PassedTurn>(&move)) {
             fmt::print(stdout, "skipping passed turn: \"{}\"\n", line);
             continue;
         }
-        else if (auto* m = std::get_if<hume::gcg::TileExchangeKnown>(&*move)) {
+        else if (auto* m = std::get_if<hume::gcg::TileExchangeKnown>(&move)) {
             fmt::print(stdout, "skipping tile exchange known: \"{}\"\n", line);
             continue;
         }
-        else if (auto* m = std::get_if<hume::gcg::TileExchangeCount>(&*move)) {
+        else if (auto* m = std::get_if<hume::gcg::TileExchangeCount>(&move)) {
             fmt::print(stdout, "skipping tile exchange count: \"{}\"\n", line);
             continue;
         }
-        else if (auto* m = std::get_if<hume::gcg::PhoneyRemoved>(&*move)) {
+        else if (auto* m = std::get_if<hume::gcg::PhoneyRemoved>(&move)) {
             fmt::print(stdout, "info: withdrawing previous move\n");
             cicero_undo_move(&engine, &sp, &engine_move.move);
             continue;
         }
-        else if (auto* m = std::get_if<hume::gcg::ChallengeBonus>(&*move)) {
+        else if (auto* m = std::get_if<hume::gcg::ChallengeBonus>(&move)) {
             fmt::print(stdout, "skipping challenge bonus: \"{}\"\n", line);
             continue;
         }
-        else if (auto* m = std::get_if<hume::gcg::LastRackPoints>(&*move)) {
+        else if (auto* m = std::get_if<hume::gcg::LastRackPoints>(&move)) {
             fmt::print(stdout, "skipping last rack points: \"{}\"\n", line);
             continue;
         }
-        else if (auto* m = std::get_if<hume::gcg::TimePenalty>(&*move)) {
+        else if (auto* m = std::get_if<hume::gcg::TimePenalty>(&move)) {
             fmt::print(stdout, "skipping time penalty: \"{}\"\n", line);
             continue;
         }
@@ -446,6 +443,7 @@ int main(int argc, char **argv)
     auto cb = Callbacks{std::move(dict)};
 
     for (const auto& filename : gamefiles) {
+        std::cout << "Replaying " << filename << "\n";
         std::ifstream ifs{filename};
         if (!ifs) {
             fmt::print(stderr, "error: unable to open game file: {}\n", filename);
