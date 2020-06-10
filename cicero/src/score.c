@@ -169,3 +169,24 @@ int cicero_score_move(const cicero *e, const cicero_move *move)
 
     return root_score + cross_score + bingo_bonus;
 }
+
+cicero_multiplier cicero_square_multiplier(const cicero* e, int sq)
+{
+    if (!(0 <= sq && sq < 225)) {
+        return CICERO_NORMAL_SQ;
+    }
+
+    if (e->s.double_letter_squares[sq] != 1) {
+        return CICERO_DOUBLE_LETTER_SQ;
+    }
+    if (e->s.triple_letter_squares[sq] != 1) {
+        return CICERO_TRIPLE_LETTER_SQ;
+    }
+    if (e->s.double_word_squares[sq] != 1) {
+        return CICERO_DOUBLE_WORD_SQ;
+    }
+    if (e->s.triple_word_squares[sq] != 1) {
+        return CICERO_TRIPLE_WORD_SQ;
+    }
+    return CICERO_NORMAL_SQ;
+}

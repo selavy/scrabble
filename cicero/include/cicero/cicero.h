@@ -42,6 +42,16 @@ enum cicero_legal_move_errnum
     CICERO_FIRST_MOVE_MUST_OCCUPY_H8  = -8,
 };
 
+enum cicero_multiplier_
+{
+    CICERO_NORMAL_SQ,
+    CICERO_DOUBLE_LETTER_SQ,
+    CICERO_TRIPLE_LETTER_SQ,
+    CICERO_DOUBLE_WORD_SQ,
+    CICERO_TRIPLE_WORD_SQ,
+};
+typedef enum cicero_multiplier_ cicero_multiplier;
+
 // TODO: switch to this?
 // struct cicero_move
 // {
@@ -161,6 +171,8 @@ cicero_api int  cicero_legal_move_ex(const cicero *e, const cicero_move *move,
 cicero_api int  cicero_legal_move(const cicero *e, const cicero_move *move);
 
 cicero_api const char *cicero_legal_move_errnum_to_string(int errnum);
+
+cicero_api cicero_multiplier cicero_square_multiplier(const cicero* e, int sq);
 
 // -------------------------------------------------------------------------- //
 
