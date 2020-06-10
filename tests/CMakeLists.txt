@@ -30,3 +30,15 @@ target_link_libraries(game-replay-test
         RE2
         cxx_project_options
     )
+
+add_executable(find-best-move find_best_move.cpp)
+target_link_libraries(find-best-move
+    PUBLIC
+        Mafsa++
+        Scrabble
+        Cicero
+        fmt::fmt
+        cxxopts::cxxopts
+        RE2
+        cxx_project_options
+    )

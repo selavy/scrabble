@@ -188,7 +188,7 @@ std::ostream& operator<<(std::ostream& os, const cicero_rack& rack)
 }
 
 
-EngineMove EngineMove::make(cicero* engine, const scrabble::Move& move)
+EngineMove EngineMove::make(const cicero* engine, const scrabble::Move& move)
 {
     EngineMove result;
     const int step   = static_cast<int>(move.direction);

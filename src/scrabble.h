@@ -221,7 +221,7 @@ struct EngineMove
     std::vector<int>  squares;
     cicero_move       move;
 
-    static EngineMove make(cicero* engine, const scrabble::Move& move);
+    static EngineMove make(const cicero* engine, const scrabble::Move& move);
 };
 
 std::ostream& operator<<(std::ostream& os, const Move& move);

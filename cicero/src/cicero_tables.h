@@ -10,6 +10,13 @@ static const int letter_values[53] = {
      0,  0,  0,  0,  0,
 };
 
+static const int words_with_friends__letter_values[53] = {
+     1,  4,  4,  2,  1,  4,  3,  3,  1, 10,  5,  2,  4,  2,  1,  4,
+    10,  1,  1,  1,  2,  5,  4,  8,  3, 10,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,
+};
+
 // TODO(peter): had 226 entries so that InvalidSquare will return 1, but don't think that I need that anymore
 static const int triple_word_squares[226] = {
 //  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
@@ -120,7 +127,7 @@ static const char* const SQ[225] = {
 #define _ 1,
 
 #define X 3,
-static const int word_with_friends__triple_word_squares[226] = {
+static const int words_with_friends__triple_word_squares[226] = {
 //  1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
     _ _ _ X _ _ _ _ _ _ _ X _ _ _ // A
     _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ // B
@@ -142,7 +149,7 @@ static const int word_with_friends__triple_word_squares[226] = {
 #undef X
 
 #define X 2,
-static const int word_with_friends__double_word_squares[226] = {
+static const int words_with_friends__double_word_squares[226] = {
 //  1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
     _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ // A
     _ _ _ _ _ X _ _ _ X _ _ _ _ _ // B
@@ -164,7 +171,7 @@ static const int word_with_friends__double_word_squares[226] = {
 #undef X
 
 #define X 3,
-static const int word_with_friends__triple_letter_squares[226] = {
+static const int words_with_friends__triple_letter_squares[226] = {
 //  1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
     _ _ _ _ _ _ X _ X _ _ _ _ _ _ // A
     _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ // B
@@ -186,7 +193,7 @@ static const int word_with_friends__triple_letter_squares[226] = {
 #undef X
 
 #define X 2,
-static const int word_with_friends__double_letter_squares[226] = {
+static const int words_with_friends__double_letter_squares[226] = {
 //  1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
     _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ // A
     _ _ X _ _ _ _ _ _ _ _ _ X _ _ // B

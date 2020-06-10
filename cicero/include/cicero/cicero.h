@@ -138,6 +138,7 @@ typedef struct cicero cicero;
 // A-Z = regular tile, a-z = blank, ' ' = empty
 cicero_api char cicero_tile_on_square(const cicero *e, int square);
 
+// TODO: this should return an error code
 cicero_api void cicero_make_rack(cicero_rack *rack, const char *const tiles);
 
 // precondition: 'A' <= tile <= 'Z' or tile == ' '
@@ -149,6 +150,9 @@ cicero_api void cicero_init_ex(cicero *e, cicero_callbacks callbacks,
         cicero_scoring scoring);
 
 cicero_api void cicero_init(cicero *e, cicero_callbacks callbacks);
+
+// words with friends scoring initialization
+cicero_api void cicero_init_wwf(cicero *e, cicero_callbacks callbacks);
 
 // precondition: move is legal and valid
 cicero_api int  cicero_make_move(cicero *e, cicero_savepos* sp,

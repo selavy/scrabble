@@ -73,6 +73,17 @@ void cicero_init(cicero *e, cicero_callbacks callbacks)
     cicero_init_ex(e, callbacks, defaults);
 }
 
+void cicero_init_wwf(cicero *e, cicero_callbacks callbacks)
+{
+    cicero_scoring defaults;
+    defaults.double_letter_squares = words_with_friends__double_letter_squares;
+    defaults.triple_letter_squares = words_with_friends__triple_letter_squares;
+    defaults.double_word_squares   = words_with_friends__double_word_squares;
+    defaults.triple_word_squares   = words_with_friends__triple_word_squares;
+    defaults.letter_values         = words_with_friends__letter_values;
+    cicero_init_ex(e, callbacks, defaults);
+}
+
 internal int calc_cached_score(int start, int stop, int stride,
         int root, const char *board)
 {
