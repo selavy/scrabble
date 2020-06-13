@@ -7,6 +7,7 @@ add_executable(cicero_tests
     score.test.cpp
     legality.test.cpp
     gcg.test.cpp
+    recalc.test.cpp
 )
 
 target_link_libraries(cicero_tests

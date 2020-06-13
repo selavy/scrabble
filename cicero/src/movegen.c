@@ -128,7 +128,7 @@ void cicero_undo_move(cicero *e, const cicero_savepos* sp,
 
 int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
 {
-    TRACE("applying: %.*s", move->ntiles, move->tiles);
+    // TRACE("applying: %.*s", move->ntiles, move->tiles);
 
     // NOTE(peter): everything in this function is named as if computing
     // the horizontal cross-checks, but it is actually direction agnotistic.
@@ -262,6 +262,23 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
     }
 
     return cicero_score_move(e, move);
+}
+
+// TODO: need to be able to re-calculate from a given state
+void cicero_init_from_position(cicero* e, char board[225])
+{
+    char *vals = e->vals;
+    // u32  *hchk = dir == HORZ ? e->hchk : e->vchk;
+    // u32  *vchk = dir == HORZ ? e->vchk : e->hchk;
+    // u16  *hscr = dir == HORZ ? e->hscr : e->vscr;
+    // u16  *vscr = dir == HORZ ? e->vscr : e->hscr;
+    // u64  *asqs = e->asqs;
+    for (int sq = 0; sq < 225; ++sq) {
+        vals[sq] = board[sq] != CICERO_EMPTY_TILE ? to_eng(board[sq]) : EMPTY;
+        // dimstart horzstart = dir == HORZ ? &colstart : &rowstart;
+        // dimstart vertstart = dir == HORZ ? &rowstart : &colstart;
+
+    }
 }
 
 // Definitions:

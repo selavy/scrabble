@@ -107,19 +107,19 @@ internal void remove_tiles(char *board, const cicero_move *move)
 
 int cicero_score_move(const cicero *e, const cicero_move *move)
 {
-    const char *board   = e->vals;
-    const u16  *hscr    = move->direction == CICERO_HORZ ? e->hscr : e->vscr;
-    const int  *squares = move->squares;
-    const char *tiles   = move->tiles;
-    const int   ntiles  = move->ntiles;
-    const int   hstride = move->direction;
-    const int   vstride = flip_dir(move->direction);
+    const char *board  = e->vals;
+    const char *tiles  = move->tiles;
+    const u16 *xscr    = move->direction == CICERO_HORZ ? e->hscr : e->vscr;
+    const int *squares = move->squares;
+    const int  ntiles  = move->ntiles;
+    const int  hstride = move->direction;
+    const int  vstride = flip_dir(move->direction);
+    const int *dlsqs   = e->s.double_letter_squares;
+    const int *tlsqs   = e->s.triple_letter_squares;
+    const int *dwsqs   = e->s.double_word_squares;
+    const int *twsqs   = e->s.triple_word_squares;
+    const int *letter_values = e->s.letter_values;
     const dimstart hstart = move->direction == CICERO_HORZ ? colstart : rowstart;
-    const int *double_letter_squares = e->s.double_letter_squares;
-    const int *triple_letter_squares = e->s.triple_letter_squares;
-    const int *double_word_squares   = e->s.double_word_squares;
-    const int *triple_word_squares   = e->s.triple_word_squares;
-    const int *letter_values         = e->s.letter_values;
 
     int root_score  = 0;
     int cross_score = 0;
@@ -143,10 +143,10 @@ int cicero_score_move(const cicero *e, const cicero_move *move)
             const char tile   = to_eng(tiles[i]);
             const int  square = squares[i];
             const int  value  = letter_values[tile];
-            // TODO: adjust double/triple_letter_squares to be 1 less
-            const int  mult = double_letter_squares[square] * triple_letter_squares[square];
+            // TODO: adjust double/tlsqs to be 1 less
+            const int  mult = dlsqs[square] * tlsqs[square];
             word_score += value * (mult - 1);
-            word_mult  *= double_word_squares[square] * triple_word_squares[square];
+            word_mult  *= dwsqs[square] * twsqs[square];
         }
 
         root_score = word_score * word_mult;
@@ -156,13 +156,12 @@ int cicero_score_move(const cicero *e, const cicero_move *move)
     for (int i = 0; i < ntiles; ++i) {
         const int  square = squares[i];
         const char teng   = to_eng(tiles[i]);
-        if (hscr[square] < 0xffffu) {
-            const int word_mult = double_word_squares[square] * triple_word_squares[square];
+        if (xscr[square] < 0xffffu) {
+            const int word_mult = dwsqs[square] * twsqs[square];
             const int letter_value = letter_values[teng];
-            const int letter_mult  = double_letter_squares[square] * triple_letter_squares[square];
+            const int letter_mult  = dlsqs[square] * tlsqs[square];
             const int value        = letter_value * letter_mult;
-            const int xscore       = hscr[square];
-            const int total        = (hscr[square] + value) * word_mult;
+            const int total        = (xscr[square] + value) * word_mult;
             cross_score += total;
         }
     }

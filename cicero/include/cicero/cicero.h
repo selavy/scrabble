@@ -178,6 +178,9 @@ cicero_api const char *cicero_legal_move_errnum_to_string(int errnum);
 
 cicero_api cicero_multiplier cicero_square_multiplier(const cicero* e, int sq);
 
+/* initialize the board from the position in `board` */
+cicero_api void cicero_init_from_position(cicero* e, char board[225]);
+
 // -------------------------------------------------------------------------- //
 
 #ifdef __cplusplus
