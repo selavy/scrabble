@@ -119,9 +119,14 @@ struct cicero
     // highest scoring word is "OXYPHENBUTAZONE" for 1,458 points,
     // and highest possible score on 1 move is 1,778 points
 
+    // the tiles on the board, use cicero_tile_on_square to access
     char     vals[225];
+
+    // cached cross-score values. hscr holds the cross-score formed vertically
+    // for a tile played as part of a horizontal word.
     uint16_t hscr[225]; // if playing horizontally at square, how many additional points you'd score
     uint16_t vscr[225];
+
     uint32_t hchk[225]; // if playing horizontally, need to check hchk
     uint32_t vchk[225];
     uint64_t asqs[4];

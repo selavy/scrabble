@@ -2,6 +2,7 @@ add_library(Cicero
     include/cicero/cicero.h
     src/cicero_types.h
     src/cicero_tables.h
+    src/init.c
     src/rack.c
     src/movegen.c
     src/score.c

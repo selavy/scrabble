@@ -3,7 +3,7 @@
 
 
 // 26 letters x 2 (blank not / blank) + 1 empty = 53
-static const int letter_values[53] = {
+static const int scrabble__letter_values[53] = {
      1,  3,  3,  2,  1,  4,  2,  4,  1,  8,  5,  1,  3,  1,  1,  3,
     10,  1,  1,  1,  1,  4,  4,  8,  4, 10,  0,  0,  0,  0,  0,  0,
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
@@ -18,7 +18,7 @@ static const int words_with_friends__letter_values[53] = {
 };
 
 // TODO(peter): had 226 entries so that InvalidSquare will return 1, but don't think that I need that anymore
-static const int triple_word_squares[226] = {
+static const int scrabble__triple_word_squares[226] = {
 //  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
 //  -------------------------------------------
     3, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 3, // A
@@ -39,7 +39,7 @@ static const int triple_word_squares[226] = {
     1,
 };
 
-static const int double_word_squares[226] = {
+static const int scrabble__double_word_squares[226] = {
 //  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
 //  -------------------------------------------
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // A
@@ -60,7 +60,7 @@ static const int double_word_squares[226] = {
     1,
 };
 
-static const int triple_letter_squares[226] = {
+static const int scrabble__triple_letter_squares[226] = {
 //  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
 //  -------------------------------------------
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // A
@@ -81,7 +81,7 @@ static const int triple_letter_squares[226] = {
     1,
 };
 
-static const int double_letter_squares[226] = {
+static const int scrabble__double_letter_squares[226] = {
 //  1  2  3  4  5  6  7  8  9  0  1  2  3  4  5
 //  -------------------------------------------
     1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, // A

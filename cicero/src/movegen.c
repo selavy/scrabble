@@ -1,7 +1,4 @@
 #include "cicero_types.h"
-#include "cicero_tables.h"
-
-#include <stdio.h>
 
 internal int inclusive_length(int beg, int end, int stride) {
     assert(beg <= end);
@@ -38,63 +35,19 @@ void cicero_savepos_copy(cicero_savepos *sp, const cicero* e)
 #endif
 }
 
-void cicero_init_ex(cicero *e, cicero_callbacks callbacks,
-        cicero_scoring scoring)
-{
-    memset(e->vals, EMPTY, sizeof(e->vals));
-    memset(e->hscr, 0xffu, sizeof(e->hscr));
-    memset(e->vscr, 0xffu, sizeof(e->vscr));
-    memset(e->vchk, 0xffu, sizeof(e->vchk));
-    memset(e->hchk, 0xffu, sizeof(e->hchk));
-    memset(e->asqs, 0x00u, sizeof(e->asqs));
-    setasq(e->asqs, SQ_H8);
-    e->cb = callbacks;
-
-    e->s.double_letter_squares = scoring.double_letter_squares ?
-        scoring.double_letter_squares : &double_letter_squares[0];
-    e->s.triple_letter_squares = scoring.triple_letter_squares ?
-        scoring.triple_letter_squares : &triple_letter_squares[0];
-    e->s.double_word_squares = scoring.double_word_squares ?
-        scoring.double_word_squares : &double_word_squares[0];
-    e->s.triple_word_squares = scoring.triple_word_squares ?
-        scoring.triple_word_squares : &triple_word_squares[0];
-    e->s.letter_values = scoring.letter_values ?
-        scoring.letter_values : &letter_values[0];
-}
-
-void cicero_init(cicero *e, cicero_callbacks callbacks)
-{
-    cicero_scoring defaults;
-    defaults.double_letter_squares = NULL;
-    defaults.triple_letter_squares = NULL;
-    defaults.double_word_squares   = NULL;
-    defaults.triple_word_squares   = NULL;
-    defaults.letter_values         = NULL;
-    cicero_init_ex(e, callbacks, defaults);
-}
-
-void cicero_init_wwf(cicero *e, cicero_callbacks callbacks)
-{
-    cicero_scoring defaults;
-    defaults.double_letter_squares = words_with_friends__double_letter_squares;
-    defaults.triple_letter_squares = words_with_friends__triple_letter_squares;
-    defaults.double_word_squares   = words_with_friends__double_word_squares;
-    defaults.triple_word_squares   = words_with_friends__triple_word_squares;
-    defaults.letter_values         = words_with_friends__letter_values;
-    cicero_init_ex(e, callbacks, defaults);
-}
-
 internal int calc_cached_score(int start, int stop, int stride,
-        int root, const char *board)
+        int root, const cicero *engine)
 {
+    const char *vals = engine->vals;
+    const int *letter_values = engine->s.letter_values;
     int partial_score = 0;
     // walk left
-    for (int sq = root - stride; sq >= start && board[sq] != EMPTY; sq -= stride) {
-        partial_score += letter_values[board[sq]];
+    for (int sq = root - stride; sq >= start && vals[sq] != EMPTY; sq -= stride) {
+        partial_score += letter_values[vals[sq]];
     }
     // walk right
-    for (int sq = root + stride; sq < stop   && board[sq] != EMPTY; sq += stride) {
-        partial_score += letter_values[board[sq]];
+    for (int sq = root + stride; sq < stop   && vals[sq] != EMPTY; sq += stride) {
+        partial_score += letter_values[vals[sq]];
     }
     return partial_score;
 }
@@ -191,7 +144,7 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
                 }
             }
             hchk[before] = chk;
-            hscr[before] = calc_cached_score(start, stop, stride, before, vals);
+            hscr[before] = calc_cached_score(start, stop, stride, before, e);
             setasq(asqs, before);
         }
 
@@ -204,7 +157,7 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
                 chk |= tilemask(tilenum(*edge));
             }
             hchk[after] = chk;
-            hscr[after] = calc_cached_score(start, stop, stride, after, vals);
+            hscr[after] = calc_cached_score(start, stop, stride, after, e);
             setasq(asqs, after);
         }
 
@@ -242,7 +195,7 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
                 }
             }
             vchk[before] = chk;
-            vscr[before] = calc_cached_score(start, stop, stride, before, vals);
+            vscr[before] = calc_cached_score(start, stop, stride, before, e);
             setasq(asqs, before);
         }
         if (after < stop) {
@@ -256,7 +209,7 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
                 chk |= tilemask(tilenum(*edge));
             }
             vchk[after] = chk;
-            vscr[after] = calc_cached_score(start, stop, stride, after, vals);
+            vscr[after] = calc_cached_score(start, stop, stride, after, e);
             setasq(asqs, after);
         }
     }
@@ -273,12 +226,27 @@ void cicero_init_from_position(cicero* e, char board[225])
     // u16  *hscr = dir == HORZ ? e->hscr : e->vscr;
     // u16  *vscr = dir == HORZ ? e->vscr : e->hscr;
     // u64  *asqs = e->asqs;
+
+    // place all the tiles from `board` becuase need them to re-compute
+    // the caches
     for (int sq = 0; sq < 225; ++sq) {
         vals[sq] = board[sq] != CICERO_EMPTY_TILE ? to_eng(board[sq]) : EMPTY;
-        // dimstart horzstart = dir == HORZ ? &colstart : &rowstart;
-        // dimstart vertstart = dir == HORZ ? &rowstart : &colstart;
-
     }
+
+    // for (int sq = 0; sq < 225; ++sq) {
+    //     // horizontal cross-score
+    //     if (vals[sq] == EMPTY) {
+    //         const int stride = DIM;
+    //         const int start = colstart(sq);
+    //         const int stop  = start + stride*DIM;
+
+    //         int xscore = 0;
+    //         for (int s = sq - stride; s >= start; )
+
+    //         // const int beg   = findbeg(vals, start, stop, stride, sq);
+    //         // const int end   = findend(vals, start, stop, stride, sq);
+    //     }
+    // }
 }
 
 // Definitions:
