@@ -199,6 +199,11 @@ int main(int argc, char** argv)
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
     };
 
+    std::array<const char*, 27> tile_labels = {
+        "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
+        "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "?",
+    };
+
     // Main loop
     while (!glfwWindowShouldClose(window)) {
         // Poll and handle events (inputs, window resize, etc.)
@@ -260,6 +265,18 @@ int main(int argc, char** argv)
             }
             ImGui::EndGroup();
             ImGui::NewLine();
+        }
+        ImGui::EndGroup();
+        ImGui::NewLine();
+
+        // tile bank
+        ImGui::BeginGroup();
+        for (int tile = 0; tile < 27; ++tile) {
+            if (tile % 13 == 0) {
+                ImGui::NewLine();
+            }
+            ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
+            ImGui::Button(tile_labels[tile], ImVec2(40, 40));
         }
         ImGui::EndGroup();
         ImGui::NewLine();
