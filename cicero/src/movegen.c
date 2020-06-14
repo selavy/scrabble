@@ -233,7 +233,7 @@ void cicero_load_position(cicero* e, char board[225])
     // u32  *vchk = dir == HORZ ? e->vchk : e->hchk;
     u16  *hscr = e->hscr;
     u16  *vscr = e->vscr;
-    // u64  *asqs = e->asqs;
+    u64  *asqs = e->asqs;
 
     const int* letter_values = e->s.letter_values;
 
@@ -282,7 +282,6 @@ void cicero_load_position(cicero* e, char board[225])
             // TODO: this isn't going to work if crossing with a blank tile
             vscr[sq] = tiles != 0 ? xscore : 0xffff;
         }
-
     }
 }
 

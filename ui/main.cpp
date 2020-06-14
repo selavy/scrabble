@@ -191,6 +191,14 @@ int main(int argc, char** argv)
 
     const char* square_text = "";
 
+    std::array<const char*, 15> column_labels = {
+        " 1", " 2", " 3", " 4", " 5", " 6", " 7", " 8", " 9", "10", "11",
+        "12", "13", "14", "15",
+    };
+    std::array<const char*, 15> row_labels = {
+        "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
+    };
+
     // Main loop
     while (!glfwWindowShouldClose(window)) {
         // Poll and handle events (inputs, window resize, etc.)
@@ -214,10 +222,31 @@ int main(int argc, char** argv)
         ImGui::Begin("Scrabble", &show_scrabble_window, ImGuiWindowFlags_MenuBar);
 
         ImGui::BeginGroup();
-        int index = 0;
-        for (int col = 0; col < 15; ++col) {
+
+        {
             ImGui::BeginGroup();
-            for (int row = 0; row < 15; ++row, ++index) {
+            ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
+            ImGui::Button("  ", ImVec2(40, 40));
+            for (int col = 0; col < 15; ++col) {
+                ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
+                ImGui::Button(column_labels[col], ImVec2(40, 40));
+            }
+            ImGui::EndGroup();
+            ImGui::NewLine();
+        }
+
+        int index = 0;
+        for (int row = 0; row < 15; ++row) {
+            ImGui::BeginGroup();
+
+            {
+                // ImGui::PushID(index);
+                ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
+                ImGui::Button(row_labels[row], ImVec2(40, 40));
+                // ImGui::PopID();
+            }
+
+            for (int col = 0; col < 15; ++col, ++index) {
                 auto square_color = square_colors[index];
                 ImGui::PushID(index);
                 // ImGui::PushStyleColor(ImGuiCol_Text, TileTextColor[tile_color]);
