@@ -75,6 +75,7 @@ enum cicero_special_tiles
     CICERO_EMPTY_TILE   = ' ',
 };
 
+// TODO: need a constant for 26 = BLANKTILEs
 struct cicero_rack
 {
     int tiles[27];
@@ -184,7 +185,7 @@ cicero_api const char *cicero_legal_move_errnum_to_string(int errnum);
 cicero_api cicero_multiplier cicero_square_multiplier(const cicero* e, int sq);
 
 /* initialize the board from the position in `board` */
-cicero_api void cicero_init_from_position(cicero* e, char board[225]);
+cicero_api void cicero_load_position(cicero* e, char board[225]);
 
 // -------------------------------------------------------------------------- //
 

@@ -38,6 +38,11 @@ static const int  DIM = 15;
 static const int  HORZ = CICERO_HORZ;
 static const int  VERT = CICERO_VERT;
 static const int  SQ_H8 = 112;
+// TODO: better way to do this?
+// need a sentinel to indicate that there are no touching cross tiles
+// because a blank is worth 0. In the situation of forming a cross with
+// blank tile, still need to double count the placed tile's value.
+static const u16  NOCROSSTILES = 0xffffu;
 
 // Tile classes:
 typedef int  rack_tile; // 0-26 (26 == Blank)
@@ -50,6 +55,7 @@ typedef int (*dimstart)(int sq);
 internal int getcol(int sq)   { return sq % DIM; }
 internal int getrow(int sq)   { return sq / DIM; }
 internal int getdim(int dir, int sq) { return dir == HORZ ? getrow(sq) : getcol(sq); } // TEMP TEMP
+// TODO: rename these; they are backwards
 internal int rowstart(int sq) { return getcol(sq); }
 internal int colstart(int sq) { return getrow(sq) * DIM; }
 internal int lsb(u64 x)       { return __builtin_ctzll(x); }
@@ -172,6 +178,36 @@ internal int findend(const char* vals, const int start, const int stop,
     sq -= stride;
     assert(vals[sq] != EMPTY || sq == root);
     return sq;
+}
+
+internal int scoreleft(const cicero* e, const int start, const int stop,
+        const int stride, const int root)
+{
+    const char *vals = e->vals;
+    const int  *letter_values = e->s.letter_values;
+    int score = 0;
+    int sq = root - stride;
+    while (sq >= start && vals[sq] != EMPTY) {
+        assert(0 <= sq && sq < 225);
+        score += letter_values[sq];
+        sq    -= stride;
+    }
+    return score;
+}
+
+internal int scoreright(const cicero* e, const int start, const int stop,
+        const int stride, const int root)
+{
+    const char *vals = e->vals;
+    const int  *letter_values = e->s.letter_values;
+    int score = 0;
+    int sq = root + stride;
+    while (sq < stop && vals[sq] != EMPTY) {
+        assert(0 <= sq && sq < 225);
+        score += letter_values[sq];
+        sq    += stride;
+    }
+    return score;
 }
 
 #ifdef __cplusplus

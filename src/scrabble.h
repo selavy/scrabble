@@ -213,6 +213,8 @@ struct Move
 
     // e.g. "8G flip 18", "I7 kiva 20"
     static Move from_isc_spec(const std::string& spec);
+
+    friend std::ostream& operator<<(std::ostream& os, const Move& move);
 };
 
 struct EngineMove
@@ -224,16 +226,18 @@ struct EngineMove
     static EngineMove make(const cicero* engine, const scrabble::Move& move);
 };
 
-std::ostream& operator<<(std::ostream& os, const Move& move);
 bool operator==(const Move& lhs, const Move& rhs) noexcept;
 bool operator!=(const Move& lhs, const Move& rhs) noexcept;
 bool operator< (const Move& lhs, const Move& rhs) noexcept;
 std::ostream& operator<<(std::ostream& os, const std::vector<Move>& moves);
 bool operator==(const std::vector<Move>& lhs, const std::vector<Move>& rhs) noexcept;
 bool operator!=(const std::vector<Move>& lhs, const std::vector<Move>& rhs) noexcept;
-std::ostream& operator<<(std::ostream& os, const cicero_rack& rack);
 
 } // scrabble
+
+// for now putting this out here because ADL doesn't trigger since cicero_rack
+// isn't in the scrabble namespace
+std::ostream& operator<<(std::ostream& os, const cicero_rack& rack);
 
 constexpr scrabble::Square IXSQ(const char *const name) noexcept
 {

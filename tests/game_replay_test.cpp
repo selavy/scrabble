@@ -5,14 +5,14 @@
 #include <string>
 #include <string_view>
 
-#include <fmt/format.h>
+// #include <fmt/format.h>
+#include <fmt/ostream.h>
 #include <cxxopts.hpp>
 #include <re2/re2.h>
 
 #include <mafsa++.h>
 #include <scrabble.h>
 #include <gcg.h>
-
 #include "test_helpers.h"
 
 
@@ -21,13 +21,6 @@ re2::RE2 move_line_regex(R"(\s*\"(.*)\", \"(.*)\"\s*)");
 re2::RE2 header_regex(R"(\s*\[(\w+) \"(.*)\"]\s*)");
 re2::RE2 empty_line_regex(R"(\s+)");
 re2::RE2 change_line_regex(R"(\s*"?CHANGE\s+(\d+)\"?\s*)");
-re2::RE2 gcg_pragma_player_regex(R"(#player(\d)\s+(\w+).*)");
-re2::RE2 gcg_take_back_regex(R"(>\w+:\s+[A-Z\?]+\s+--?\s+[-+]?\d+\s+[-+]?\d+)");
-re2::RE2 gcg_move_regex(R"(>(\w+):\s+([A-Z\?]+)\s+(\w+)\s+([A-Za-z\.]+)\s+([+-]?\d+)\s+([+-]?\d+).*)");
-// re2::RE2 gcg_final_move_regex(R"(>(\w+):\s+\(([A-Z\.]+)\)\s+([+-]?\d+)\s+([+-]?\d+)\s*)");
-re2::RE2 gcg_tile_exch_regex(R"(>(\w+):\s+([A-Z\?]+)\s+-([A-Z\?]+)\s+\+0\s+(\d+)\s*)");
-re2::RE2 gcg_final_move_regex(R"(>\w+:\s+\([A-Z\?]+\)\s+[+-]?\d+\s+[+-]?\d+)");
-re2::RE2 gcg_passed_turn_regex(R"(>(\w+):\s+([A-Z\?]+)\s+-\s+\+0\s+(\d+)\s*)");
 
 
 std::string stripline(const std::string& line)
@@ -80,85 +73,6 @@ std::optional<ReplayMove> parsemove_isc(const std::string& line, const cicero* e
     return result;
 }
 
-#if 0
-std::optional<ReplayMove> parsemove_gcg(const std::string& line, const cicero* engine)
-{
-
-    ReplayMove result;
-    if (line[0] == '#') {
-        return std::nullopt;
-    } else if (line[0] != '>') {
-        // fmt::print(stderr, "invalid line: \"{}\"\n", line);
-        // throw std::runtime_error("invalid gcg line");
-
-        // lot's of non-sense in cross-tables.com's inputs
-        return std::nullopt;
-    }
-
-    std::string nick;
-    std::string rack;
-    std::string word;
-    std::string sqspec; // NOTE: gcg square spec is row/col flipped from ISC
-    int score;
-    int total;
-
-    if (re2::RE2::FullMatch(line, gcg_tile_exch_regex, &nick, &rack, &word, &total)) {
-        fmt::print(stderr, "info: skipping tile exchange: \"{}\"\n", line);
-        return std::nullopt;
-    }
-
-    if (re2::RE2::FullMatch(line, gcg_final_move_regex)) {
-        fmt::print(stderr, "info: skipping final move: \"{}\"\n", line);
-        return std::nullopt;
-    }
-
-    if (re2::RE2::FullMatch(line, gcg_passed_turn_regex)) {
-        fmt::print(stderr, "info: skipping passed turn: \"{}\"\n", line);
-        return std::nullopt;
-    }
-
-    if (re2::RE2::FullMatch(line, gcg_take_back_regex)) {
-        // throw std::runtime_error("withdrawn moves not supported yet");
-        // fmt::print(stdout, "info: skipping withdrawn move: \"{}\"\n", line);
-        // return std::nullopt;
-        fmt::print(stdout, "info: previous move withdrawn\n");
-        result.previous_move_withdrawn = true;
-        return result;
-    }
-
-    nick.clear();
-    word.clear();
-    rack.clear();
-    score = -1;
-    total = -1;
-    if (!re2::RE2::FullMatch(line, gcg_move_regex, &nick, &rack, &sqspec, &word, &score, &total)) {
-        fmt::print(stderr, "error: malformed GCG move line: \"{}\"\n", line);
-        throw std::runtime_error("invalid gcg line");
-    }
-
-    cicero_make_rack(&result.rack, rack.c_str());
-    auto maybe_square = scrabble::Square::from_gcg(sqspec);
-    if (!maybe_square) {
-        throw std::runtime_error("invalid gcg square specification");
-    }
-    result.move.square = *maybe_square;
-    result.move.direction = scrabble::gcg_direction(sqspec);
-    result.move.word = "";
-    int stride = static_cast<int>(result.move.direction);
-    int start  = result.move.square.value();
-    int step   = 0;
-    for (char ch : word) {
-        if (ch == '.') {
-            ch = cicero_tile_on_square(engine, start + step * stride);
-        }
-        result.move.word += ch;
-        ++step;
-    }
-    result.move.score = score;
-    return result;
-}
-#endif
-
 std::ostream& operator<<(std::ostream& os, const cicero& engine)
 {
     auto print_row = [&os](const cicero& e, int row) {
@@ -179,12 +93,61 @@ std::ostream& operator<<(std::ostream& os, const cicero& engine)
     return os;
 }
 
-bool apply_move(ReplayMove& replay_move, scrabble::EngineMove& engine_move,
-        cicero& engine, cicero_savepos& sp, Callbacks& cb)
+struct S
 {
-    using scrabble::operator<<;
-    std::cout << "\t-> " << replay_move.move << " " << replay_move.rack << "\n";
-    std::cout << "\n\nBOARD:\n" << engine << "\n\n";
+    int x;
+
+    explicit S(int xx) : x{xx} {}
+
+    friend std::ostream& operator<<(std::ostream& os, const S& s)
+    {
+        os << s.x;
+        return os;
+    }
+};
+
+class date {
+  int year_, month_, day_;
+public:
+  date(int year, int month, int day): year_(year), month_(month), day_(day) {}
+
+  friend std::ostream& operator<<(std::ostream& os, const date& d) {
+    return os << d.year_ << '-' << d.month_ << '-' << d.day_;
+  }
+};
+
+struct Logger
+{
+    enum class Level
+    {
+        eDebug = 0,
+        eInfo  = 1,
+        eWarn  = 2,
+        eError = 3,
+    };
+
+    Logger(Level level) : level_{level} {}
+
+    template <typename... Args>
+    void log(Level level, const char* fmt, Args&&... args)
+    {
+        if (static_cast<int>(level) >= static_cast<int>(level_)) {
+            fmt::print(std::cout, fmt, std::forward<Args>(args)...);
+        }
+    }
+
+    Level level_;
+};
+
+#define DEBUG(fmt, ...) logger.log(Logger::Level::eDebug, "DEBUG: " fmt "\n", ##__VA_ARGS__)
+#define INFO(fmt, ...)  logger.log(Logger::Level::eInfo,  "INFO: "  fmt "\n", ##__VA_ARGS__)
+#define WARN(fmt, ...)  logger.log(Logger::Level::eWarn,  "WARN: "  fmt "\n", ##__VA_ARGS__)
+#define ERROR(fmt, ...) logger.log(Logger::Level::eError, "ERROR: " fmt "\n", ##__VA_ARGS__)
+
+bool apply_move(ReplayMove& replay_move, scrabble::EngineMove& engine_move,
+        cicero& engine, cicero_savepos& sp, Callbacks& cb, Logger& logger)
+{
+    DEBUG("\tmove={} rack={}\n{}\n", replay_move.move, replay_move.rack, engine);
 
     cb.clear_legal_moves();
     cicero_generate_legal_moves(&engine, replay_move.rack);
@@ -207,10 +170,10 @@ bool apply_move(ReplayMove& replay_move, scrabble::EngineMove& engine_move,
             // std::cerr << "error: did not find played move: " << replay_move.move << "\n";
             return false;
         } else {
-            std::cout << "generated move: " << replay_move.move << " correctly!\n";
+            DEBUG("generated move: {} correctly", replay_move.move);
         }
     } else {
-        fmt::print(stderr, "\nwarning: move played that is not in dictionary: '{}'\n\n", replay_move.move.word);
+        WARN("move played that is not in dictionary: '{}'", replay_move.move.word);
     }
 
     // Desired API:
@@ -223,17 +186,17 @@ bool apply_move(ReplayMove& replay_move, scrabble::EngineMove& engine_move,
     engine_move = scrabble::EngineMove::make(&engine, replay_move.move);
     int rc = cicero_legal_move(&engine, &engine_move.move);
     if (rc != CICERO_LEGAL_MOVE) {
-        fmt::print(stderr, "error: cicero_legal move returned: {}",
+        ERROR("cicero_legal move returned: {}",
                 cicero_legal_move_errnum_to_string(rc));
     }
 
     int score = cicero_make_move(&engine, &sp, &engine_move.move);
     if (score != replay_move.move.score) {
-        fmt::print(stderr, "Scores don't match :( => engine={} correct={}\n\n",
+        ERROR("Scores don't match :( => engine={} correct={}",
                 score, replay_move.move.score);
         return false;
     } else {
-        fmt::print(stdout, "Scores match! => engine={} correct={}\n\n",
+        DEBUG("Scores match! => engine={} correct={}",
                 score, replay_move.move.score);
     }
 
@@ -243,7 +206,7 @@ bool apply_move(ReplayMove& replay_move, scrabble::EngineMove& engine_move,
         cicero_undo_move(&engine, &sp, &engine_move.move);
         auto score2 = cicero_make_move(&engine, &sp, &engine_move.move);
         if (score != score2) {
-            fmt::print(stderr, "!!! FAIL !!! after undo move scores don't match; old={} new={}\n",
+            ERROR("after undo move scores don't match; old={} new={}",
                     score2, score);
             return false;
         }
@@ -275,7 +238,8 @@ ReplayMove make_replay_move(const hume::gcg::Play& move, cicero* engine)
     return result;
 }
 
-bool replay_file_gcg(std::ifstream& ifs, Callbacks& cb, cicero& engine)
+bool replay_file_gcg(std::ifstream& ifs, Callbacks& cb, cicero& engine,
+        Logger& logger)
 {
     std::string line;
     cicero_savepos sp;
@@ -285,51 +249,51 @@ bool replay_file_gcg(std::ifstream& ifs, Callbacks& cb, cicero& engine)
     while (getline_stripped(ifs, line)) {
         auto move = parser.parse_line(line);
         if (auto* m = std::get_if<hume::gcg::Comment>(&move)) {
-            fmt::print(stdout, "skipping comment: \"{}\"\n", *m);
+            DEBUG("skipping comment: \"{}\"", *m);
             continue;
         }
         else if (auto* m = std::get_if<hume::gcg::Pragmata>(&move)) {
-            fmt::print(stdout, "skipping pragma: \"{}\"\n", line);
+            DEBUG("skipping pragma: \"{}\"", line);
             continue;
         }
         else if (auto* m = std::get_if<hume::gcg::Play>(&move)) {
             auto replay_move = make_replay_move(*m, &engine);
-            if (!apply_move(replay_move, engine_move, engine, sp, cb)) {
+            if (!apply_move(replay_move, engine_move, engine, sp, cb, logger)) {
                 return false;
             }
             continue;
         }
         else if (auto* m = std::get_if<hume::gcg::PassedTurn>(&move)) {
-            fmt::print(stdout, "skipping passed turn: \"{}\"\n", line);
+            DEBUG("skipping passed turn: \"{}\"", line);
             continue;
         }
         else if (auto* m = std::get_if<hume::gcg::TileExchangeKnown>(&move)) {
-            fmt::print(stdout, "skipping tile exchange known: \"{}\"\n", line);
+            DEBUG("skipping tile exchange known: \"{}\"", line);
             continue;
         }
         else if (auto* m = std::get_if<hume::gcg::TileExchangeCount>(&move)) {
-            fmt::print(stdout, "skipping tile exchange count: \"{}\"\n", line);
+            DEBUG("skipping tile exchange count: \"{}\"", line);
             continue;
         }
         else if (auto* m = std::get_if<hume::gcg::PhoneyRemoved>(&move)) {
-            fmt::print(stdout, "info: withdrawing previous move\n");
+            DEBUG("withdrawing previous move");
             cicero_undo_move(&engine, &sp, &engine_move.move);
             continue;
         }
         else if (auto* m = std::get_if<hume::gcg::ChallengeBonus>(&move)) {
-            fmt::print(stdout, "skipping challenge bonus: \"{}\"\n", line);
+            DEBUG("skipping challenge bonus: \"{}\"", line);
             continue;
         }
         else if (auto* m = std::get_if<hume::gcg::LastRackPoints>(&move)) {
-            fmt::print(stdout, "skipping last rack points: \"{}\"\n", line);
+            DEBUG("skipping last rack points: \"{}\"", line);
             continue;
         }
         else if (auto* m = std::get_if<hume::gcg::TimePenalty>(&move)) {
-            fmt::print(stdout, "skipping time penalty: \"{}\"\n", line);
+            DEBUG("skipping time penalty: \"{}\"", line);
             continue;
         }
         else {
-            fmt::print(stderr, "unknown line type: \"{}\"\n", line);
+            ERROR("unknown line type: \"{}\"", line);
             throw std::runtime_error("Didn't handle all variant cases");
         }
     }
@@ -337,7 +301,7 @@ bool replay_file_gcg(std::ifstream& ifs, Callbacks& cb, cicero& engine)
     return true;
 }
 
-bool replay_file(std::ifstream& ifs, Callbacks& cb)
+bool replay_file(std::ifstream& ifs, Callbacks& cb, Logger& logger)
 {
     FileType type = FileType::eInvalid;
     // TODO: could have parse_header_gcg / parse_header_isc, but this is fine for now
@@ -351,9 +315,7 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
         } else if (line == "#pragma GCG") {
             type = FileType::eGcg;
         } else {
-            // fmt::print(stderr, "error: game file doesn't begin with type identifier\n");
-            // return false;
-            fmt::print(stdout, "warning: game file doesn't have an identifier. assuming gcg\n");
+            WARN("game file doesn't have an identifier. assuming gcg.");
             type = FileType::eGcg;
         }
         break;
@@ -369,7 +331,6 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
             if (!re2::RE2::FullMatch(line, header_regex, &key, &value)) {
                 break;
             }
-            // fmt::print(stdout, "PGN Header: key=\"{}\" value=\"{}\"\n", key, value);
         }
     }
 
@@ -381,21 +342,21 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb)
     if (type == FileType::eIsc) {
         do {
             if (line.empty() || line[0] == '#') {
-                std::cout << "skipping line: \"" << line << "\"\n";
+                INFO("skipping line \"{}\"", line);
                 continue;
             }
-            std::cout << "line: \"" << line << "\"" << std::endl;
+            INFO("line: \"{}\"", line);
             auto maybe_replay_move = parsemove_isc(line, &engine);
             if (!maybe_replay_move) {
                 continue;
             }
             auto& replay_move = *maybe_replay_move;
-            if (!apply_move(replay_move, engine_move, engine, sp, cb)) {
+            if (!apply_move(replay_move, engine_move, engine, sp, cb, logger)) {
                 return false;
             }
         } while (getline_stripped(ifs, line));
     } else {
-        return replay_file_gcg(ifs, cb, engine);
+        return replay_file_gcg(ifs, cb, engine, logger);
     }
     return true;
 }
@@ -407,11 +368,6 @@ int main(int argc, char **argv)
     assert(header_regex.ok());
     assert(empty_line_regex.ok());
     assert(change_line_regex.ok());
-    assert(gcg_pragma_player_regex.ok());
-    assert(gcg_move_regex.ok());
-    assert(gcg_final_move_regex.ok());
-    assert(gcg_tile_exch_regex.ok());
-    assert(gcg_take_back_regex.ok());
 
     // clang-format off
     cxxopts::Options options(
@@ -421,13 +377,14 @@ int main(int argc, char **argv)
     options.add_options()
         ("d,dict", "dictionary file to use", cxxopts::value<std::string>(), "DICT")
         ("f,file", "input game file", cxxopts::value<std::vector<std::string>>(), "FILE")
+        ("v,verbose", "verbose output", cxxopts::value<bool>()->default_value("false"))
         ("h,help", "print usage")
         ;
     options.positional_help("[FILE...]");
     options.parse_positional({"file"});
     auto args = options.parse(argc, argv);
     if (args.count("help")) {
-        std::cout << options.help() << std::endl;
+        std::cerr << options.help() << std::endl;
         return 0;
     }
     // clang-format on
@@ -441,24 +398,25 @@ int main(int argc, char **argv)
     }
     auto& dict = *maybe_dict;
     auto cb = Callbacks{std::move(dict)};
+    auto logger = Logger{args["verbose"].as<bool>() ? Logger::Level::eDebug : Logger::Level::eInfo};
 
     for (const auto& filename : gamefiles) {
-        std::cout << "Replaying " << filename << "\n";
+        INFO("Replaying {}", filename);
         std::ifstream ifs{filename};
         if (!ifs) {
-            fmt::print(stderr, "error: unable to open game file: {}\n", filename);
+            ERROR("unable to open game file: {}", filename);
             return 1;
         }
         try {
-            if (!replay_file(ifs, cb)) {
-                fmt::print(stderr, "error: failed replaying game file: {}\n", filename);
+            if (!replay_file(ifs, cb, logger)) {
+                ERROR("failed replaying game file: {}", filename);
                 return 1;
             }
         } catch (...) {
-            fmt::print(stderr, "Failed in: {}\n", filename);
+            ERROR("Failed in: {}", filename);
             throw;
         }
-        fmt::print(stdout, "\n\nPassed {}!\n\n", filename);
+        INFO("\nPassed {}!\n", filename);
     }
 
     return 0;

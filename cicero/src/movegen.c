@@ -40,16 +40,19 @@ internal int calc_cached_score(int start, int stop, int stride,
 {
     const char *vals = engine->vals;
     const int *letter_values = engine->s.letter_values;
+    int tiles = 0;
     int partial_score = 0;
     // walk left
     for (int sq = root - stride; sq >= start && vals[sq] != EMPTY; sq -= stride) {
+        ++tiles;
         partial_score += letter_values[vals[sq]];
     }
     // walk right
     for (int sq = root + stride; sq < stop   && vals[sq] != EMPTY; sq += stride) {
+        ++tiles;
         partial_score += letter_values[vals[sq]];
     }
-    return partial_score;
+    return tiles != 0 ? partial_score : NOCROSSTILES;
 }
 
 void cicero_undo_move(cicero *e, const cicero_savepos* sp,
@@ -218,14 +221,16 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
 }
 
 // TODO: need to be able to re-calculate from a given state
-void cicero_init_from_position(cicero* e, char board[225])
+void cicero_load_position(cicero* e, char board[225])
 {
     char *vals = e->vals;
     // u32  *hchk = dir == HORZ ? e->hchk : e->vchk;
     // u32  *vchk = dir == HORZ ? e->vchk : e->hchk;
-    // u16  *hscr = dir == HORZ ? e->hscr : e->vscr;
-    // u16  *vscr = dir == HORZ ? e->vscr : e->hscr;
+    u16  *hscr = e->hscr;
+    u16  *vscr = e->vscr;
     // u64  *asqs = e->asqs;
+
+    const int* letter_values = e->s.letter_values;
 
     // place all the tiles from `board` becuase need them to re-compute
     // the caches
@@ -233,20 +238,35 @@ void cicero_init_from_position(cicero* e, char board[225])
         vals[sq] = board[sq] != CICERO_EMPTY_TILE ? to_eng(board[sq]) : EMPTY;
     }
 
-    // for (int sq = 0; sq < 225; ++sq) {
-    //     // horizontal cross-score
-    //     if (vals[sq] == EMPTY) {
-    //         const int stride = DIM;
-    //         const int start = colstart(sq);
-    //         const int stop  = start + stride*DIM;
+    memset(hscr, 0xffff, sizeof(e->hscr));
+    for (int sq = 0; sq < 225; ++sq) {
+        // TODO: combine these if cases
 
-    //         int xscore = 0;
-    //         for (int s = sq - stride; s >= start; )
+        // horizontal cross-score
+        if (vals[sq] == EMPTY) {
+            const int vstride = DIM;
+            const int vstart  = rowstart(sq);
+            const int vstop   = vstart + vstride*DIM;
+            int xscore = 0;
+            xscore += scoreleft (e, vstart, vstop, vstride, sq);
+            xscore += scoreright(e, vstart, vstop, vstride, sq);
+            // TODO: this isn't going to work if crossing with a blank tile
+            hscr[sq] = xscore > 0 ? xscore : 0xffff;
+        }
 
-    //         // const int beg   = findbeg(vals, start, stop, stride, sq);
-    //         // const int end   = findend(vals, start, stop, stride, sq);
-    //     }
-    // }
+        // vertical cross-score
+        if (vals[sq] == EMPTY) {
+            const int hstride = 1;
+            const int hstart  = colstart(sq);
+            const int hstop   = hstart + hstride*DIM;
+            int xscore = 0;
+            xscore += scoreleft (e, hstart, hstop, hstride, sq);
+            xscore += scoreright(e, hstart, hstop, hstride, sq);
+            // TODO: this isn't going to work if crossing with a blank tile
+            vscr[sq] = xscore > 0 ? xscore : 0xffff;
+        }
+
+    }
 }
 
 // Definitions:

@@ -156,7 +156,10 @@ int cicero_score_move(const cicero *e, const cicero_move *move)
     for (int i = 0; i < ntiles; ++i) {
         const int  square = squares[i];
         const char teng   = to_eng(tiles[i]);
-        if (xscr[square] < 0xffffu) {
+        // NOTE: have to use a sentinel value because a blank is worth 0
+        // and still get the double score for the played tile (and multiplier)
+        // in that case.
+        if (xscr[square] != NOCROSSTILES) {
             const int word_mult = dwsqs[square] * twsqs[square];
             const int letter_value = letter_values[teng];
             const int letter_mult  = dlsqs[square] * tlsqs[square];

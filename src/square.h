@@ -42,16 +42,15 @@ class Square
 
 public:
     static constexpr std::optional<Square> make(int sq) noexcept
+    // { return valid(sq) ? { Square{sq} } : { std::nullopt }; }
     {
-        if (0 <= sq && sq < NumSquares) {
-            return Square{sq};
-        }
+        if (valid(sq)) return Square{sq};
         return std::nullopt;
     }
     static std::optional<Square> from_gcg_name(std::string_view name) noexcept;
     static std::optional<Square> from_isc_name(std::string_view name) noexcept;
 
-    Square() noexcept {}
+    constexpr Square() noexcept : sq{0} {}
     constexpr Square(const Square& other) noexcept : sq{other.sq} {}
     constexpr Square(Square&& other) noexcept : sq{other.sq} { other.sq = -1; }
     constexpr Square& operator=(const Square& other) noexcept {
@@ -63,8 +62,7 @@ public:
         other.sq = -1;
         return *this;
     }
-    constexpr bool valid() const noexcept { return 0 <= sq && sq < NumSquares; }
-    constexpr bool ok() const noexcept { return valid(); }
+    constexpr bool ok() const noexcept { return valid(sq); }
     constexpr int value() const noexcept { assert(ok()); return sq; }
     constexpr const char* name() const noexcept
     {
@@ -80,7 +78,10 @@ public:
     constexpr int row() const noexcept { assert(ok()); return sq / Dim; }
 
 private:
-    constexpr Square(int s) noexcept : sq{s} { assert(ok()); }
+    explicit constexpr Square(int s) noexcept : sq{s} { assert(ok()); }
+
+    static constexpr bool valid(int sq) noexcept
+    { return 0 <= sq && sq < NumSquares; }
 
     friend constexpr bool operator==(Square lhs, Square rhs) noexcept
     { return lhs.sq == rhs.sq; }

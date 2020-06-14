@@ -166,28 +166,6 @@ bool operator!=(const std::vector<Move>& lhs, const std::vector<Move>& rhs) noex
     return !(lhs == rhs);
 }
 
-std::ostream& operator<<(std::ostream& os, const cicero_rack& rack)
-{
-    os << "\"";
-    int num_tiles = 0;
-    for (int i = 0; i < 26; ++i) {
-        for (int j = 0; j < rack.tiles[i]; ++j) {
-            os << static_cast<char>(i + 'A');
-            ++num_tiles;
-        }
-    }
-    for (int i = 0; i < rack.tiles[26]; ++i) {
-        os << "?";
-        ++num_tiles;
-    }
-    for (; num_tiles++ < 7; ++num_tiles) {
-        os << " ";
-    }
-    os << "\"";
-    return os;
-}
-
-
 EngineMove EngineMove::make(const cicero* engine, const scrabble::Move& move)
 {
     EngineMove result;
@@ -210,3 +188,26 @@ EngineMove EngineMove::make(const cicero* engine, const scrabble::Move& move)
 }
 
 } // ~scrabble
+
+std::ostream& operator<<(std::ostream& os, const cicero_rack& rack)
+{
+    os << "\"";
+    int num_tiles = 0;
+    for (int i = 0; i < 26; ++i) {
+        for (int j = 0; j < rack.tiles[i]; ++j) {
+            os << static_cast<char>(i + 'A');
+            ++num_tiles;
+        }
+    }
+    for (int i = 0; i < rack.tiles[26]; ++i) {
+        os << "?";
+        ++num_tiles;
+    }
+    for (; num_tiles++ < 7; ++num_tiles) {
+        os << " ";
+    }
+    os << "\"";
+    return os;
+}
+
+
