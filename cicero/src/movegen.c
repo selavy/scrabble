@@ -238,7 +238,7 @@ void cicero_load_position(cicero* e, char board[225])
         vals[sq] = board[sq] != CICERO_EMPTY_TILE ? to_eng(board[sq]) : EMPTY;
     }
 
-    memset(hscr, 0xffff, sizeof(e->hscr));
+    memset(hscr, 0xffffffffu, sizeof(e->hscr));
     for (int sq = 0; sq < 225; ++sq) {
         // TODO: combine these if cases
 
@@ -247,11 +247,17 @@ void cicero_load_position(cicero* e, char board[225])
             const int vstride = DIM;
             const int vstart  = rowstart(sq);
             const int vstop   = vstart + vstride*DIM;
+            scoreresult result;
             int xscore = 0;
-            xscore += scoreleft (e, vstart, vstop, vstride, sq);
-            xscore += scoreright(e, vstart, vstop, vstride, sq);
+            int tiles  = 0;
+            result = scoreleft (e, vstart, vstop, vstride, sq);
+            xscore += result.score;
+            tiles  += result.tiles;
+            result = scoreright(e, vstart, vstop, vstride, sq);
+            xscore += result.score;
+            tiles  += result.tiles;
             // TODO: this isn't going to work if crossing with a blank tile
-            hscr[sq] = xscore > 0 ? xscore : 0xffff;
+            hscr[sq] = tiles != 0 ? xscore : 0xffff;
         }
 
         // vertical cross-score
@@ -259,11 +265,17 @@ void cicero_load_position(cicero* e, char board[225])
             const int hstride = 1;
             const int hstart  = colstart(sq);
             const int hstop   = hstart + hstride*DIM;
+            scoreresult result;
             int xscore = 0;
-            xscore += scoreleft (e, hstart, hstop, hstride, sq);
-            xscore += scoreright(e, hstart, hstop, hstride, sq);
+            int tiles  = 0;
+            result = scoreleft (e, hstart, hstop, hstride, sq);
+            xscore += result.score;
+            tiles  += result.tiles;
+            result = scoreright(e, hstart, hstop, hstride, sq);
+            xscore += result.score;
+            tiles  += result.tiles;
             // TODO: this isn't going to work if crossing with a blank tile
-            vscr[sq] = xscore > 0 ? xscore : 0xffff;
+            vscr[sq] = tiles != 0 ? xscore : 0xffff;
         }
 
     }

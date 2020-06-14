@@ -180,34 +180,48 @@ internal int findend(const char* vals, const int start, const int stop,
     return sq;
 }
 
-internal int scoreleft(const cicero* e, const int start, const int stop,
-        const int stride, const int root)
+
+struct scoreresult_
+{
+    int score;
+    int tiles;
+};
+typedef struct scoreresult_ scoreresult;
+
+internal scoreresult scoreleft(const cicero* e, const int start,
+        const int stop, const int stride, const int root)
 {
     const char *vals = e->vals;
     const int  *letter_values = e->s.letter_values;
     int score = 0;
+    int tiles = 0;
     int sq = root - stride;
     while (sq >= start && vals[sq] != EMPTY) {
         assert(0 <= sq && sq < 225);
         score += letter_values[sq];
         sq    -= stride;
+        ++tiles;
     }
-    return score;
+    scoreresult result = { .score=score, .tiles=tiles };
+    return result;
 }
 
-internal int scoreright(const cicero* e, const int start, const int stop,
-        const int stride, const int root)
+internal scoreresult scoreright(const cicero* e, const int start,
+        const int stop, const int stride, const int root)
 {
     const char *vals = e->vals;
     const int  *letter_values = e->s.letter_values;
     int score = 0;
+    int tiles = 0;
     int sq = root + stride;
     while (sq < stop && vals[sq] != EMPTY) {
         assert(0 <= sq && sq < 225);
         score += letter_values[sq];
         sq    += stride;
+        ++tiles;
     }
-    return score;
+    scoreresult result = { .score=score, .tiles=tiles };
+    return result;
 }
 
 #ifdef __cplusplus
