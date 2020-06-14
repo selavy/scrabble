@@ -204,6 +204,10 @@ int main(int argc, char** argv)
         "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "?",
     };
 
+    const char* empty_square_label = "";
+    std::array<const char*, 225> board_labels;
+    std::fill(std::begin(board_labels), std::end(board_labels), empty_square_label);
+
     // Main loop
     while (!glfwWindowShouldClose(window)) {
         // Poll and handle events (inputs, window resize, etc.)
@@ -259,8 +263,20 @@ int main(int argc, char** argv)
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, square_color);
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive, square_color);
                 ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
-                ImGui::Button(square_text, ImVec2(40, 40));
+                if (ImGui::Button(board_labels[index], ImVec2(40, 40))) {
+                    // button was clicked -- reset tile
+                    board_labels[index] = empty_square_label;
+                }
                 ImGui::PopStyleColor(/*4*/3);
+                if (ImGui::BeginDragDropTarget()) {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_TILE")) {
+                        IM_ASSERT(payload->DataSize == sizeof(index));
+                        int tile = *static_cast<const int*>(payload->Data);
+                        assert(0 <= tile && tile <= 27);
+                        board_labels[index] = tile_labels[tile];
+                    }
+                    ImGui::EndDragDropTarget();
+                }
                 ImGui::PopID();
             }
             ImGui::EndGroup();
@@ -277,6 +293,10 @@ int main(int argc, char** argv)
             }
             ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
             ImGui::Button(tile_labels[tile], ImVec2(40, 40));
+            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
+                ImGui::SetDragDropPayload("DND_TILE", &tile, sizeof(tile));
+                ImGui::EndDragDropSource();
+            }
         }
         ImGui::EndGroup();
         ImGui::NewLine();
