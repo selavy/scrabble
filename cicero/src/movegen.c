@@ -178,7 +178,10 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
         for (int i = 0; i < len; ++i) {
             const char tile = vals[beg+i*stride];
             buf[i+1] = to_ext(tile);
-            assert(('A' <= buf[i+1] && buf[i+1] <= 'Z') || ('a' <= buf[i+1] && buf[i+1] <= 'z'));
+            assert(
+                    ('A' <= buf[i+1] && buf[i+1] <= 'Z') ||
+                    ('a' <= buf[i+1] && buf[i+1] <= 'z')
+            );
         }
         buf[len+1] = '\0';
         buf[len+2] = '\0';
@@ -192,7 +195,8 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
             u32 chk = 0;
             for (char c = 'A'; c <= 'Z'; ++c) {
                 buf[0] = c;
-                cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, buf);
+                cicero_edges edges = e->cb.getedges(
+                        (void*)e->cb.getedgesdata, buf);
                 if (edges.terminal) {
                     chk |= tilemask(tilenum(c));
                 }
@@ -207,7 +211,8 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
             assert(getdim(stride, after) == getdim(stride, rsq));
             assert(buf[len+1] == '\0');
             u32 chk = 0;
-            cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, &buf[1]);
+            cicero_edges edges = e->cb.getedges(
+                    (void*)e->cb.getedgesdata, &buf[1]);
             for (const char *edge = edges.edges; *edge != '\0'; ++edge) {
                 chk |= tilemask(tilenum(*edge));
             }
