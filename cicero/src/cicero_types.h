@@ -198,7 +198,7 @@ internal scoreresult scoreleft(const cicero* e, const int start,
     int sq = root - stride;
     while (sq >= start && vals[sq] != EMPTY) {
         assert(0 <= sq && sq < 225);
-        score += letter_values[sq];
+        score += letter_values[vals[sq]];
         sq    -= stride;
         ++tiles;
     }
@@ -216,7 +216,7 @@ internal scoreresult scoreright(const cicero* e, const int start,
     int sq = root + stride;
     while (sq < stop && vals[sq] != EMPTY) {
         assert(0 <= sq && sq < 225);
-        score += letter_values[sq];
+        score += letter_values[vals[sq]];
         sq    += stride;
         ++tiles;
     }

@@ -232,7 +232,7 @@ int main(int argc, char** argv)
 
         ImGui::BeginGroup();
 
-        {
+        { // Column Labels
             ImGui::BeginGroup();
             ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
             ImGui::Button("  ", ImVec2(40, 40));
@@ -248,7 +248,7 @@ int main(int argc, char** argv)
         for (int row = 0; row < 15; ++row) {
             ImGui::BeginGroup();
 
-            {
+            { // Row Labels
                 // ImGui::PushID(index);
                 ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
                 ImGui::Button(row_labels[row], ImVec2(40, 40));
