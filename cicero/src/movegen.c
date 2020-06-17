@@ -229,8 +229,8 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
 void cicero_load_position(cicero* e, char board[225])
 {
     char *vals = e->vals;
-    // u32  *hchk = dir == HORZ ? e->hchk : e->vchk;
-    // u32  *vchk = dir == HORZ ? e->vchk : e->hchk;
+    u32  *hchk = e->hchk;
+    u32  *vchk = e->vchk;
     u16  *hscr = e->hscr;
     u16  *vscr = e->vscr;
     u64  *asqs = e->asqs;
@@ -244,6 +244,9 @@ void cicero_load_position(cicero* e, char board[225])
     }
 
     memset(hscr, 0xffffffffu, sizeof(e->hscr));
+    memset(vscr, 0xffffffffu, sizeof(e->vscr));
+    memset(vchk, 0xffffffffu, sizeof(e->vchk));
+    memset(hchk, 0xffffffffu, sizeof(e->hchk));
     for (int sq = 0; sq < 225; ++sq) {
         // TODO: combine these if cases
 
@@ -281,6 +284,83 @@ void cicero_load_position(cicero* e, char board[225])
             tiles  += result.tiles;
             // TODO: this isn't going to work if crossing with a blank tile
             vscr[sq] = tiles != 0 ? xscore : 0xffff;
+        }
+
+        struct {
+            char str[16];
+            int  len;
+        } word = { .str = {0}, .len = 0 };
+
+        // horizontal cross-check
+        if (vals[sq] == EMPTY) {
+            word.len = 0;
+            const int vstride = DIM;
+            const int vstart  = rowstart(sq);
+            const int vstop   = vstart + vstride*DIM;
+            const int beg = findbeg(vals, vstart, vstop, vstride, sq);
+            int ss = beg;
+            for (; vals[ss] != EMPTY; ss += vstride) {
+                assert(ss < sq);
+                word.str[word.len++] = to_ext(vals[ss]);
+            }
+            // skip `sq`
+            const int index = word.len++;
+            ss += vstride;
+            for (; ss < vstop && vals[ss] != EMPTY; ss += vstride) {
+                word.str[word.len++] = to_ext(vals[ss]);
+            }
+
+            // only set if touching other tiles -- this just makes the first
+            // move easier to check if all squares are initially set to
+            // 0xffffffffu
+            if (word.len != 1) {
+                word.str[word.len] = '\0';
+                u32 xchk = 0;
+                for (char c = 'A'; c <= 'Z'; ++c) {
+                    word.str[index] = c;
+                    cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, word.str);
+                    if (edges.terminal) {
+                        xchk |= tilemask(tilenum(c));
+                    }
+                }
+                hchk[sq] = xchk;
+            }
+        }
+
+        // vertical cross-check
+        if (vals[sq] == EMPTY) {
+            word.len = 0;
+            const int hstride = 1;
+            const int hstart  = colstart(sq);
+            const int hstop   = hstart + hstride*DIM;
+            const int beg = findbeg(vals, hstart, hstop, hstride, sq);
+            int ss = beg;
+            for (; vals[ss] != EMPTY; ss += hstride) {
+                assert(ss < sq);
+                word.str[word.len++] = to_ext(vals[ss]);
+            }
+            // skip `sq`
+            const int index = word.len++;
+            ss += hstride;
+            for (; ss < hstop && vals[ss] != EMPTY; ss += hstride) {
+                word.str[word.len++] = to_ext(vals[ss]);
+            }
+
+            // only set if touching other tiles -- this just makes the first
+            // move easier to check if all squares are initially set to
+            // 0xffffffffu
+            if (word.len != 1) {
+                word.str[word.len] = '\0';
+                u32 xchk = 0;
+                for (char c = 'A'; c <= 'Z'; ++c) {
+                    word.str[index] = c;
+                    cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, word.str);
+                    if (edges.terminal) {
+                        xchk |= tilemask(tilenum(c));
+                    }
+                }
+                vchk[sq] = xchk;
+            }
         }
     }
 }
