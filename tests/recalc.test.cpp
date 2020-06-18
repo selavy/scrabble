@@ -39,8 +39,8 @@ TEST_CASE("Rebuild state after H8 APPLE")
             // using REQUIRE because if any fails, probably they all will
             REQUIRE(engine1.hscr[sq] == engine2.hscr[sq]);
             REQUIRE(engine1.vscr[sq] == engine2.vscr[sq]);
-            // CHECK(engine1.hchk[sq] == engine2.hchk[sq]);
-            // CHECK(engine1.vchk[sq] == engine2.vchk[sq]);
+            CHECK(engine1.hchk[sq] == engine2.hchk[sq]);
+            CHECK(engine1.vchk[sq] == engine2.vchk[sq]);
             CHECK(isanchorsq(engine1, sq) == isanchorsq(engine2, sq));
         }
     }
@@ -66,7 +66,7 @@ TEST_CASE("Rebuild state after H8 APPLE")
             CHECK(engine1.vscr[sq] == engine2.vscr[sq]);
             CHECK(engine1.hchk[sq] == engine2.hchk[sq]);
             CHECK(engine1.vchk[sq] == engine2.vchk[sq]);
-            // CHECK(isanchorsq(engine1, sq) == isanchorsq(engine2, sq));
+            CHECK(isanchorsq(engine1, sq) == isanchorsq(engine2, sq));
         }
 
     }

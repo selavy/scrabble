@@ -1,5 +1,12 @@
 #include "cicero_types.h"
 
+struct string
+{
+    char buf[16];
+    int  len;
+};
+typedef struct string string;
+
 internal int inclusive_length(int beg, int end, int stride) {
     assert(beg <= end);
     return (end - beg) / stride + 1;
@@ -247,6 +254,8 @@ void cicero_load_position(cicero* e, char board[225])
     memset(vscr, 0xffffffffu, sizeof(e->vscr));
     memset(vchk, 0xffffffffu, sizeof(e->vchk));
     memset(hchk, 0xffffffffu, sizeof(e->hchk));
+    memset(asqs, 0x00000000u, sizeof(e->asqs));
+    // int placed_tiles = 0;
     for (int sq = 0; sq < 225; ++sq) {
         // TODO: combine these if cases
 
@@ -286,10 +295,9 @@ void cicero_load_position(cicero* e, char board[225])
             vscr[sq] = tiles != 0 ? xscore : 0xffff;
         }
 
-        struct {
-            char str[16];
-            int  len;
-        } word = { .str = {0}, .len = 0 };
+        string word;
+        word.len = 0;
+        int neighbors = 0;
 
         // horizontal cross-check
         if (vals[sq] == EMPTY) {
@@ -301,29 +309,30 @@ void cicero_load_position(cicero* e, char board[225])
             int ss = beg;
             for (; vals[ss] != EMPTY; ss += vstride) {
                 assert(ss < sq);
-                word.str[word.len++] = to_ext(vals[ss]);
+                word.buf[word.len++] = to_ext(vals[ss]);
             }
             // skip `sq`
             const int index = word.len++;
             ss += vstride;
             for (; ss < vstop && vals[ss] != EMPTY; ss += vstride) {
-                word.str[word.len++] = to_ext(vals[ss]);
+                word.buf[word.len++] = to_ext(vals[ss]);
             }
 
             // only set if touching other tiles -- this just makes the first
             // move easier to check if all squares are initially set to
             // 0xffffffffu
             if (word.len != 1) {
-                word.str[word.len] = '\0';
+                word.buf[word.len] = '\0';
                 u32 xchk = 0;
                 for (char c = 'A'; c <= 'Z'; ++c) {
-                    word.str[index] = c;
-                    cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, word.str);
+                    word.buf[index] = c;
+                    cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, word.buf);
                     if (edges.terminal) {
                         xchk |= tilemask(tilenum(c));
                     }
                 }
                 hchk[sq] = xchk;
+                setasq(asqs, sq);
             }
         }
 
@@ -337,31 +346,42 @@ void cicero_load_position(cicero* e, char board[225])
             int ss = beg;
             for (; vals[ss] != EMPTY; ss += hstride) {
                 assert(ss < sq);
-                word.str[word.len++] = to_ext(vals[ss]);
+                word.buf[word.len++] = to_ext(vals[ss]);
             }
             // skip `sq`
             const int index = word.len++;
             ss += hstride;
             for (; ss < hstop && vals[ss] != EMPTY; ss += hstride) {
-                word.str[word.len++] = to_ext(vals[ss]);
+                word.buf[word.len++] = to_ext(vals[ss]);
             }
 
             // only set if touching other tiles -- this just makes the first
             // move easier to check if all squares are initially set to
             // 0xffffffffu
             if (word.len != 1) {
-                word.str[word.len] = '\0';
+                word.buf[word.len] = '\0';
                 u32 xchk = 0;
                 for (char c = 'A'; c <= 'Z'; ++c) {
-                    word.str[index] = c;
-                    cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, word.str);
+                    word.buf[index] = c;
+                    cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, word.buf);
                     if (edges.terminal) {
                         xchk |= tilemask(tilenum(c));
                     }
                 }
                 vchk[sq] = xchk;
+                setasq(asqs, sq);
             }
         }
+
+        // if (vals[sq] != EMPTY) {
+        //     placed_tiles += 1;
+        // }
+    }
+
+    // edge case if is starting position then need to set H8
+    // if (placed_tiles == 0) {
+    if (asqs[0] == 0 && asqs[1] == 0 && asqs[2] == 0 && asqs[3] == 0) {
+        setasq(asqs, SQ_H8);
     }
 }
 
@@ -390,13 +410,6 @@ struct state
     int           stop;
 };
 typedef struct state state;
-
-struct string
-{
-    char* buf;
-    int   len;
-};
-typedef struct string string;
 
 internal int range_contains_square(int start, int stride, int length, int sq)
 {
@@ -573,12 +586,9 @@ internal void extend_right_on_existing_left_part(const state* ss, int anchor, st
 void cicero_generate_legal_moves(const cicero *e, cicero_rack rack)
 {
     const int dirs[] = { HORZ, VERT };
-
     const u64  *asqs = e->asqs;
     const char *vals = e->vals;
-    char buf[16];
     string word;
-    word.buf = buf;
     word.len = 0;
     word.buf[0] = 0;
     state ss;
@@ -592,13 +602,11 @@ void cicero_generate_legal_moves(const cicero *e, cicero_rack rack)
             for (int i = 0; i < ASIZE(dirs); ++i) {
                 const int stride  = dirs[i];
                 const int start = dirs[i] == HORZ ? colstart(anchor) : rowstart(anchor);
-
                 ss.anchor = anchor;
                 ss.start  = start;
                 ss.stride = stride;
                 ss.stop   = start + DIM * stride;
                 ss.xchk   = dirs[i] == HORZ ? e->hchk : e->vchk;
-
                 if (anchor - stride >= start && vals[anchor - stride] != EMPTY) {
                     extend_right_on_existing_left_part(&ss, anchor, &word);
                 } else {
