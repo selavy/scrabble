@@ -153,6 +153,7 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
                     chk |= tilemask(tilenum(c));
                 }
             }
+            assert(vals[before] == EMPTY);
             hchk[before] = chk;
             hscr[before] = calc_cached_score(start, stop, stride, before, e);
             setasq(asqs, before);
@@ -166,12 +167,16 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
             for (const char *edge = edges.edges; *edge != '\0'; ++edge) {
                 chk |= tilemask(tilenum(*edge));
             }
+            assert(vals[after] == EMPTY);
             hchk[after] = chk;
             hscr[after] = calc_cached_score(start, stop, stride, after, e);
             setasq(asqs, after);
         }
 
+        assert(vals[root] != EMPTY);
         clrasq(asqs, root);
+// #ifndef NDEBUG
+// #endif
     }
 
     { // update horizontal cross-checks
@@ -229,7 +234,17 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
         }
     }
 
-    return cicero_score_move(e, move);
+    int score = cicero_score_move(e, move);
+
+#ifndef NDEBUG
+    for (int tidx = 0; tidx < ntiles; ++tidx) {
+        const int root = squares[tidx];
+        hscr[root] = 0xffffu;
+        vscr[root] = 0xffffu;
+    }
+#endif
+
+    return score;
 }
 
 // TODO: need to be able to re-calculate from a given state

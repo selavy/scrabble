@@ -38,6 +38,7 @@ static const int  DIM = 15;
 static const int  HORZ = CICERO_HORZ;
 static const int  VERT = CICERO_VERT;
 static const int  SQ_H8 = 112;
+static const int  SQ_I8 = 127;
 // TODO: better way to do this?
 // need a sentinel to indicate that there are no touching cross tiles
 // because a blank is worth 0. In the situation of forming a cross with
