@@ -93,7 +93,6 @@ TEST_CASE("Rebuild state after H8 APPLE")
         }
     }
 
-#if 0
     /* "After 'L7 lengths'" */
     {
         auto smove = scrabble::Move::from_isc_spec("L7 lengths");
@@ -114,5 +113,4 @@ TEST_CASE("Rebuild state after H8 APPLE")
             CHECK(isanchorsq(engine1, sq) == isanchorsq(engine2, sq));
         }
     }
-#endif
 }
