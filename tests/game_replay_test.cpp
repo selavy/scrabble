@@ -375,8 +375,8 @@ int main(int argc, char **argv)
         "replay through official games to test move generation and scoring"
     );
     options.add_options()
-        ("d,dict", "dictionary file to use", cxxopts::value<std::string>(), "DICT")
-        ("f,file", "input game file", cxxopts::value<std::vector<std::string>>(), "FILE")
+        ("d,dict", "dictionary file to use", cxxopts::value<std::string>()->default_value("csw19.dict.gz"), "DICT")
+        ("f,file", "input game file", cxxopts::value<std::vector<std::string>>())
         ("v,verbose", "verbose output", cxxopts::value<bool>()->default_value("false"))
         ("h,help", "print usage")
         ;
@@ -388,6 +388,12 @@ int main(int argc, char **argv)
         return 0;
     }
     // clang-format on
+
+    if (!args["file"].count()) {
+        std::cerr << "Must specify at least one file to replay\n\n"
+            << options.help() << std::endl;
+        return 0;
+    }
 
     auto gamefiles = args["file"].as<std::vector<std::string>>();
     auto dictfile  = args["dict"].as<std::string>();

@@ -133,6 +133,10 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
         const int beg = findbeg(vals, start, stop, stride, root);
         const int end = findend(vals, start, stop, stride, root);
         const int len = inclusive_length(beg, end, stride);
+#ifdef FOR_TEST_COMPLIANCE
+        hchk[root] = 0;
+        vchk[root] = 0;
+#endif
         for (int i = 0; i < len; ++i) {
             const char tile = vals[beg + i * stride];
             buf[i+1] = to_ext(tile);
@@ -175,8 +179,6 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
 
         assert(vals[root] != EMPTY);
         clrasq(asqs, root);
-// #ifndef NDEBUG
-// #endif
     }
 
     { // update horizontal cross-checks
@@ -236,7 +238,7 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
 
     int score = cicero_score_move(e, move);
 
-#ifndef NDEBUG
+#ifdef FOR_TEST_COMPLIANCE
     for (int tidx = 0; tidx < ntiles; ++tidx) {
         const int root = squares[tidx];
         hscr[root] = 0xffffu;
@@ -270,7 +272,6 @@ void cicero_load_position(cicero* e, char board[225])
     memset(vchk, 0xffffffffu, sizeof(e->vchk));
     memset(hchk, 0xffffffffu, sizeof(e->hchk));
     memset(asqs, 0x00000000u, sizeof(e->asqs));
-    // int placed_tiles = 0;
     for (int sq = 0; sq < 225; ++sq) {
         // TODO: combine these if cases
 
@@ -388,13 +389,13 @@ void cicero_load_position(cicero* e, char board[225])
             }
         }
 
-        // if (vals[sq] != EMPTY) {
-        //     placed_tiles += 1;
-        // }
+        if (vals[sq] != EMPTY) {
+            hchk[sq] = 0;
+            vchk[sq] = 0;
+        }
     }
 
     // edge case if is starting position then need to set H8
-    // if (placed_tiles == 0) {
     if (asqs[0] == 0 && asqs[1] == 0 && asqs[2] == 0 && asqs[3] == 0) {
         setasq(asqs, SQ_H8);
     }

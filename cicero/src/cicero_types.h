@@ -16,6 +16,7 @@
 #define TRACE(fmt, ...)
 #endif
 
+#define FOR_TEST_COMPLIANCE
 
 #ifdef __cplusplus
 extern "C" {
