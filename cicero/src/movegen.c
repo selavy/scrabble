@@ -94,35 +94,6 @@ internal cicero_edges getedges(const cicero* e, const char* root)
     return e->cb.getedges((void*)e->cb.getedgesdata, root);
 }
 
-internal u32 calc_xchk_before(const cicero* e, char* root, int len)
-{
-    (void)len;
-    assert(root[len+1] == '\0');
-    u32 xchk = 0;
-    for (char c = 'A'; c <= 'Z'; ++c) {
-        root[0] = c;
-        cicero_edges edges = getedges(e, root);
-        if (edges.terminal) {
-            xchk |= tilemask(tilenum(c));
-        }
-    }
-    return xchk;
-}
-
-internal u32 calc_xchk_after(const cicero* e, char* root, int len)
-{
-    assert(root[len+1] == '\0');
-    u32 xchk = 0;
-    for (char c = 'A'; c <= 'Z'; ++c) {
-        root[len] = c;
-        cicero_edges edges = getedges(e, root);
-        if (edges.terminal) {
-            xchk |= tilemask(tilenum(c));
-        }
-    }
-    return xchk;
-}
-
 internal int build_word(const char* vals, const int start, const int stop, const int stride, const int root, string* word)
 {
     assert(start <= root && root < stop);
@@ -392,11 +363,6 @@ void cicero_load_position(cicero* e, char board[225])
                     if (edges.terminal) {
                         xchk |= tilemask(tilenum(c));
                     }
-                }
-                // TEMP TEMP
-                if (sq == SQ_E2) {
-                    word.buf[index] = '?';
-                    TRACE("Calculated xchk for %s = '%s' = 0x%08x", SQNAME(sq), word.buf, xchk);
                 }
                 hchk[sq] = xchk;
                 setasq(asqs, sq);
