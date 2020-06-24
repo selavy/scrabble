@@ -148,3 +148,11 @@ struct XChk
     }
 };
 
+inline bool isanchorsq(const cicero& e, int sq)
+{
+    const auto* asq = e.asqs;
+    const int m = sq / 64;
+    const int n = sq % 64;
+    return (asq[m] & (uint64_t)(1ull << n)) != 0;
+}
+

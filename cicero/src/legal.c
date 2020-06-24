@@ -67,6 +67,7 @@ int cicero_legal_move_ex(const cicero *e, const cicero_move *move,
         *p++ = '\0';
         word_long_enough |= (p - &buffer[0]) > 2;
         if (is_word(udata, &buffer[0]) == 0) {
+            TRACE("Invalid cross word: '%s'", &buffer[0]);
             return CICERO_INVALID_ROOT_WORD;
         }
     }

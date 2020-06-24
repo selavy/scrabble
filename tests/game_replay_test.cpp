@@ -96,10 +96,10 @@ struct Logger
     Level level_;
 };
 
-#define DEBUG(fmt, ...) logger.log(Logger::Level::eDebug, "DEBUG: " fmt "\n", ##__VA_ARGS__)
-#define INFO(fmt, ...)  logger.log(Logger::Level::eInfo,  "INFO: "  fmt "\n", ##__VA_ARGS__)
-#define WARN(fmt, ...)  logger.log(Logger::Level::eWarn,  "WARN: "  fmt "\n", ##__VA_ARGS__)
-#define ERROR(fmt, ...) logger.log(Logger::Level::eError, "ERROR: " fmt "\n", ##__VA_ARGS__)
+#define DEBUG(fmt, ...) logger.log(Logger::Level::eDebug, "DEBUG({:d}): " fmt "\n", __LINE__, ##__VA_ARGS__)
+#define INFO(fmt, ...)  logger.log(Logger::Level::eInfo,  "INFO({:d}): "  fmt "\n", __LINE__, ##__VA_ARGS__)
+#define WARN(fmt, ...)  logger.log(Logger::Level::eWarn,  "WARN({:d}): "  fmt "\n", __LINE__, ##__VA_ARGS__)
+#define ERROR(fmt, ...) logger.log(Logger::Level::eError, "ERROR({:d}): " fmt "\n", __LINE__, ##__VA_ARGS__)
 
 bool apply_move(ReplayMove& replay_move, scrabble::EngineMove& engine_move,
         cicero& engine, cicero_savepos& sp, Callbacks& cb, Logger& logger)
@@ -128,11 +128,6 @@ bool apply_move(ReplayMove& replay_move, scrabble::EngineMove& engine_move,
             ERROR("\n{}\n\nGenerated move {} not legal: {}.\nOn game move {}",
                     engine, move, cicero_legal_move_errnum_to_string(rc), replay_move.move);
             ERROR("\n\nLegal Moves:\n{}", legal_moves);
-
-            auto I8 = hume::Square::from_isc_name("I8")->value();
-            INFO("hchk[I8] = 0x{:08x} = {}", engine.hchk[I8], XChk{engine.hchk[I8]});
-            INFO("vchk[I8] = 0x{:08x} = {}", engine.vchk[I8], XChk{engine.vchk[I8]});
-
             cicero engine2;
             cicero_init(&engine2, cb.make_callbacks());
             cicero_load_position_ex(&engine2, &engine);
@@ -155,11 +150,11 @@ bool apply_move(ReplayMove& replay_move, scrabble::EngineMove& engine_move,
                         sq, engine2.vchk[sq], XChk{engine2.vchk[sq]}
                     );
                     assert(engine.vals[sq] == engine2.vals[sq]);
-                    // assert(engine.hscr[sq] == engine2.hscr[sq]);
-                    // assert(engine.vscr[sq] == engine2.vscr[sq]);
+                    assert(engine.hscr[sq] == engine2.hscr[sq]);
+                    assert(engine.vscr[sq] == engine2.vscr[sq]);
                     assert(engine.hchk[sq] == engine2.hchk[sq]);
                     assert(engine.vchk[sq] == engine2.vchk[sq]);
-                    // assert(isanchorsq(engine1, sq) == isanchorsq(engine2, sq));
+                    assert(isanchorsq(engine, sq) == isanchorsq(engine2, sq));
                 }
             }
 
@@ -343,10 +338,10 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb, Logger& logger)
     if (type == FileType::eIsc) {
         do {
             if (line.empty() || line[0] == '#') {
-                INFO("skipping line \"{}\"", line);
+                DEBUG("skipping line \"{}\"", line);
                 continue;
             }
-            INFO("line: \"{}\"", line);
+            DEBUG("line: \"{}\"", line);
             auto maybe_replay_move = parsemove_isc(line, &engine);
             if (!maybe_replay_move) {
                 continue;
@@ -360,33 +355,6 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb, Logger& logger)
         return replay_file_gcg(ifs, cb, engine, logger);
     }
     return true;
-}
-
-void mytest(Callbacks& cb)
-{
-    const std::vector<std::string> moves = {
-        "H7 oaf",
-    };
-
-    fmt::print("--- MYTEST ---\n\n");
-
-    cicero engine;
-    cicero_savepos sp;
-    char board[225];
-    cicero_init(&engine, cb.make_callbacks());
-
-    for (const auto& isc_move : moves) {
-        auto smove = scrabble::Move::from_isc_spec(isc_move.c_str());
-        auto emove = scrabble::EngineMove::make(&engine, smove);
-        auto* move = &emove.move;
-        cicero_make_move(&engine, &sp, move);
-        std::cout << engine << "\n\n";
-        auto I8 = hume::Square::from_isc_name("I8")->value();
-        fmt::print("hchk[I8] = 0x{:08x} = {}\n", engine.hchk[I8], XChk{engine.hchk[I8]});
-        fmt::print("vchk[I8] = 0x{:08x} = {}\n", engine.vchk[I8], XChk{engine.vchk[I8]});
-    }
-
-    fmt::print("--- END MYTEST ---\n\n");
 }
 
 int main(int argc, char **argv)
@@ -433,8 +401,6 @@ int main(int argc, char **argv)
     auto& dict = *maybe_dict;
     auto cb = Callbacks{std::move(dict)};
     auto logger = Logger{args["verbose"].as<bool>() ? Logger::Level::eDebug : Logger::Level::eInfo};
-
-    mytest(cb);
 
     for (const auto& filename : gamefiles) {
         INFO("Replaying {}", filename);
