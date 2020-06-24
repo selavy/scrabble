@@ -18,6 +18,8 @@ target_link_libraries(cicero_tests
         Scrabble
         Cicero
         cxx_project_options
+        # TEMP
+        fmt::fmt
 )
 
 add_executable(game-replay-test game_replay_test.cpp)

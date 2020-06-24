@@ -109,3 +109,42 @@ inline std::vector<scrabble::Move> make_move_list(const std::vector<std::string>
     return result;
 }
 
+inline std::ostream& operator<<(std::ostream& os, const cicero& engine)
+{
+    auto print_row = [&os](const cicero& e, int row) {
+        for (int col = 0; col < Dim - 1; ++col) {
+            os << cicero_tile_on_square(&e, row*Dim + col) << " | ";
+        }
+        os << cicero_tile_on_square(&e, row*Dim + (Dim - 1));
+    };
+    const auto* b = engine.vals;
+    os << "     1   2   3   4   5   6   7   8   9   0   1   2   3   4   5  \n";
+    os << "   -------------------------------------------------------------\n";
+    for (int row = 0; row < Dim; ++row) {
+        os << static_cast<char>('A' + row) << "  | ";
+        print_row(engine, row);
+        os << " |\n";
+        os << "   -------------------------------------------------------------\n";
+    }
+    return os;
+}
+
+struct XChk
+{
+    explicit XChk(uint32_t mask_)
+        : mask(mask_) {}
+    uint32_t mask;
+
+    friend std::ostream& operator<<(std::ostream& os, XChk x)
+    {
+        for (uint32_t i = 0; i < 26; ++i) {
+            if (((1u << i) & x.mask) != 0) {
+                os << static_cast<char>('A' + i) << ' ';
+            } else {
+                os << ' ' << ' ';
+            }
+        }
+        return os;
+    }
+};
+

@@ -128,8 +128,12 @@ struct cicero
     uint16_t hscr[225]; // if playing horizontally at square, how many additional points you'd score
     uint16_t vscr[225];
 
-    uint32_t hchk[225]; // if playing horizontally, need to check hchk
+    // cross-checks, if playing horizontally, check hchk to see if words
+    // formed are valid vertically
+    uint32_t hchk[225];
     uint32_t vchk[225];
+
+    // anchor squares bitmask
     uint64_t asqs[4];
 
     cicero_callbacks cb;
@@ -186,6 +190,8 @@ cicero_api cicero_multiplier cicero_square_multiplier(const cicero* e, int sq);
 
 /* initialize the board from the position in `board` */
 cicero_api void cicero_load_position(cicero* e, char board[225]);
+
+cicero_api void cicero_load_position_ex(cicero* e, const cicero* position);
 
 // -------------------------------------------------------------------------- //
 

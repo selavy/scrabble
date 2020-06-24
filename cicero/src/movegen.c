@@ -89,6 +89,94 @@ void cicero_undo_move(cicero *e, const cicero_savepos* sp,
 #endif
 }
 
+internal cicero_edges getedges(const cicero* e, const char* root)
+{
+    return e->cb.getedges((void*)e->cb.getedgesdata, root);
+}
+
+internal u32 calc_xchk_before(const cicero* e, char* root, int len)
+{
+    (void)len;
+    assert(root[len+1] == '\0');
+    u32 xchk = 0;
+    for (char c = 'A'; c <= 'Z'; ++c) {
+        root[0] = c;
+        cicero_edges edges = getedges(e, root);
+        if (edges.terminal) {
+            xchk |= tilemask(tilenum(c));
+        }
+    }
+    return xchk;
+}
+
+internal u32 calc_xchk_after(const cicero* e, char* root, int len)
+{
+    assert(root[len+1] == '\0');
+    u32 xchk = 0;
+    for (char c = 'A'; c <= 'Z'; ++c) {
+        root[len] = c;
+        cicero_edges edges = getedges(e, root);
+        if (edges.terminal) {
+            xchk |= tilemask(tilenum(c));
+        }
+    }
+    return xchk;
+}
+
+internal int build_word(const char* vals, const int start, const int stop, const int stride, const int root, string* word)
+{
+    assert(start <= root && root < stop);
+    assert(vals[root] == EMPTY);
+
+    // find left most square after `root`
+    int sq = root - stride;
+    while (sq >= start && vals[sq] != EMPTY) {
+        sq -= stride;
+    }
+    sq += stride;
+    assert(sq == root || vals[sq] != EMPTY);
+    assert((sq - stride) < start || vals[sq - stride] == EMPTY);
+
+    // fill in left part
+    word->len = 0;
+    for (; sq != root; sq += stride) {
+        assert(sq < stop);
+        assert(vals[sq] != EMPTY);
+        word->buf[word->len++] = to_ext(vals[sq]);
+    }
+
+    // skip `root`
+    const int rootidx = word->len++;
+    assert(sq == root);
+    assert(vals[root] == EMPTY);
+#ifndef NDEBUG
+    word->buf[rootidx] = '?';
+#endif
+    sq += stride;
+
+    // fill in right part
+    for (; sq < stop && vals[sq] != EMPTY; sq += stride) {
+        word->buf[word->len++] = to_ext(vals[sq]);
+    }
+    // TRACE("\tbuild_word(%s) stopping on %s (sq=%d stop=%d vals[sq]='%c')", SQNAME(root), SQNAME(sq), sq, stop, to_ext(vals[sq]));
+    word->buf[word->len] = '\0';
+
+    return rootidx;
+}
+
+internal u32 calc_xchk(const cicero* e, char* word, int index)
+{
+    u32 xchk = 0;
+    for (char c = 'A'; c <= 'Z'; ++c) {
+        word[index] = c;
+        cicero_edges edges = getedges(e, word);
+        if (getedges(e, word).terminal) {
+            xchk |= tilemask(tilenum(c));
+        }
+    }
+    return xchk;
+}
+
 int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
 {
     // TRACE("applying: %.*s", move->ntiles, move->tiles);
@@ -120,60 +208,41 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
 
     cicero_savepos_copy(sp, e);
 
-    // update vertical cross-checks
+    // update horizontal cross-checks
     for (int tidx = 0; tidx < ntiles; ++tidx) {
         const int stride = vstride;
-        const int root = squares[tidx];
-        const char tile = tiles[tidx];
-        const char teng = to_eng(tile);
-        const int start = vertstart(root);
-        const int stop = start + DIM * stride;
+        const int root   = squares[tidx];
+        const char tile  = tiles[tidx];
+        const char teng  = to_eng(tile);
+        const int start  = vertstart(root);
+        const int stop   = start + DIM * stride;
+        const int before = findbeg(vals, start, stop, stride, root) - stride;
+        const int after  = findend(vals, start, stop, stride, root) + stride;
         assert(vals[root] == EMPTY);
         vals[root] = teng;
-        const int beg = findbeg(vals, start, stop, stride, root);
-        const int end = findend(vals, start, stop, stride, root);
-        const int len = inclusive_length(beg, end, stride);
 #ifdef FOR_TEST_COMPLIANCE
         hchk[root] = 0;
         vchk[root] = 0;
 #endif
-        for (int i = 0; i < len; ++i) {
-            const char tile = vals[beg + i * stride];
-            buf[i+1] = to_ext(tile);
-            assert(('A' <= buf[i+1] && buf[i+1] <= 'Z') || ('a' <= buf[i+1] && buf[i+1] <= 'z'));
-        }
-        buf[len+1] = '\0';
-        buf[len+2] = '\0';
-        const int before = beg - stride;
-        const int after  = end + stride;
         if (before >= start) {
             assert(getdim(stride, before) == getdim(stride, root));
-            // TODO(peter): switch to using prefix call to get children -- need GADDAG for this one
-            u32 chk = 0;
-            for (char c = 'A'; c <= 'Z'; ++c) {
-                buf[0] = c;
-                cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, buf);
-                if (edges.terminal) {
-                    chk |= tilemask(tilenum(c));
-                }
-            }
             assert(vals[before] == EMPTY);
-            hchk[before] = chk;
-            hscr[before] = calc_cached_score(start, stop, stride, before, e);
+            string word;
+            const int idx = build_word(vals, start, stop, stride, before, &word);
+            TRACE("B HORZ XCHK[%s]: word='%s'", SQNAME(before), word.buf);
+            hchk[before]  = calc_xchk(e, word.buf, idx);
+            hscr[before]  = calc_cached_score(start, stop, stride, before, e);
             setasq(asqs, before);
         }
 
         if (after < stop) {
             assert(getdim(stride, after) == getdim(stride, root));
-            assert(buf[len+1] == '\0');
-            u32 chk = 0;
-            cicero_edges edges = e->cb.getedges((void*)e->cb.getedgesdata, &buf[1]);
-            for (const char *edge = edges.edges; *edge != '\0'; ++edge) {
-                chk |= tilemask(tilenum(*edge));
-            }
             assert(vals[after] == EMPTY);
-            hchk[after] = chk;
-            hscr[after] = calc_cached_score(start, stop, stride, after, e);
+            string word;
+            const int idx = build_word(vals, start, stop, stride, after, &word);
+            TRACE("A HORZ XCHK[%s]: word='%s'", SQNAME(after), word.buf);
+            hchk[after]   = calc_xchk(e, word.buf, idx);
+            hscr[after]   = calc_cached_score(start, stop, stride, after, e);
             setasq(asqs, after);
         }
 
@@ -181,57 +250,33 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
         clrasq(asqs, root);
     }
 
-    { // update horizontal cross-checks
-        const int start = hstart;
-        const int stride  = hstride;
-        const int stop  = hstop;
-        const int beg = findbeg(vals, start, stop, stride, lsq);
-        const int end = findend(vals, start, stop, stride, rsq);
-        const int len = inclusive_length(beg, end, stride);
+    { // update vertical cross-checks
+        const int start  = hstart;
+        const int stride = hstride;
+        const int stop   = hstop;
+        const int before = findbeg(vals, start, stop, stride, lsq) - stride;
+        const int after  = findend(vals, start, stop, stride, rsq) + stride;
         assert(getdim(stride, lsq) == getdim(stride, rsq)); // move must be on exactly 1 row or col
-        for (int i = 0; i < len; ++i) {
-            const char tile = vals[beg+i*stride];
-            buf[i+1] = to_ext(tile);
-            assert(
-                    ('A' <= buf[i+1] && buf[i+1] <= 'Z') ||
-                    ('a' <= buf[i+1] && buf[i+1] <= 'z')
-            );
-        }
-        buf[len+1] = '\0';
-        buf[len+2] = '\0';
-        const int before = beg - stride;
-        const int after  = end + stride;
         if (before >= start) {
             assert(vals[before] == EMPTY);
             assert(getdim(stride, before) == getdim(stride, lsq));
             assert(getdim(stride, before) == getdim(stride, rsq));
-            // TODO(peter): switch to using prefix call to get children -- need GADDAG for this one
-            u32 chk = 0;
-            for (char c = 'A'; c <= 'Z'; ++c) {
-                buf[0] = c;
-                cicero_edges edges = e->cb.getedges(
-                        (void*)e->cb.getedgesdata, buf);
-                if (edges.terminal) {
-                    chk |= tilemask(tilenum(c));
-                }
-            }
-            vchk[before] = chk;
-            vscr[before] = calc_cached_score(start, stop, stride, before, e);
+            string word;
+            const int idx = build_word(vals, start, stop, stride, before, &word);
+            TRACE("B VERT XCHK[%s]: word='%s'", SQNAME(before), word.buf);
+            vchk[before]  = calc_xchk(e, word.buf, idx);
+            vscr[before]  = calc_cached_score(start, stop, stride, before, e);
             setasq(asqs, before);
         }
         if (after < stop) {
             assert(vals[after] == EMPTY);
             assert(getdim(stride, after) == getdim(stride, lsq));
             assert(getdim(stride, after) == getdim(stride, rsq));
-            assert(buf[len+1] == '\0');
-            u32 chk = 0;
-            cicero_edges edges = e->cb.getedges(
-                    (void*)e->cb.getedgesdata, &buf[1]);
-            for (const char *edge = edges.edges; *edge != '\0'; ++edge) {
-                chk |= tilemask(tilenum(*edge));
-            }
-            vchk[after] = chk;
-            vscr[after] = calc_cached_score(start, stop, stride, after, e);
+            string word;
+            const int idx = build_word(vals, start, stop, stride, after, &word);
+            TRACE("A VERT XCHK[%s]: word='%s'", SQNAME(after), word.buf);
+            vchk[after]   = calc_xchk(e, word.buf, idx);
+            vscr[after]   = calc_cached_score(start, stop, stride, after, e);
             setasq(asqs, after);
         }
     }
@@ -261,7 +306,7 @@ void cicero_load_position(cicero* e, char board[225])
 
     const int* letter_values = e->s.letter_values;
 
-    // place all the tiles from `board` becuase need them to re-compute
+    // place all the tiles from `board` because need them to re-compute
     // the caches
     for (int sq = 0; sq < 225; ++sq) {
         vals[sq] = board[sq] != CICERO_EMPTY_TILE ? to_eng(board[sq]) : EMPTY;
@@ -334,6 +379,7 @@ void cicero_load_position(cicero* e, char board[225])
                 word.buf[word.len++] = to_ext(vals[ss]);
             }
 
+
             // only set if touching other tiles -- this just makes the first
             // move easier to check if all squares are initially set to
             // 0xffffffffu
@@ -346,6 +392,11 @@ void cicero_load_position(cicero* e, char board[225])
                     if (edges.terminal) {
                         xchk |= tilemask(tilenum(c));
                     }
+                }
+                // TEMP TEMP
+                if (sq == SQ_E2) {
+                    word.buf[index] = '?';
+                    TRACE("Calculated xchk for %s = '%s' = 0x%08x", SQNAME(sq), word.buf, xchk);
                 }
                 hchk[sq] = xchk;
                 setasq(asqs, sq);
@@ -399,6 +450,15 @@ void cicero_load_position(cicero* e, char board[225])
     if (asqs[0] == 0 && asqs[1] == 0 && asqs[2] == 0 && asqs[3] == 0) {
         setasq(asqs, SQ_H8);
     }
+}
+
+cicero_api void cicero_load_position_ex(cicero* e, const cicero* position)
+{
+    char board[225];
+    for (int sq = 0; sq < 225; ++sq) {
+        board[sq] = cicero_tile_on_square(position, sq);
+    }
+    cicero_load_position(e, board);
 }
 
 // Definitions:

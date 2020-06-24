@@ -37,6 +37,7 @@ int cicero_legal_move_ex(const cicero *e, const cicero_move *move,
     int word_long_enough = 0;
     int h8_played = board[SQ_H8] != EMPTY;
 
+    // TODO: why did I size this to 32 instead of 15 or 16?
     char buffer[32];
     {
         int tilenum = 0;
@@ -55,6 +56,7 @@ int cicero_legal_move_ex(const cicero *e, const cicero_move *move,
             } else if (sq == squares[tilenum]) {
                 tile = to_eng(tiles[tilenum++]);
             } else {
+                TRACE("empty square: %d", sq);
                 return CICERO_MOVE_LEAVES_EMPTY_SQUARES;
             }
             *p++ = to_uppercase(to_ext(tile));
@@ -87,6 +89,7 @@ int cicero_legal_move_ex(const cicero *e, const cicero_move *move,
         *p++ = '\0';
         word_long_enough |= (p - &buffer[0]) > 2;
         if ((p - &buffer[0]) > 2 && is_word(udata, &buffer[0]) == 0) {
+            TRACE("Invalid cross word: '%s'", &buffer[0]);
             return CICERO_INVALID_CROSS_WORD;
         }
     }

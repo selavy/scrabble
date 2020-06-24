@@ -16,26 +16,6 @@
 #include "test_helpers.h"
 
 
-std::ostream& operator<<(std::ostream& os, const cicero& engine)
-{
-    auto print_row = [&os](const cicero& e, int row) {
-        for (int col = 0; col < Dim - 1; ++col) {
-            os << cicero_tile_on_square(&e, row*Dim + col) << " | ";
-        }
-        os << cicero_tile_on_square(&e, row*Dim + (Dim - 1));
-    };
-    const auto* b = engine.vals;
-    os << "     1   2   3   4   5   6   7   8   9   0   1   2   3   4   5  \n";
-    os << "   -------------------------------------------------------------\n";
-    for (int row = 0; row < Dim; ++row) {
-        os << static_cast<char>('A' + row) << "  | ";
-        print_row(engine, row);
-        os << " |\n";
-        os << "   -------------------------------------------------------------\n";
-    }
-    return os;
-}
-
 std::string stripline(const std::string& line)
 {
     auto first = std::find_if_not(line.begin(), line.end(), isspace);

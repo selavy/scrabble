@@ -73,49 +73,6 @@ std::optional<ReplayMove> parsemove_isc(const std::string& line, const cicero* e
     return result;
 }
 
-std::ostream& operator<<(std::ostream& os, const cicero& engine)
-{
-    auto print_row = [&os](const cicero& e, int row) {
-        for (int col = 0; col < Dim - 1; ++col) {
-            os << cicero_tile_on_square(&e, row*Dim + col) << " | ";
-        }
-        os << cicero_tile_on_square(&e, row*Dim + (Dim - 1));
-    };
-    const auto* b = engine.vals;
-    os << "     1   2   3   4   5   6   7   8   9   0   1   2   3   4   5  \n";
-    os << "   -------------------------------------------------------------\n";
-    for (int row = 0; row < Dim; ++row) {
-        os << static_cast<char>('A' + row) << "  | ";
-        print_row(engine, row);
-        os << " |\n";
-        os << "   -------------------------------------------------------------\n";
-    }
-    return os;
-}
-
-struct S
-{
-    int x;
-
-    explicit S(int xx) : x{xx} {}
-
-    friend std::ostream& operator<<(std::ostream& os, const S& s)
-    {
-        os << s.x;
-        return os;
-    }
-};
-
-class date {
-  int year_, month_, day_;
-public:
-  date(int year, int month, int day): year_(year), month_(month), day_(day) {}
-
-  friend std::ostream& operator<<(std::ostream& os, const date& d) {
-    return os << d.year_ << '-' << d.month_ << '-' << d.day_;
-  }
-};
-
 struct Logger
 {
     enum class Level
@@ -164,16 +121,65 @@ bool apply_move(ReplayMove& replay_move, scrabble::EngineMove& engine_move,
 
     bool move_played_in_dictionary = cb.isword(replay_move.move.word);
     if (move_played_in_dictionary) {
-        auto it = std::find_if(std::begin(legal_moves), std::end(legal_moves), match_ignoring_score);
+        auto it = std::find_if(std::begin(legal_moves), std::end(legal_moves),
+                match_ignoring_score);
         if (it == std::end(legal_moves)) {
-            std::cerr << "error: did not find played move: " << replay_move.move << ", found moves " << legal_moves << "\n";
-            // std::cerr << "error: did not find played move: " << replay_move.move << "\n";
+            ERROR("Did not find played move: {}, found moves {}",
+                    replay_move.move, legal_moves);
             return false;
         } else {
             DEBUG("generated move: {} correctly", replay_move.move);
         }
     } else {
         WARN("move played that is not in dictionary: '{}'", replay_move.move.word);
+    }
+
+    // verify all generated moves are legal -- legality check doesn't use
+    // cross-checks and such.
+    for (const auto& move : legal_moves) {
+        auto emove = scrabble::EngineMove::make(&engine, move);
+        int rc = cicero_legal_move(&engine, &emove.move);
+        if (rc != CICERO_LEGAL_MOVE) {
+            ERROR("\n{}\n\nGenerated move {} not legal: {}.\nOn game move {}",
+                    engine, move, cicero_legal_move_errnum_to_string(rc), replay_move.move);
+            ERROR("\n\nLegal Moves:\n{}", legal_moves);
+
+            auto I8 = hume::Square::from_isc_name("I8")->value();
+            INFO("hchk[I8] = 0x{:08x} = {}", engine.hchk[I8], XChk{engine.hchk[I8]});
+            INFO("vchk[I8] = 0x{:08x} = {}", engine.vchk[I8], XChk{engine.vchk[I8]});
+
+            cicero engine2;
+            cicero_init(&engine2, cb.make_callbacks());
+            cicero_load_position_ex(&engine2, &engine);
+            {
+                for (int sq = 0; sq < 225; ++sq) {
+                    assert(engine.vals[sq] == engine2.vals[sq]);
+                }
+
+                for (int sq = 0; sq < 225; ++sq) {
+                    INFO(
+                        "Checking: {}\n"
+                        "\te1.hchk[{}] = 0x{:08x} = {}\n"
+                        "\te2.hchk[{}] = 0x{:08x} = {}\n"
+                        "\te1.vchk[{}] = 0x{:08x} = {}\n"
+                        "\te2.vchk[{}] = 0x{:08x} = {}\n",
+                        hume::Square::make(sq)->name(),
+                        sq, engine.hchk[sq],  XChk{engine.hchk[sq]},
+                        sq, engine2.hchk[sq], XChk{engine2.hchk[sq]},
+                        sq, engine.vchk[sq],  XChk{engine.vchk[sq]},
+                        sq, engine2.vchk[sq], XChk{engine2.vchk[sq]}
+                    );
+                    assert(engine.vals[sq] == engine2.vals[sq]);
+                    // assert(engine.hscr[sq] == engine2.hscr[sq]);
+                    // assert(engine.vscr[sq] == engine2.vscr[sq]);
+                    assert(engine.hchk[sq] == engine2.hchk[sq]);
+                    assert(engine.vchk[sq] == engine2.vchk[sq]);
+                    // assert(isanchorsq(engine1, sq) == isanchorsq(engine2, sq));
+                }
+            }
+
+            return false;
+        }
     }
 
     // Desired API:
@@ -201,7 +207,7 @@ bool apply_move(ReplayMove& replay_move, scrabble::EngineMove& engine_move,
     }
 
     // TEMP -- check undo_move
-    constexpr bool check_undo_move = true;
+    constexpr bool check_undo_move = false;
     if (check_undo_move) {
         cicero_undo_move(&engine, &sp, &engine_move.move);
         auto score2 = cicero_make_move(&engine, &sp, &engine_move.move);
@@ -361,6 +367,33 @@ bool replay_file(std::ifstream& ifs, Callbacks& cb, Logger& logger)
     return true;
 }
 
+void mytest(Callbacks& cb)
+{
+    const std::vector<std::string> moves = {
+        "H7 oaf",
+    };
+
+    fmt::print("--- MYTEST ---\n\n");
+
+    cicero engine;
+    cicero_savepos sp;
+    char board[225];
+    cicero_init(&engine, cb.make_callbacks());
+
+    for (const auto& isc_move : moves) {
+        auto smove = scrabble::Move::from_isc_spec(isc_move.c_str());
+        auto emove = scrabble::EngineMove::make(&engine, smove);
+        auto* move = &emove.move;
+        cicero_make_move(&engine, &sp, move);
+        std::cout << engine << "\n\n";
+        auto I8 = hume::Square::from_isc_name("I8")->value();
+        fmt::print("hchk[I8] = 0x{:08x} = {}\n", engine.hchk[I8], XChk{engine.hchk[I8]});
+        fmt::print("vchk[I8] = 0x{:08x} = {}\n", engine.vchk[I8], XChk{engine.vchk[I8]});
+    }
+
+    fmt::print("--- END MYTEST ---\n\n");
+}
+
 int main(int argc, char **argv)
 {
     assert(isc_regex.ok());
@@ -405,6 +438,8 @@ int main(int argc, char **argv)
     auto& dict = *maybe_dict;
     auto cb = Callbacks{std::move(dict)};
     auto logger = Logger{args["verbose"].as<bool>() ? Logger::Level::eDebug : Logger::Level::eInfo};
+
+    mytest(cb);
 
     for (const auto& filename : gamefiles) {
         INFO("Replaying {}", filename);
