@@ -229,7 +229,7 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
             assert(vals[before] == EMPTY);
             string word;
             const int idx = build_word(vals, start, stop, stride, before, &word);
-            TRACE("B HORZ XCHK[%s]: word='%s'", SQNAME(before), word.buf);
+            // TRACE("B HORZ XCHK[%s]: word='%s'", SQNAME(before), word.buf);
             hchk[before]  = calc_xchk(e, word.buf, idx);
             hscr[before]  = calc_cached_score(start, stop, stride, before, e);
             setasq(asqs, before);
@@ -240,7 +240,7 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
             assert(vals[after] == EMPTY);
             string word;
             const int idx = build_word(vals, start, stop, stride, after, &word);
-            TRACE("A HORZ XCHK[%s]: word='%s'", SQNAME(after), word.buf);
+            // TRACE("A HORZ XCHK[%s]: word='%s'", SQNAME(after), word.buf);
             hchk[after]   = calc_xchk(e, word.buf, idx);
             hscr[after]   = calc_cached_score(start, stop, stride, after, e);
             setasq(asqs, after);
@@ -263,7 +263,7 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
             assert(getdim(stride, before) == getdim(stride, rsq));
             string word;
             const int idx = build_word(vals, start, stop, stride, before, &word);
-            TRACE("B VERT XCHK[%s]: word='%s'", SQNAME(before), word.buf);
+            // TRACE("B VERT XCHK[%s]: word='%s'", SQNAME(before), word.buf);
             vchk[before]  = calc_xchk(e, word.buf, idx);
             vscr[before]  = calc_cached_score(start, stop, stride, before, e);
             setasq(asqs, before);
@@ -274,7 +274,7 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
             assert(getdim(stride, after) == getdim(stride, rsq));
             string word;
             const int idx = build_word(vals, start, stop, stride, after, &word);
-            TRACE("A VERT XCHK[%s]: word='%s'", SQNAME(after), word.buf);
+            // TRACE("A VERT XCHK[%s]: word='%s'", SQNAME(after), word.buf);
             vchk[after]   = calc_xchk(e, word.buf, idx);
             vscr[after]   = calc_cached_score(start, stop, stride, after, e);
             setasq(asqs, after);

@@ -119,21 +119,6 @@ bool apply_move(ReplayMove& replay_move, scrabble::EngineMove& engine_move,
         );
     };
 
-    bool move_played_in_dictionary = cb.isword(replay_move.move.word);
-    if (move_played_in_dictionary) {
-        auto it = std::find_if(std::begin(legal_moves), std::end(legal_moves),
-                match_ignoring_score);
-        if (it == std::end(legal_moves)) {
-            ERROR("Did not find played move: {}, found moves {}",
-                    replay_move.move, legal_moves);
-            return false;
-        } else {
-            DEBUG("generated move: {} correctly", replay_move.move);
-        }
-    } else {
-        WARN("move played that is not in dictionary: '{}'", replay_move.move.word);
-    }
-
     // verify all generated moves are legal -- legality check doesn't use
     // cross-checks and such.
     for (const auto& move : legal_moves) {
@@ -194,6 +179,16 @@ bool apply_move(ReplayMove& replay_move, scrabble::EngineMove& engine_move,
     if (rc != CICERO_LEGAL_MOVE) {
         ERROR("cicero_legal move returned: {}",
                 cicero_legal_move_errnum_to_string(rc));
+    } else {
+        auto it = std::find_if(std::begin(legal_moves), std::end(legal_moves),
+                match_ignoring_score);
+        if (it == std::end(legal_moves)) {
+            ERROR("\n{}\nDid not find played move: {}, found moves {}",
+                    engine, replay_move.move, legal_moves);
+            return false;
+        } else {
+            DEBUG("generated move: {} correctly", replay_move.move);
+        }
     }
 
     int score = cicero_make_move(&engine, &sp, &engine_move.move);
