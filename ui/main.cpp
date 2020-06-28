@@ -366,27 +366,34 @@ int main(int argc, char** argv)
             }
 
             for (int col = 0; col < 15; ++col, ++index) {
-                auto square_color = square_colors[index];
                 ImGui::PushID(id++);
-                // ImGui::PushStyleColor(ImGuiCol_Text, TileTextColor[tile_color]);
+                auto square_color = square_colors[index];
                 ImGui::PushStyleColor(ImGuiCol_Button, square_color);
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, square_color);
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive, square_color);
                 ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
                 if (ImGui::Button(board_labels[index], ImVec2(40, 40))) {
-                    // button was clicked -- reset tile
+                    printf("board tile was clicked.\n");
+                    // reset tile on left click
                     board_labels[index] = empty_square_label;
                 }
-                ImGui::PopStyleColor(/*4*/3);
                 if (ImGui::BeginDragDropTarget()) {
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_TILE")) {
-                        IM_ASSERT(payload->DataSize == sizeof(index));
-                        int tile = *static_cast<const int*>(payload->Data);
+                        printf("Accepting tile bank tile\n");
+                        const auto tile = *get_dnd_payload<int>(payload);
                         assert(0 <= tile && tile < tile_labels.size());
                         board_labels[index] = tile_labels[tile];
                     }
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_RACK_TILE")) {
+                        printf("Accepting rack tile\n");
+                        const auto rack_index = *get_dnd_payload<int>(payload);
+                        assert(0 <= rack_index && rack_index < rack.size());
+                        board_labels[index] = tile_labels[rack[rack_index]];
+                        rack[rack_index] = EmptyTileNum;
+                    }
                     ImGui::EndDragDropTarget();
                 }
+                ImGui::PopStyleColor(3);
                 ImGui::PopID();
             }
             ImGui::EndGroup();
@@ -415,7 +422,11 @@ int main(int argc, char** argv)
                     ImGui::EndDragDropTarget();
                 }
                 if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
-                    ImGui::SetDragDropPayload("DND_TILE", &tile, sizeof(tile));
+                    ImGui::SetDragDropPayload("DND_RACK_TILE", &index, sizeof(index));
+                    // TODO(peter): if want to clear rack when the tile is
+                    // dropped, then should instead make a different name/type
+                    // of DND and send the rack index so it can be cleared
+                    // rack[index] = EmptyTileNum;
                     ImGui::EndDragDropSource();
                 }
                 ++index;
