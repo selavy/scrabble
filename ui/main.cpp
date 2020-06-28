@@ -381,146 +381,160 @@ int main(int argc, char** argv)
 
         ImGui::ShowMetricsWindow(&show_metrics_window);
 
-        ImGui::Begin("Scrabble", &show_scrabble_window, ImGuiWindowFlags_MenuBar);
-
-        ImGui::BeginGroup();
-
-        { // Column Labels
-            ImGui::BeginGroup();
-            ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
-            ImGui::Button("  ", ImVec2(40, 40));
-            for (int col = 0; col < 15; ++col) {
-                ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
-                ImGui::Button(column_labels[col], ImVec2(40, 40));
-            }
-            ImGui::EndGroup();
-            ImGui::NewLine();
-        }
-
-        int id = 0;
-        {
-            if (ImGui::BeginPopup("BLANK_TILE_SELECTOR")) {
-                ImGui::PushID(id++);
-                if (ImGui::BeginChild("BLANK_TILE_SELECTOR_WINDOW")) {
-                    ImGui::Text("%s", "Hello, World");
-                    // ImGui::Button()
-                }
-                ImGui::EndChild();
-                ImGui::EndPopup();
-                ImGui::PopID();
-            }
-        }
-
-        int index = 0;
-        for (int row = 0; row < 15; ++row) {
+        if (ImGui::Begin("Scrabble", &show_scrabble_window, ImGuiWindowFlags_MenuBar)) {
             ImGui::BeginGroup();
 
-            { // Row Labels
-                ImGui::PushID(id++);
+            { // Column Labels
+                ImGui::BeginGroup();
                 ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
-                ImGui::Button(row_labels[row], ImVec2(40, 40));
-                ImGui::PopID();
-            }
-
-            for (int col = 0; col < 15; ++col, ++index) {
-                ImGui::PushID(id++);
-                auto square_color = square_colors[index];
-                ImGui::PushStyleColor(ImGuiCol_Button, square_color);
-                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, square_color);
-                ImGui::PushStyleColor(ImGuiCol_ButtonActive, square_color);
-                ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
-                if (ImGui::Button(board_labels[index], ImVec2(40, 40))) {
-                    DEBUG("board tile was clicked.");
-                    // reset tile on left click
-                    board_labels[index] = empty_square_label;
+                ImGui::Button("  ", ImVec2(40, 40));
+                for (int col = 0; col < 15; ++col) {
+                    ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
+                    ImGui::Button(column_labels[col], ImVec2(40, 40));
                 }
-                if (ImGui::BeginDragDropTarget()) {
-                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_TILE")) {
-                        DEBUG("Accepting tile bank tile");
-                        const auto tile = *get_dnd_payload<int>(payload);
-                        assert(0 <= tile && tile < tile_labels.size());
-                        board_labels[index] = tile_labels[tile];
-
-                        if (tile == BlankTileNum) {
-                            DEBUG("Blank tile begin placed on board");
-                            ImGui::OpenPopup("BLANK_TILE_SELECTOR");
-                        }
-                    }
-                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_RACK_TILE")) {
-                        DEBUG("Accepting rack tile");
-                        const auto rack_index = *get_dnd_payload<int>(payload);
-                        assert(0 <= rack_index && rack_index < rack.size());
-                        board_labels[index] = tile_labels[rack[rack_index]];
-                        rack[rack_index] = EmptyTileNum;
-                    }
-                    ImGui::EndDragDropTarget();
-                }
-                ImGui::PopStyleColor(3);
-                ImGui::PopID();
-            }
-            ImGui::EndGroup();
-            ImGui::NewLine();
-        }
-        ImGui::EndGroup();
-        ImGui::NewLine();
-
-        { // rack
-            ImGui::BeginGroup();
-            for (int index = 0; index < rack.size(); ++index) {
-                const auto tile = rack[index];
-                ImGui::PushID(id++);
-                ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
-                if (ImGui::Button(tile_labels[tile], ImVec2(40, 40))) {
-                    // reset tile on left click
-                    rack[index] = EmptyTileNum;
-                }
-                if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
-                    ImGui::SetDragDropPayload("DND_RACK_TILE", &index, sizeof(index));
-                    ImGui::EndDragDropSource();
-                }
-                if (ImGui::BeginDragDropTarget()) {
-                    if (const auto* payload = ImGui::AcceptDragDropPayload("DND_TILE")) {
-                        rack[index] = *get_dnd_payload<int>(payload);
-                    }
-                    ImGui::EndDragDropTarget();
-                }
-                ImGui::PopID();
-            }
-            ImGui::EndGroup();
-            ImGui::NewLine();
-        }
-
-        // tile bank
-        ImGui::BeginGroup();
-        for (int tile = 0; tile < 2*26 + 1; ++tile) {
-            if (tile % 13 == 0) {
+                ImGui::EndGroup();
                 ImGui::NewLine();
             }
-            ImGui::PushID(id++);
-            ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
-            ImGui::Button(tile_labels[tile], ImVec2(40, 40));
-            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
-                ImGui::SetDragDropPayload("DND_TILE", &tile, sizeof(tile));
-                ImGui::EndDragDropSource();
+
+            int id = 0;
+            int index = 0;
+            for (int row = 0; row < 15; ++row) {
+                ImGui::BeginGroup();
+
+                { // Row Labels
+                    ImGui::PushID(id++);
+                    ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
+                    ImGui::Button(row_labels[row], ImVec2(40, 40));
+                    ImGui::PopID();
+                }
+
+                for (int col = 0; col < 15; ++col, ++index) {
+                    ImGui::PushID(id++);
+                    auto square_color = square_colors[index];
+                    ImGui::PushStyleColor(ImGuiCol_Button, square_color);
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, square_color);
+                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, square_color);
+                    ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
+                    if (ImGui::Button(board_labels[index], ImVec2(40, 40))) {
+                        DEBUG("board tile was clicked.");
+                        // reset tile on left click
+                        board_labels[index] = empty_square_label;
+                    }
+                    if (ImGui::BeginDragDropTarget()) {
+                        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_TILE")) {
+                            DEBUG("Accepting tile bank tile");
+                            const auto tile = *get_dnd_payload<int>(payload);
+                            assert(0 <= tile && tile < tile_labels.size());
+                            board_labels[index] = tile_labels[tile];
+
+                            if (tile == BlankTileNum) {
+                                DEBUG("Blank tile begin placed on board");
+                                ImGui::OpenPopup("BLANK_TILE_SELECTOR", ImGuiPopupFlags_AnyPopup | ImGuiPopupFlags_NoOpenOverExistingPopup);
+                            }
+                        }
+                        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_RACK_TILE")) {
+                            DEBUG("Accepting rack tile");
+                            const auto rack_index = *get_dnd_payload<int>(payload);
+                            assert(0 <= rack_index && rack_index < rack.size());
+                            board_labels[index] = tile_labels[rack[rack_index]];
+                            rack[rack_index] = EmptyTileNum;
+                        }
+                        ImGui::EndDragDropTarget();
+                    }
+                    ImGui::PopStyleColor(3);
+                    ImGui::PopID();
+                }
+                ImGui::EndGroup();
+                ImGui::NewLine();
             }
-            ImGui::PopID();
+            ImGui::EndGroup();
+            ImGui::NewLine();
+
+            ///////////////////////////////////////////////////////////////////
+            // TODO:
+            // Trying to figure out how to make a pop up selector for blank
+            // tiles. For some reason, the pop-up *does* work if I drive it
+            // with the below button, but it *does not* work if I do it in the
+            // DND target code above.
+            // ////////////////////////////////////////////////////////////////
+
+            if (ImGui::Button("Select...")) {
+                ImGui::OpenPopup("BLANK_TILE_SELECTOR");
+            }
+            ImGui::NewLine();
+
+            if (ImGui::BeginPopup("BLANK_TILE_SELECTOR")) {
+                DEBUG("BeginPopup returned true");
+                for (int tile = 26; tile < 2*26; ++tile) {
+                    ImGui::PushID(id++);
+                    ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
+                    ImGui::Button(tile_labels[tile], ImVec2(40, 40));
+                    ImGui::PopID();
+                    if (tile % 5 == 0) {
+                        ImGui::NewLine();
+                    }
+                }
+                ImGui::NewLine();
+                ImGui::EndPopup();
+            }
+
+            { // rack
+                ImGui::BeginGroup();
+                for (int index = 0; index < rack.size(); ++index) {
+                    const auto tile = rack[index];
+                    ImGui::PushID(id++);
+                    ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
+                    if (ImGui::Button(tile_labels[tile], ImVec2(40, 40))) {
+                        // reset tile on left click
+                        rack[index] = EmptyTileNum;
+                    }
+                    if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
+                        ImGui::SetDragDropPayload("DND_RACK_TILE", &index, sizeof(index));
+                        ImGui::EndDragDropSource();
+                    }
+                    if (ImGui::BeginDragDropTarget()) {
+                        if (const auto* payload = ImGui::AcceptDragDropPayload("DND_TILE")) {
+                            rack[index] = *get_dnd_payload<int>(payload);
+                        }
+                        ImGui::EndDragDropTarget();
+                    }
+                    ImGui::PopID();
+                }
+                ImGui::EndGroup();
+                ImGui::NewLine();
+            }
+
+            // tile bank
+            ImGui::BeginGroup();
+            for (int tile = 0; tile < 2*26 + 1; ++tile) {
+                if (tile % 13 == 0) {
+                    ImGui::NewLine();
+                }
+                ImGui::PushID(id++);
+                ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
+                ImGui::Button(tile_labels[tile], ImVec2(40, 40));
+                if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
+                    ImGui::SetDragDropPayload("DND_TILE", &tile, sizeof(tile));
+                    ImGui::EndDragDropSource();
+                }
+                ImGui::PopID();
+            }
+            ImGui::EndGroup();
+            ImGui::NewLine();
+
+            ImGui::BeginGroup();
+            if (ImGui::Button("Find Best Moves")) {
+                DEBUG("FindBestMoves button pressed");
+                cicero_init(&engine, cb.make_callbacks());
+
+                // cicero_load_position(&engine, board);
+                // cb.clear_legal_moves();
+                // cicero_generate_legal_moves(&engine, rack);
+                // auto legal_moves = cb.sorted_legal_moves();
+            }
+            ImGui::EndGroup();
+            ImGui::NewLine();
         }
-        ImGui::EndGroup();
-        ImGui::NewLine();
-
-        ImGui::BeginGroup();
-        if (ImGui::Button("Find Best Moves")) {
-            DEBUG("FindBestMoves button pressed");
-            cicero_init(&engine, cb.make_callbacks());
-
-            // cicero_load_position(&engine, board);
-            // cb.clear_legal_moves();
-            // cicero_generate_legal_moves(&engine, rack);
-            // auto legal_moves = cb.sorted_legal_moves();
-        }
-        ImGui::EndGroup();
-        ImGui::NewLine();
-
         ImGui::End();
 
 
