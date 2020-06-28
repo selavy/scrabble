@@ -377,9 +377,9 @@ int main(int argc, char** argv)
 
         { // rack
             ImGui::BeginGroup();
-            int index = 0;
+            // int index = 0;
             bool add_empty_rack_space = false;
-            for (auto* tile : rack) {
+            for (int index = 0; auto* tile : rack) {
                 ImGui::PushID(id++);
                 ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
                 if (ImGui::Button(tile, ImVec2(40, 40))) {
