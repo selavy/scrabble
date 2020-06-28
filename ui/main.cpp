@@ -187,6 +187,13 @@ private:
     std::vector<Move> legal_moves_;
 };
 
+template <class T>
+auto get_dnd_payload(const ImGuiPayload* payload) -> const T*
+{
+    IM_ASSERT(payload->DataSize == sizeof(T));
+    return static_cast<const T*>(payload->Data);
+}
+
 int main(int argc, char** argv)
 {
     // TODO: add argument parser
@@ -283,17 +290,30 @@ int main(int argc, char** argv)
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
     };
 
-    std::array<const char*, 27> tile_labels = {
+    std::array<const char*, 29> tile_labels = {
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
-        "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "?",
+        "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "?", "",
+        "@" // <<< signifies an error
     };
+    constexpr int BlankTileNum = 26;
+    constexpr int EmptyTileNum = 27;
+    constexpr int ErrorTileNum = 28;
+
+    // auto tile_label_to_tile_number = [&](const char* label) -> int
+    // {
+    //     auto found = std::find(std::begin(tile_labels), std::end(tile_labels), label);
+    //     if (found == std::end(tile_labels)) {
+    //         return ErrorTileNum;
+    //     }
+    //     return static_cast<int>(std::distance(std::begin(tile_labels), found));
+    // };
 
     const char* empty_square_label = "";
     std::array<const char*, 225> board_labels;
     std::fill(std::begin(board_labels), std::end(board_labels), empty_square_label);
 
-    std::array<const char*, 7> rack;
-    std::fill(std::begin(rack), std::end(rack), empty_square_label);
+    std::array<int, 7> rack;
+    std::fill(std::begin(rack), std::end(rack), EmptyTileNum);
     // std::vector<const char*> rack(7, empty_square_label);
     // rack.push_back(empty_square_label);
 
@@ -362,7 +382,7 @@ int main(int argc, char** argv)
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_TILE")) {
                         IM_ASSERT(payload->DataSize == sizeof(index));
                         int tile = *static_cast<const int*>(payload->Data);
-                        assert(0 <= tile && tile <= 27);
+                        assert(0 <= tile && tile < tile_labels.size());
                         board_labels[index] = tile_labels[tile];
                     }
                     ImGui::EndDragDropTarget();
@@ -377,42 +397,30 @@ int main(int argc, char** argv)
 
         { // rack
             ImGui::BeginGroup();
-            // int index = 0;
+            int index = 0;
             bool add_empty_rack_space = false;
-            for (int index = 0; auto* tile : rack) {
+            for (auto tile : rack) {
                 ImGui::PushID(id++);
                 ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
-                if (ImGui::Button(tile, ImVec2(40, 40))) {
-                    // button was clicked -- reset tile
-                    rack[index] = empty_square_label;
-                    printf("Button clicked\n");
+                if (ImGui::Button(tile_labels[tile], ImVec2(40, 40))) {
+                    // reset tile on left click
+                    rack[index] = EmptyTileNum;
                 }
                 if (ImGui::BeginDragDropTarget()) {
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_TILE")) {
-                        IM_ASSERT(payload->DataSize == sizeof(index));
-                        int newtile = *static_cast<const int*>(payload->Data);
-                        assert(0 <= newtile && newtile <= 27);
-                        rack[index] = tile_labels[newtile];
+                        // IM_ASSERT(payload->DataSize == sizeof(int));
+                        // rack[index] = *static_cast<const int*>(payload->Data);
+                        rack[index] = *get_dnd_payload<int>(payload);
                     }
                     ImGui::EndDragDropTarget();
+                }
+                if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
+                    ImGui::SetDragDropPayload("DND_TILE", &tile, sizeof(tile));
+                    ImGui::EndDragDropSource();
                 }
                 ++index;
                 ImGui::PopID();
             }
-
-            // // TODO: limit to 7 tiles?
-            // // update rack to always have 1 empty space at the end
-            // auto last = std::remove(std::begin(rack), std::end(rack), empty_square_label);
-            // auto num_empty = std::distance(last, std::end(rack));
-            // assert(num_empty >= 0);
-            // if (num_empty == 0) {
-            //     // need to add one
-            //     rack.push_back(empty_square_label);
-            // } else if (num_empty > 1) {
-            //     rack.erase(std::next(last), std::end(rack));
-            // }
-            // assert(std::count(std::begin(rack), std::end(rack), empty_square_label) == 1);
-
             ImGui::EndGroup();
             ImGui::NewLine();
         }
