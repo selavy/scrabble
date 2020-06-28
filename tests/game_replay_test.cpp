@@ -398,8 +398,7 @@ int main(int argc, char **argv)
         std::cerr << "unable to load dictionary from file: " << dictfile << std::endl;
         return 1;
     }
-    auto& dict = *maybe_dict;
-    auto cb = Callbacks{std::move(dict)};
+    auto cb = Callbacks{std::move(*maybe_dict)};
     auto logger = Logger{args["verbose"].as<bool>() ? Logger::Level::eDebug : Logger::Level::eInfo};
 
     for (const auto& filename : gamefiles) {

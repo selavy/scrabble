@@ -6,12 +6,18 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <iostream>
 
 #include <fmt/format.h>
+#include <fmt/ostream.h>
 
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+
+#include <cicero/cicero.h>
+#include <scrabble.h>
+#include <mafsa++.h>
 
 static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
@@ -113,8 +119,86 @@ ImVec4 square_colors[225] = {
 };
 // clang-format on
 
+struct Callbacks
+{
+    using Move = scrabble::Move;
+
+    Callbacks(Mafsa&& m) noexcept : mafsa_{std::move(m)}, legal_moves_{} {}
+
+    static cicero_edges prefix_edges(void* data, const char* prefix) noexcept
+    {
+        auto* self = reinterpret_cast<const Callbacks*>(data);
+        return self->prefix_edges_(prefix);
+    }
+
+    static void on_legal_move(void* data, const char* word, int square, int direction) noexcept
+    {
+        auto* self = reinterpret_cast<Callbacks*>(data);
+        return self->on_legal_move_(word, square, direction);
+    }
+
+    void clear_legal_moves() noexcept
+    {
+        legal_moves_.clear();
+    }
+
+    std::vector<Move> sorted_legal_moves() const noexcept
+    {
+        auto result = legal_moves_;
+        std::sort(result.begin(), result.end());
+        return result;
+    }
+
+    cicero_callbacks make_callbacks() const noexcept
+    {
+        cicero_callbacks cb;
+        cb.onlegal = &Callbacks::on_legal_move;
+        cb.getedges = &Callbacks::prefix_edges;
+        cb.onlegaldata = this;
+        cb.getedgesdata = this;
+        return cb;
+    }
+
+    bool isword(const std::string& word) const noexcept
+    {
+        return mafsa_.isword(word);
+    }
+
+private:
+    cicero_edges prefix_edges_(const char* prefix) const noexcept
+    {
+        cicero_edges out;
+        auto edges = mafsa_.get_edges(prefix);
+        static_assert(sizeof(edges) == sizeof(out));
+        memcpy(&out, &edges, sizeof(out));
+        return out;
+    }
+
+    void on_legal_move_(const char* word, int square, int direction)
+    {
+        legal_moves_.emplace_back();
+        legal_moves_.back().square = scrabble::Square{square};
+        legal_moves_.back().direction = static_cast<scrabble::Direction>(direction);
+        legal_moves_.back().word = word;
+        legal_moves_.back().score = -1;
+    }
+
+    Mafsa             mafsa_;
+    std::vector<Move> legal_moves_;
+};
+
 int main(int argc, char** argv)
 {
+    // TODO: add argument parser
+    auto dictfile = "csw19.dict.gz";
+    auto maybe_dict = Mafsa::load(dictfile);
+    if (!maybe_dict) {
+        fmt::print(std::cerr, "Unable to load dictionary from file: '{}'\n", dictfile);
+        return 1;
+    }
+    auto cb = Callbacks{std::move(*maybe_dict)};
+    cicero engine;
+
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
         return 1;
@@ -208,6 +292,11 @@ int main(int argc, char** argv)
     std::array<const char*, 225> board_labels;
     std::fill(std::begin(board_labels), std::end(board_labels), empty_square_label);
 
+    std::array<const char*, 7> rack;
+    std::fill(std::begin(rack), std::end(rack), empty_square_label);
+    // std::vector<const char*> rack(7, empty_square_label);
+    // rack.push_back(empty_square_label);
+
     // Main loop
     while (!glfwWindowShouldClose(window)) {
         // Poll and handle events (inputs, window resize, etc.)
@@ -244,20 +333,21 @@ int main(int argc, char** argv)
             ImGui::NewLine();
         }
 
+        int id = 0;
         int index = 0;
         for (int row = 0; row < 15; ++row) {
             ImGui::BeginGroup();
 
             { // Row Labels
-                // ImGui::PushID(index);
+                ImGui::PushID(id++);
                 ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
                 ImGui::Button(row_labels[row], ImVec2(40, 40));
-                // ImGui::PopID();
+                ImGui::PopID();
             }
 
             for (int col = 0; col < 15; ++col, ++index) {
                 auto square_color = square_colors[index];
-                ImGui::PushID(index);
+                ImGui::PushID(id++);
                 // ImGui::PushStyleColor(ImGuiCol_Text, TileTextColor[tile_color]);
                 ImGui::PushStyleColor(ImGuiCol_Button, square_color);
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, square_color);
@@ -285,18 +375,77 @@ int main(int argc, char** argv)
         ImGui::EndGroup();
         ImGui::NewLine();
 
+        { // rack
+            ImGui::BeginGroup();
+            int index = 0;
+            bool add_empty_rack_space = false;
+            for (auto* tile : rack) {
+                ImGui::PushID(id++);
+                ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
+                if (ImGui::Button(tile, ImVec2(40, 40))) {
+                    // button was clicked -- reset tile
+                    rack[index] = empty_square_label;
+                    printf("Button clicked\n");
+                }
+                if (ImGui::BeginDragDropTarget()) {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_TILE")) {
+                        IM_ASSERT(payload->DataSize == sizeof(index));
+                        int newtile = *static_cast<const int*>(payload->Data);
+                        assert(0 <= newtile && newtile <= 27);
+                        rack[index] = tile_labels[newtile];
+                    }
+                    ImGui::EndDragDropTarget();
+                }
+                ++index;
+                ImGui::PopID();
+            }
+
+            // // TODO: limit to 7 tiles?
+            // // update rack to always have 1 empty space at the end
+            // auto last = std::remove(std::begin(rack), std::end(rack), empty_square_label);
+            // auto num_empty = std::distance(last, std::end(rack));
+            // assert(num_empty >= 0);
+            // if (num_empty == 0) {
+            //     // need to add one
+            //     rack.push_back(empty_square_label);
+            // } else if (num_empty > 1) {
+            //     rack.erase(std::next(last), std::end(rack));
+            // }
+            // assert(std::count(std::begin(rack), std::end(rack), empty_square_label) == 1);
+
+            ImGui::EndGroup();
+            ImGui::NewLine();
+        }
+
         // tile bank
         ImGui::BeginGroup();
         for (int tile = 0; tile < 27; ++tile) {
             if (tile % 13 == 0) {
                 ImGui::NewLine();
             }
+            ImGui::PushID(id++);
             ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
             ImGui::Button(tile_labels[tile], ImVec2(40, 40));
             if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
                 ImGui::SetDragDropPayload("DND_TILE", &tile, sizeof(tile));
                 ImGui::EndDragDropSource();
             }
+            ImGui::PopID();
+        }
+        ImGui::EndGroup();
+        ImGui::NewLine();
+
+        ImGui::BeginGroup();
+        if (ImGui::Button("Find Best Moves")) {
+            printf("Button was pressed\n");
+            cicero_init(&engine, cb.make_callbacks());
+
+            // TODO: need to add rack input
+
+            // cicero_load_position(&engine, board);
+            // cb.clear_legal_moves();
+            // cicero_generate_legal_moves(&engine, rack);
+            // auto legal_moves = cb.sorted_legal_moves();
         }
         ImGui::EndGroup();
         ImGui::NewLine();
