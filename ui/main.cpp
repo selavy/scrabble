@@ -37,7 +37,8 @@ static void HelpMarker(const char* desc) {
     }
 }
 
-constexpr ImVec4 MakeColor(float r, float g, float b, float a = 255) noexcept
+// TODO: need ImVec4 to be constexpr
+/*constexpr*/ ImVec4 MakeColor(float r, float g, float b, float a = 255) noexcept
 {
     float sc = 1.0f/255.0f;
     float x = r * sc;
@@ -48,19 +49,19 @@ constexpr ImVec4 MakeColor(float r, float g, float b, float a = 255) noexcept
 }
 
 // clang-format off
-constexpr std::array<ImVec4, 3> TileTextColor = {
+/*constexpr*/ std::array<ImVec4, 3> TileTextColor = {
     MakeColor(  0,   0, 178), // blue -- Player 1
     MakeColor(178,   0,   0), // red  -- Player 2
     MakeColor(255, 255, 255), // white -- Normal
 };
 // TODO(peter): switch these to enums to index into array of images
-constexpr ImVec4 DoubleWordSquareColor   = MakeColor(250, 145, 145); // salmon
-constexpr ImVec4 TripleWordSquareColor   = MakeColor(215,   0,  75); // red
-constexpr ImVec4 DoubleLetterSquareColor = MakeColor( 50,  50, 233); // dark blue
-constexpr ImVec4 TripleLetterSquareColor = MakeColor(150, 200, 250); // light blue
-constexpr ImVec4 EmptySquareColor        = MakeColor( 66,  66,  66); // gray
-constexpr ImVec4 TileSquareColor         = MakeColor(120,  81,  45); // oak
-constexpr ImVec4 TileHoverSquareColor    = MakeColor(206, 187, 158); // light oak
+/*constexpr*/ ImVec4 DoubleWordSquareColor   = MakeColor(250, 145, 145); // salmon
+/*constexpr*/ ImVec4 TripleWordSquareColor   = MakeColor(215,   0,  75); // red
+/*constexpr*/ ImVec4 DoubleLetterSquareColor = MakeColor( 50,  50, 233); // dark blue
+/*constexpr*/ ImVec4 TripleLetterSquareColor = MakeColor(150, 200, 250); // light blue
+/*constexpr*/ ImVec4 EmptySquareColor        = MakeColor( 66,  66,  66); // gray
+/*constexpr*/ ImVec4 TileSquareColor         = MakeColor(120,  81,  45); // oak
+/*constexpr*/ ImVec4 TileHoverSquareColor    = MakeColor(206, 187, 158); // light oak
 ImVec4 square_colors[225] = {
     TripleWordSquareColor  , EmptySquareColor       , EmptySquareColor       , DoubleLetterSquareColor,
     EmptySquareColor       , EmptySquareColor       , EmptySquareColor       , TripleWordSquareColor  ,

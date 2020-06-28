@@ -18,7 +18,32 @@ option(GLFW_INSTALL OFF)
 option(GLFW_VULKAN_STATIC OFF)
 add_subdirectory(glfw)
 
-add_subdirectory(imgui)
+# add_subdirectory(imgui)
+add_library(ImGui
+    ./imgui/imgui.cpp
+    ./imgui/imgui_demo.cpp
+    ./imgui/imgui_draw.cpp
+    ./imgui/examples/imgui_impl_glfw.cpp
+    ./imgui/examples/imgui_impl_opengl3.cpp
+    ./imgui/imgui_widgets.cpp
+    # ./imgui/imconfig.h
+    # ./imgui/imgui.h
+    # ./imgui/examples/imgui_impl_glfw.h
+    # ./imgui/examples/imgui_impl_opengl3.h
+    # ./imgui/imgui_internal.h
+    # ./imgui/imstb_rectpack.h
+    # ./imgui/imstb_textedit.h
+    # ./imgui/imstb_truetype.h
+)
+target_compile_definitions(ImGui PRIVATE IMGUI_IMPL_OPENGL_LOADER_GL3W)
+target_include_directories(ImGui PUBLIC imgui imgui/examples)
+target_link_libraries(ImGui
+    PUBLIC
+        cxx_project_options
+        OpenGL::GL
+        glfw
+        GL3W
+    )
 
 option(CATCH_USE_VALGRIND "Perform SelfTests with Valgrind" OFF)
 option(CATCH_BUILD_TESTING "Build SelfTest project" OFF)
