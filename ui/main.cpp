@@ -319,22 +319,30 @@ int main(int argc, char** argv)
 
     const char* square_text = "";
 
-    std::array<const char*, 15> column_labels = {
+    constexpr std::array<const char*, 15> column_labels = {
         " 1", " 2", " 3", " 4", " 5", " 6", " 7", " 8", " 9", "10", "11",
         "12", "13", "14", "15",
     };
-    std::array<const char*, 15> row_labels = {
+    constexpr std::array<const char*, 15> row_labels = {
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
     };
 
-    std::array<const char*, 29> tile_labels = {
+    constexpr std::array<const char*, 55> tile_labels = {
+        // regular tiles
         "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
-        "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "?", "",
-        "@" // <<< signifies an error
+        "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+        // blanks on board
+        "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o",
+        "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+        // special tiles
+        "?", // blank tile in rack
+        "",  // empty tile
+        "@"  // <<< signifies an error
     };
-    constexpr int BlankTileNum = 26;
-    constexpr int EmptyTileNum = 27;
-    constexpr int ErrorTileNum = 28;
+    constexpr int ErrorTileNum = 54;
+    constexpr int EmptyTileNum = ErrorTileNum - 1;
+    constexpr int BlankTileNum = EmptyTileNum - 1;
+    static_assert(ErrorTileNum == tile_labels.size() - 1);
 
     // auto tile_label_to_tile_number = [&](const char* label) -> int
     // {
@@ -418,6 +426,10 @@ int main(int argc, char** argv)
                         const auto tile = *get_dnd_payload<int>(payload);
                         assert(0 <= tile && tile < tile_labels.size());
                         board_labels[index] = tile_labels[tile];
+
+                        if (tile == BlankTileNum) {
+                            DEBUG("Blank tile begin placed on board");
+                        }
                     }
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_RACK_TILE")) {
                         DEBUG("Accepting rack tile");
@@ -466,7 +478,7 @@ int main(int argc, char** argv)
 
         // tile bank
         ImGui::BeginGroup();
-        for (int tile = 0; tile < 27; ++tile) {
+        for (int tile = 0; tile < 2*26 + 1; ++tile) {
             if (tile % 13 == 0) {
                 ImGui::NewLine();
             }
@@ -486,8 +498,6 @@ int main(int argc, char** argv)
         if (ImGui::Button("Find Best Moves")) {
             DEBUG("FindBestMoves button pressed");
             cicero_init(&engine, cb.make_callbacks());
-
-            // TODO: need to add rack input
 
             // cicero_load_position(&engine, board);
             // cb.clear_legal_moves();
