@@ -397,6 +397,19 @@ int main(int argc, char** argv)
         }
 
         int id = 0;
+        {
+            if (ImGui::BeginPopup("BLANK_TILE_SELECTOR")) {
+                ImGui::PushID(id++);
+                if (ImGui::BeginChild("BLANK_TILE_SELECTOR_WINDOW")) {
+                    ImGui::Text("%s", "Hello, World");
+                    // ImGui::Button()
+                }
+                ImGui::EndChild();
+                ImGui::EndPopup();
+                ImGui::PopID();
+            }
+        }
+
         int index = 0;
         for (int row = 0; row < 15; ++row) {
             ImGui::BeginGroup();
@@ -429,6 +442,7 @@ int main(int argc, char** argv)
 
                         if (tile == BlankTileNum) {
                             DEBUG("Blank tile begin placed on board");
+                            ImGui::OpenPopup("BLANK_TILE_SELECTOR");
                         }
                     }
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_RACK_TILE")) {
@@ -451,7 +465,6 @@ int main(int argc, char** argv)
 
         { // rack
             ImGui::BeginGroup();
-            bool add_empty_rack_space = false;
             for (int index = 0; index < rack.size(); ++index) {
                 const auto tile = rack[index];
                 ImGui::PushID(id++);
@@ -460,15 +473,15 @@ int main(int argc, char** argv)
                     // reset tile on left click
                     rack[index] = EmptyTileNum;
                 }
-                if (ImGui::BeginDragDropTarget()) {
-                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_TILE")) {
-                        rack[index] = *get_dnd_payload<int>(payload);
-                    }
-                    ImGui::EndDragDropTarget();
-                }
                 if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
                     ImGui::SetDragDropPayload("DND_RACK_TILE", &index, sizeof(index));
                     ImGui::EndDragDropSource();
+                }
+                if (ImGui::BeginDragDropTarget()) {
+                    if (const auto* payload = ImGui::AcceptDragDropPayload("DND_TILE")) {
+                        rack[index] = *get_dnd_payload<int>(payload);
+                    }
+                    ImGui::EndDragDropTarget();
                 }
                 ImGui::PopID();
             }
