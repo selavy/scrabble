@@ -7,6 +7,7 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <variant>
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
@@ -18,6 +19,8 @@
 #include <cicero/cicero.h>
 #include <scrabble.h>
 #include <mafsa++.h>
+
+#define DEBUG(format, ...) fmt::print(std::cerr, "[DEBUG ({:s})]: " format "\n", __func__, ##__VA_ARGS__)
 
 static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
@@ -194,6 +197,40 @@ auto get_dnd_payload(const ImGuiPayload* payload) -> const T*
     return static_cast<const T*>(payload->Data);
 }
 
+struct TileBankToRackAction
+{
+    int newtile;
+    int oldtile;
+    int rackidx;
+};
+
+struct RackTileToBoardAction
+{
+    int oldtile;
+    int newtile;
+    int rackidx;
+    int sq;
+};
+
+struct ClearBoardTileAction
+{
+    int tile;
+    int sq;
+};
+
+struct ClearRackTileAction
+{
+    int tile;
+    int rackidx;
+};
+
+using Action = std::variant<
+      TileBankToRackAction
+    , RackTileToBoardAction
+    , ClearBoardTileAction
+    , ClearRackTileAction
+>;
+
 int main(int argc, char** argv)
 {
     // TODO: add argument parser
@@ -314,8 +351,6 @@ int main(int argc, char** argv)
 
     std::array<int, 7> rack;
     std::fill(std::begin(rack), std::end(rack), EmptyTileNum);
-    // std::vector<const char*> rack(7, empty_square_label);
-    // rack.push_back(empty_square_label);
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -373,19 +408,19 @@ int main(int argc, char** argv)
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive, square_color);
                 ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
                 if (ImGui::Button(board_labels[index], ImVec2(40, 40))) {
-                    printf("board tile was clicked.\n");
+                    DEBUG("board tile was clicked.");
                     // reset tile on left click
                     board_labels[index] = empty_square_label;
                 }
                 if (ImGui::BeginDragDropTarget()) {
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_TILE")) {
-                        printf("Accepting tile bank tile\n");
+                        DEBUG("Accepting tile bank tile");
                         const auto tile = *get_dnd_payload<int>(payload);
                         assert(0 <= tile && tile < tile_labels.size());
                         board_labels[index] = tile_labels[tile];
                     }
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_RACK_TILE")) {
-                        printf("Accepting rack tile\n");
+                        DEBUG("Accepting rack tile");
                         const auto rack_index = *get_dnd_payload<int>(payload);
                         assert(0 <= rack_index && rack_index < rack.size());
                         board_labels[index] = tile_labels[rack[rack_index]];
@@ -404,9 +439,9 @@ int main(int argc, char** argv)
 
         { // rack
             ImGui::BeginGroup();
-            int index = 0;
             bool add_empty_rack_space = false;
-            for (auto tile : rack) {
+            for (int index = 0; index < rack.size(); ++index) {
+                const auto tile = rack[index];
                 ImGui::PushID(id++);
                 ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
                 if (ImGui::Button(tile_labels[tile], ImVec2(40, 40))) {
@@ -415,21 +450,14 @@ int main(int argc, char** argv)
                 }
                 if (ImGui::BeginDragDropTarget()) {
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_TILE")) {
-                        // IM_ASSERT(payload->DataSize == sizeof(int));
-                        // rack[index] = *static_cast<const int*>(payload->Data);
                         rack[index] = *get_dnd_payload<int>(payload);
                     }
                     ImGui::EndDragDropTarget();
                 }
                 if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
                     ImGui::SetDragDropPayload("DND_RACK_TILE", &index, sizeof(index));
-                    // TODO(peter): if want to clear rack when the tile is
-                    // dropped, then should instead make a different name/type
-                    // of DND and send the rack index so it can be cleared
-                    // rack[index] = EmptyTileNum;
                     ImGui::EndDragDropSource();
                 }
-                ++index;
                 ImGui::PopID();
             }
             ImGui::EndGroup();
@@ -456,7 +484,7 @@ int main(int argc, char** argv)
 
         ImGui::BeginGroup();
         if (ImGui::Button("Find Best Moves")) {
-            printf("Button was pressed\n");
+            DEBUG("FindBestMoves button pressed");
             cicero_init(&engine, cb.make_callbacks());
 
             // TODO: need to add rack input
