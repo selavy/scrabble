@@ -176,6 +176,8 @@ cicero_api void cicero_undo_move(cicero *e, const cicero_savepos* sp,
 // will call `onlegal` callback with all legal moves from `rack`
 cicero_api void cicero_generate_legal_moves(const cicero *e, cicero_rack rack);
 
+// TODO: maybe this function shouldn't be part of the public api since it is
+//       easy to mess up
 // precondition: `move` was just played
 cicero_api int  cicero_score_move(const cicero *e, const cicero_move *move);
 

@@ -1,5 +1,6 @@
 #include <catch2/catch.hpp>
 #include "test_helpers.h"
+#include <sstream>
 
 
 TEST_CASE("Cicero score first move")
@@ -191,4 +192,63 @@ TEST_CASE("Test from CF589 vs whatnoloan")
         auto score2 = cicero_make_move(&engine, &sp, &cicero_move);
         CHECK(score2 == score);
     }
+}
+
+TEST_CASE("Words with friends scoring")
+{
+    std::string position = R"(
+     1   2   3   4   5   6   7   8   9   0   1   2   3   4   5
+   -------------------------------------------------------------
+A  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
+   -------------------------------------------------------------
+B  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
+   -------------------------------------------------------------
+C  |   |   | W |   | V |   |   |   | Y |   |   |   |   |   |   |
+   -------------------------------------------------------------
+D  | A | N | I | M | A | L |   | T | O |   |   |   |   |   |   |
+   -------------------------------------------------------------
+E  |   |   | S |   | D |   | H | I | M |   |   |   | T |   |   |
+   -------------------------------------------------------------
+F  |   | C | H | E | A | P | O | S |   | Q | U | E | E | R |   |
+   -------------------------------------------------------------
+G  |   | O |   |   |   | R |   |   |   |   |   |   | N |   |   |
+   -------------------------------------------------------------
+H  | O | D |   | T | R | I | A | L |   |   |   |   | T |   |   |
+   -------------------------------------------------------------
+I  | M | E |   |   |   | N |   | A | H |   | F | O | H |   |   |
+   -------------------------------------------------------------
+J  | E | S |   |   |   | T |   | Z | A | Y | I | N | S |   |   |
+   -------------------------------------------------------------
+K  | G |   |   |   |   | S |   | I | R | A | D | E |   |   |   |
+   -------------------------------------------------------------
+L  | A |   |   |   |   |   | N | E | K |   |   |   |   |   |   |
+   -------------------------------------------------------------
+M  |   |   |   |   |   |   |   | R |   |   |   |   |   |   |   |
+   -------------------------------------------------------------
+N  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
+   -------------------------------------------------------------
+O  |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
+   -------------------------------------------------------------
+
+Rack: "AEHIOPX"
+    )";
+
+    std::stringstream ss{position};
+    auto res = scrabble::read_board(ss);
+    REQUIRE(res);
+    auto&& [board, _] = *res;
+
+    auto cb = make_callbacks();
+    cicero engine;
+    cicero_savepos sp;
+    cicero_init_wwf(&engine, cb.make_callbacks());
+    cicero_load_position(&engine, board.data());
+
+    std::string isc  = "12D vie";
+    auto move  = scrabble::Move::from_isc_spec(isc);
+    auto emove = scrabble::EngineMove::make(&engine, move);
+    auto cmove = emove.move;
+    INFO("Board before:\n" << engine);
+    int score = cicero_make_move(&engine, &sp, &cmove);
+    CHECK(score == 19);
 }

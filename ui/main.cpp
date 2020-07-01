@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <iostream>
 #include <variant>
+#include <fstream>
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
@@ -21,6 +22,7 @@
 #include <mafsa++.h>
 
 #define DEBUG(format, ...) fmt::print(std::cerr, "[DEBUG ({:s})]: " format "\n", __func__, ##__VA_ARGS__)
+#define INFO(format, ...)  fmt::print(std::cerr, "[INFO  ({:s})]: " format "\n", __func__, ##__VA_ARGS__)
 
 static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
@@ -185,6 +187,7 @@ private:
         legal_moves_.back().direction = static_cast<scrabble::Direction>(direction);
         legal_moves_.back().word = word;
         legal_moves_.back().score = -1;
+        DEBUG("Found legal move: {}", legal_moves_.back());
     }
 
     Mafsa             mafsa_;
@@ -232,10 +235,52 @@ using Action = std::variant<
     , ClearRackTileAction
 >;
 
+inline std::ostream& operator<<(std::ostream& os, const cicero& engine)
+{
+    auto print_row = [&os](const cicero& e, int row) {
+        for (int col = 0; col < Dim - 1; ++col) {
+            os << cicero_tile_on_square(&e, row*Dim + col) << " | ";
+        }
+        os << cicero_tile_on_square(&e, row*Dim + (Dim - 1));
+    };
+    const auto* b = engine.vals;
+    os << "     1   2   3   4   5   6   7   8   9   0   1   2   3   4   5  \n";
+    os << "   -------------------------------------------------------------\n";
+    for (int row = 0; row < Dim; ++row) {
+        os << static_cast<char>('A' + row) << "  | ";
+        print_row(engine, row);
+        os << " |\n";
+        os << "   -------------------------------------------------------------\n";
+    }
+    return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, const cicero_rack& rack)
+{
+    os << "\"";
+    int num_tiles = 0;
+    for (int i = 0; i < 26; ++i) {
+        for (int j = 0; j < rack.tiles[i]; ++j) {
+            os << static_cast<char>(i + 'A');
+            ++num_tiles;
+        }
+    }
+    for (int i = 0; i < rack.tiles[26]; ++i) {
+        os << "?";
+        ++num_tiles;
+    }
+    while (num_tiles++ < 7) {
+        os << " ";
+    }
+    os << "\"";
+    return os;
+}
+
 int main(int argc, char** argv)
 {
     // TODO: add argument parser
-    auto dictfile = "csw19.dict.gz";
+    // auto dictfile = "csw19.dict.gz";
+    auto dictfile = "enable1.dict.gz";
     auto maybe_dict = Mafsa::load(dictfile);
     if (!maybe_dict) {
         fmt::print(std::cerr, "Unable to load dictionary from file: '{}'\n", dictfile);
@@ -337,7 +382,7 @@ int main(int argc, char** argv)
         "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
         // special tiles
         "?", // blank tile in rack
-        "",  // empty tile
+        " ",  // empty tile
         "@"  // <<< signifies an error
     };
     constexpr int ErrorTileNum = 54;
@@ -345,21 +390,48 @@ int main(int argc, char** argv)
     constexpr int BlankTileNum = EmptyTileNum - 1;
     static_assert(ErrorTileNum == tile_labels.size() - 1);
 
-    // auto tile_label_to_tile_number = [&](const char* label) -> int
-    // {
-    //     auto found = std::find(std::begin(tile_labels), std::end(tile_labels), label);
-    //     if (found == std::end(tile_labels)) {
-    //         return ErrorTileNum;
-    //     }
-    //     return static_cast<int>(std::distance(std::begin(tile_labels), found));
-    // };
+    auto tile_label_to_tile_number = [&](const char* label) -> int
+    {
+        auto found = std::find(std::begin(tile_labels), std::end(tile_labels), label);
+        if (found == std::end(tile_labels)) {
+            return ErrorTileNum;
+        }
+        return static_cast<int>(std::distance(std::begin(tile_labels), found));
+    };
 
-    const char* empty_square_label = "";
-    std::array<const char*, 225> board_labels;
-    std::fill(std::begin(board_labels), std::end(board_labels), empty_square_label);
+    std::array<int, 225> board_labels;
+    std::fill(std::begin(board_labels), std::end(board_labels), EmptyTileNum);
 
     std::array<int, 7> rack;
     std::fill(std::begin(rack), std::end(rack), EmptyTileNum);
+
+    if (argc >= 2) {
+        const char* filename = argv[1];
+        auto res = scrabble::read_board(filename);
+        if (res) {
+            auto&& [board_, rack_] = *res;
+            for (std::size_t i = 0; i < rack_.size() && i < rack.size(); ++i) {
+                auto ch = rack_[i];
+                rack[i] = ch == ' ' ? EmptyTileNum : ch - 'A';
+            }
+
+            for (std::size_t i = 0; i < board_.size(); ++i) {
+                auto ch = board_[i];
+                if (ch == ' ') {
+                    board_labels[i] = EmptyTileNum;
+                } else if ('A' <= ch && ch <= 'Z') {
+                    board_labels[i] = ch - 'A';
+                } else if ('a' <= ch && ch <= 'z') {
+                    board_labels[i] = (ch - 'a') + 26;
+                } else {
+                    DEBUG("Invalid tile: {}", ch);
+                }
+            }
+
+            DEBUG("Position loaded from file {}!", filename);
+        }
+
+    }
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -415,17 +487,17 @@ int main(int argc, char** argv)
                     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, square_color);
                     ImGui::PushStyleColor(ImGuiCol_ButtonActive, square_color);
                     ImGui::SameLine(/*offset_from_start_x*/0., /*spacing*/5.);
-                    if (ImGui::Button(board_labels[index], ImVec2(40, 40))) {
+                    if (ImGui::Button(tile_labels[board_labels[index]], ImVec2(40, 40))) {
                         DEBUG("board tile was clicked.");
                         // reset tile on left click
-                        board_labels[index] = empty_square_label;
+                        board_labels[index] = EmptyTileNum;
                     }
                     if (ImGui::BeginDragDropTarget()) {
                         if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_TILE")) {
                             DEBUG("Accepting tile bank tile");
                             const auto tile = *get_dnd_payload<int>(payload);
                             assert(0 <= tile && tile < tile_labels.size());
-                            board_labels[index] = tile_labels[tile];
+                            board_labels[index] = tile;
 
                             if (tile == BlankTileNum) {
                                 DEBUG("Blank tile begin placed on board");
@@ -436,7 +508,7 @@ int main(int argc, char** argv)
                             DEBUG("Accepting rack tile");
                             const auto rack_index = *get_dnd_payload<int>(payload);
                             assert(0 <= rack_index && rack_index < rack.size());
-                            board_labels[index] = tile_labels[rack[rack_index]];
+                            board_labels[index] = rack[rack_index];
                             rack[rack_index] = EmptyTileNum;
                         }
                         ImGui::EndDragDropTarget();
@@ -525,12 +597,49 @@ int main(int argc, char** argv)
             ImGui::BeginGroup();
             if (ImGui::Button("Find Best Moves")) {
                 DEBUG("FindBestMoves button pressed");
-                cicero_init(&engine, cb.make_callbacks());
+                cicero_init_wwf(&engine, cb.make_callbacks());
+                cicero_rack erack;
+                memset(&erack, 0, sizeof(erack));
+                for (auto tilenum : rack) {
+                    if (tilenum == EmptyTileNum) {
+                        continue;
+                    }
+                    if ((0 <= tilenum && tilenum < 26) || tilenum == BlankTileNum) {
+                        char tile = tile_labels[tilenum][0];
+                        DEBUG("Adding tile {} to rack", tile);
+                        cicero_rack_add_tile(&erack, tile);
+                    }
+                }
 
-                // cicero_load_position(&engine, board);
-                // cb.clear_legal_moves();
-                // cicero_generate_legal_moves(&engine, rack);
-                // auto legal_moves = cb.sorted_legal_moves();
+                DEBUG("Generating board");
+                char board[225];
+                for (std::size_t i = 0; i < board_labels.size(); ++i) {
+                    board[i] = tile_labels[board_labels[i]][0];
+                }
+
+                cicero_load_position(&engine, board);
+                DEBUG("Board:\n{}\nRack: {}", engine, erack);
+
+                DEBUG("Generating legal moves...");
+                cb.clear_legal_moves();
+                cicero_generate_legal_moves(&engine, erack);
+                DEBUG("Finished generating legal moves...");
+                auto moves = cb.sorted_legal_moves();
+                cicero_savepos sp;
+                for (auto& move : moves) {
+                    auto emove = scrabble::EngineMove::make(&engine, move);
+                    auto cmove = emove.move;
+                    move.score = cicero_make_move(&engine, &sp, &cmove);
+                    cicero_undo_move(&engine, &sp, &cmove);
+                }
+                std::sort(moves.begin(), moves.end(),
+                        [](const auto& m1, const auto& m2) {
+                            return m1.score > m2.score;
+                        });
+                auto N = std::min<std::size_t>(moves.size(), 20u);
+                for (std::size_t i = 0; i < N; ++i) {
+                    INFO("{}", moves[i]);
+                }
             }
             ImGui::EndGroup();
             ImGui::NewLine();

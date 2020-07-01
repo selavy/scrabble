@@ -265,7 +265,7 @@ int cicero_make_move(cicero *e, cicero_savepos *sp, const cicero_move *move)
     return score;
 }
 
-// TODO: need to be able to re-calculate from a given state
+// TODO: add safety checks that the position makes some sense
 void cicero_load_position(cicero* e, char board[225])
 {
     char *vals = e->vals;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <array>
 #include <stdexcept>
 #include <utility>
 #include <cstring>
@@ -233,6 +234,19 @@ std::ostream& operator<<(std::ostream& os, const std::vector<Move>& moves);
 bool operator==(const std::vector<Move>& lhs, const std::vector<Move>& rhs) noexcept;
 bool operator!=(const std::vector<Move>& lhs, const std::vector<Move>& rhs) noexcept;
 
+struct BoardAndRack
+{
+    BoardAndRack()
+    {
+        std::fill(std::begin(board), std::end(board), ' ');
+    }
+    std::array<char, 225> board;
+    std::string           rack = {};
+};
+
+std::optional<BoardAndRack> read_board(const char* filename);
+std::optional<BoardAndRack> read_board(std::istream& ifs);
+
 } // scrabble
 
 // for now putting this out here because ADL doesn't trigger since cicero_rack
@@ -243,4 +257,3 @@ constexpr scrabble::Square IXSQ(const char *const name) noexcept
 {
     return scrabble::Square{IX(name)};
 }
-

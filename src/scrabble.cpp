@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <cassert>
 #include <re2/re2.h>
+#include <fstream>
 
 
 namespace scrabble {
@@ -187,6 +188,66 @@ EngineMove EngineMove::make(const cicero* engine, const scrabble::Move& move)
     return result;
 }
 
+std::string stripline(const std::string& line)
+{
+    auto first = std::find_if_not(line.begin(), line.end(), isspace);
+    auto rlast = std::find_if_not(line.rbegin(), line.rend(), isspace);
+    auto last  = rlast.base();
+    auto pos   = std::distance(line.begin(), first);
+    auto count = std::distance(first, last);
+    assert(0 <= pos && pos <= static_cast<int>(line.size()));
+    assert(0 <= (pos + count) && (pos + count) <= static_cast<int>(line.size()));
+    using size_type = std::string::size_type;
+    return line.substr(static_cast<size_type>(pos), static_cast<size_type>(count));
+}
+
+std::istream& getline_stripped(std::istream& ifs, std::string& line) {
+    std::getline(ifs, line);
+    line = stripline(line);
+    return ifs;
+}
+
+// re2::RE2 board_row_regex = R"(([A-O])  \|(?: ([a-zA-Z ]) \|){15}\s*)";
+re2::RE2 board_row_regex = R"(([A-O])  \| ([a-zA-Z ]) \| ([a-zA-Z ]) \| ([a-zA-Z ]) \| ([a-zA-Z ]) \| ([a-zA-Z ]) \| ([a-zA-Z ]) \| ([a-zA-Z ]) \| ([a-zA-Z ]) \| ([a-zA-Z ]) \| ([a-zA-Z ]) \| ([a-zA-Z ]) \| ([a-zA-Z ]) \| ([a-zA-Z ]) \| ([a-zA-Z ]) \| ([a-zA-Z ]) \|)";
+re2::RE2 rack_regex      = R"(\s*Rack:\s*\"([A-Z\?]{0,7})\")";
+
+std::optional<BoardAndRack> read_board(const char* filename)
+{
+    assert(board_row_regex.ok());
+    std::ifstream ifs(filename);
+    if (!ifs) {
+        return std::nullopt;
+    }
+    return read_board(ifs);
+}
+
+std::optional<BoardAndRack> read_board(std::istream& ifs)
+{
+    BoardAndRack result;
+    std::string line;
+    while (getline_stripped(ifs, line)) {
+        char row;
+        char tiles[15];
+        if (re2::RE2::FullMatch(line, board_row_regex,
+                &row,
+                &tiles[ 0], &tiles[ 1], &tiles[ 2], &tiles[ 3],
+                &tiles[ 4], &tiles[ 5], &tiles[ 6], &tiles[ 7],
+                &tiles[ 8], &tiles[ 9], &tiles[10], &tiles[11],
+                &tiles[12], &tiles[13], &tiles[14]))
+        {
+            assert('A' <= row && row <= 'O');
+            std::size_t start = static_cast<std::size_t>(row - 'A')*15u;
+            for (std::size_t i = 0; i < 15; ++i) {
+                result.board[start + i] = tiles[i];
+            }
+        }
+        else if (re2::RE2::FullMatch(line, rack_regex, &result.rack)) {
+            return result;
+        }
+    }
+    return std::nullopt;
+}
+
 } // ~scrabble
 
 std::ostream& operator<<(std::ostream& os, const cicero_rack& rack)
@@ -209,5 +270,4 @@ std::ostream& operator<<(std::ostream& os, const cicero_rack& rack)
     os << "\"";
     return os;
 }
-
 
