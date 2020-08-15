@@ -10,6 +10,18 @@ target_link_libraries(scrabble-ui
         Scrabble
 )
 
+add_executable(wwf-ui wwf-ui.cpp)
+target_link_libraries(wwf-ui
+    PUBLIC
+        cxx_project_options
+        GL3W
+        ImGui
+        fmt::fmt
+        Cicero
+        Mafsa++
+        Scrabble
+)
+
 # add_library(game game.h game.cpp)
 # target_link_libraries(game PUBLIC cxx_project_options)
 # 
