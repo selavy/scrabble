@@ -100,6 +100,7 @@ struct cicero_scoring
     const int *double_word_squares;
     const int *triple_word_squares;
     const int *letter_values;
+    int bingo_bonus;
 };
 typedef struct cicero_scoring cicero_scoring;
 

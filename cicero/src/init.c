@@ -24,6 +24,7 @@ void cicero_init_ex(cicero *e, cicero_callbacks callbacks,
         scoring.triple_word_squares : &scrabble__triple_word_squares[0];
     e->s.letter_values = scoring.letter_values ?
         scoring.letter_values : &scrabble__letter_values[0];
+    e->s.bingo_bonus = scoring.bingo_bonus;
 }
 
 void cicero_init(cicero *e, cicero_callbacks callbacks)
@@ -34,6 +35,7 @@ void cicero_init(cicero *e, cicero_callbacks callbacks)
     defaults.double_word_squares   = NULL;
     defaults.triple_word_squares   = NULL;
     defaults.letter_values         = NULL;
+    defaults.bingo_bonus           = 50;
     cicero_init_ex(e, callbacks, defaults);
 }
 
@@ -45,6 +47,7 @@ void cicero_init_wwf(cicero *e, cicero_callbacks callbacks)
     defaults.double_word_squares   = words_with_friends__double_word_squares;
     defaults.triple_word_squares   = words_with_friends__triple_word_squares;
     defaults.letter_values         = words_with_friends__letter_values;
+    defaults.bingo_bonus           = 35;
     cicero_init_ex(e, callbacks, defaults);
 }
 

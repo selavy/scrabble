@@ -123,7 +123,7 @@ int cicero_score_move(const cicero *e, const cicero_move *move)
 
     int root_score  = 0;
     int cross_score = 0;
-    const int bingo_bonus = ntiles == 7 ? 50 : 0;
+    const int bingo_bonus = ntiles == 7 ? e->s.bingo_bonus : 0;
 
     {
         int word_score = 0;
