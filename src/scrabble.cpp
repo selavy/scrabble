@@ -176,7 +176,7 @@ EngineMove EngineMove::make(const cicero* engine, const scrabble::Move& move)
     for (auto c : move.word) {
         const int sq = square + i++ * step;
         const char t = cicero_tile_on_square(engine, sq);
-        if (t == CICERO_EMPTY_TILE) {
+        if (t == CICERO_TILE_EMPTY) {
             result.tiles.push_back(c);
             result.squares.push_back(sq);
         }

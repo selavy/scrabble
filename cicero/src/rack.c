@@ -5,24 +5,25 @@
 
 
 internal rack_tile char_to_rack_tile(char tile) {
-    assert(('A' <= tile && tile <= 'Z') || tile == CICERO_BLANK_TILE);
-    return tile == CICERO_BLANK_TILE ? 26 : tile - 'A';
+    assert((CICERO_TILE_A <= tile && tile <= CICERO_TILE_Z) || tile == CICERO_TILE_BLANK);
+    return tile == CICERO_TILE_BLANK ? 26 : tile - CICERO_TILE_A;
 }
 
 void cicero_make_rack(cicero_rack *rack, const char *const tiles)
 {
     memset(rack, 0, sizeof(*rack));
     for (const char *tile = tiles; *tile != '\0'; ++tile) {
-        assert(('A' <= *tile && *tile <= 'Z') || *tile == ' ' || *tile == '?');
+        assert((CICERO_TILE_A <= *tile && *tile <= CICERO_TILE_Z) || *tile == CICERO_TILE_BLANK ||
+               *tile == CICERO_TILE_UNKNOWN);
         cicero_rack_add_tile(rack, *tile);
     }
 }
 
 void cicero_rack_add_tile(cicero_rack* rack, char tile)
 {
-    if (tile == CICERO_UNKNOWN_TILE) {
+    if (tile == CICERO_TILE_UNKNOWN) {
         return;
     }
-    assert(('A' <= tile && tile <= 'Z') || tile == CICERO_BLANK_TILE);
+    assert(('A' <= tile && tile <= 'Z') || tile == CICERO_TILE_BLANK);
     rack->tiles[char_to_rack_tile(tile)]++;
 }

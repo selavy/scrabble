@@ -280,7 +280,7 @@ void cicero_load_position(cicero* e, char board[225])
     // place all the tiles from `board` because need them to re-compute
     // the caches
     for (int sq = 0; sq < 225; ++sq) {
-        vals[sq] = board[sq] != CICERO_EMPTY_TILE ? to_eng(board[sq]) : EMPTY;
+        vals[sq] = board[sq] != CICERO_TILE_EMPTY ? to_eng(board[sq]) : EMPTY;
     }
 
     memset(hscr, 0xffffffffu, sizeof(e->hscr));

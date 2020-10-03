@@ -148,10 +148,10 @@ internal u32 tilemask(char tile)
 // TODO: make table based
 internal eng_tile to_eng(char tile)
 {
-    if ('A' <= tile && tile <= 'Z') {
-        return (tile - 'A');
-    } else if ('a' <= tile && tile <= 'z') {
-        return (tile - 'a') + BLANK;
+    if (CICERO_TILE_A <= tile && tile <= CICERO_TILE_Z) {
+        return tile - CICERO_TILE_A;
+    } else if (CICERO_TILE_BLANK_A <= tile && tile <= CICERO_TILE_BLANK_Z) {
+        return (tile - CICERO_TILE_BLANK_A) + BLANK;
     } else {
         assert(0 && "invalid tile");
         __builtin_unreachable();
@@ -163,11 +163,11 @@ internal eng_tile to_eng(char tile)
 internal ext_tile to_ext(eng_tile tile)
 {
     if (0 <= tile && tile < BLANK) {
-        return tile + 'A';
+        return tile + CICERO_TILE_A;
     } else if (BLANK <= tile && tile < 2*BLANK) {
-        return (tile - BLANK) + 'a';
+        return (tile - BLANK) + CICERO_TILE_BLANK_A;
     } else if (tile == EMPTY) {
-        return CICERO_EMPTY_TILE;
+        return CICERO_TILE_EMPTY;
     } else {
         assert(0 && "invalid teng tile");
         __builtin_unreachable();

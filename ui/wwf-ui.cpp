@@ -180,14 +180,18 @@ static_assert(TileLabels[ErrorTileIndex][0] == '@');
 
 struct CiceroState
 {
+    using Rack = std::array<int, 7>;
+
     Callbacks cb;
     cicero engine;
+    std::array<Rack, 2> racks;
 };
 
 void ShowCiceroWindow(CiceroState& state, bool& show_window)
 {
     auto& engine = state.engine;
     auto& cb = state.cb;
+    auto& racks = state.racks;
 
     if (ImGui::Begin("Cicero", &show_window, ImGuiWindowFlags_MenuBar))
     {
@@ -198,6 +202,8 @@ void ShowCiceroWindow(CiceroState& state, bool& show_window)
         // TODO: choose border tile + text colors
         const auto border_color = DoubleWordSquareColor;
         const auto border_text_color = TextColor_Black;
+        const auto rack_tile_color = TileSquareColor;
+        const auto rack_text_color = TextColor_Black;
         const auto cell_spacing = 5.;
 
         { // Column Labels
@@ -253,6 +259,27 @@ void ShowCiceroWindow(CiceroState& state, bool& show_window)
             ImGui::NewLine();
         }
 
+        { // Rack
+            ImGui::BeginGroup();
+
+            for (auto tile : racks[0]) {
+                const auto tile_index = get_tile_index(tile);
+                const auto tile_label = TileLabels[tile_index];
+                ImGui::SameLine(0., cell_spacing);
+                ImGui::PushID(id++);
+                ImGui::PushStyleColor(ImGuiCol_Text, rack_text_color);
+                ImGui::PushStyleColor(ImGuiCol_Button, rack_tile_color);
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, rack_tile_color);
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, rack_tile_color);
+                ImGui::Button(tile_label, ImVec2(40, 40));
+                ImGui::PopStyleColor(4);
+                ImGui::PopID();
+            }
+
+            ImGui::EndGroup();
+            ImGui::NewLine();
+        }
+
         ImGui::EndGroup();
     }
     ImGui::End();
@@ -270,9 +297,13 @@ int main(int argc, char** argv)
     }
     CiceroState state{
         .cb = Callbacks{std::move(*maybe_dict)},
-        .engine = {}
+        .engine = {},
+        .racks = {},
     };
     cicero_init_wwf(&state.engine, state.cb.make_callbacks());
+    for (auto& rack : state.racks) {
+        std::fill(std::begin(rack), std::end(rack), CICERO_TILE_EMPTY);
+    }
 
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
