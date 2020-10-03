@@ -131,12 +131,12 @@ const ImVec4 TileHoverSquareColor    = MakeColor(206, 187, 158); // light oak
 const ImVec4 ClearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 // clang-format on
 
-constexpr std::array<const char*, 16> ColumnLabels = {
-    "  ", " 1", " 2", " 3", " 4", " 5", " 6", " 7", " 8", " 9", "10", "11", "12", "13", "14", "15",
+constexpr std::array<const char*, 15> RowLabels = {
+    " 1", " 2", " 3", " 4", " 5", " 6", " 7", " 8", " 9", "10", "11", "12", "13", "14", "15",
 };
 
-constexpr std::array<const char*, 15> RowLabels = {
-    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
+constexpr std::array<const char*, 16> ColumnLabels = {
+    " ", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
 };
 
 constexpr std::array<const char*, 55> TileLabels = {
@@ -146,11 +146,37 @@ constexpr std::array<const char*, 55> TileLabels = {
     // blanks on board
     "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o",
     "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
-    // special tiles
+    // special tiles [52, 54]
     "?", // blank tile in rack
     " ",  // empty tile
     "@"  // <<< signifies an error
 };
+constexpr auto BlankTileIndex = 52;
+constexpr auto EmptyTileIndex = 53;
+constexpr auto ErrorTileIndex = 54;
+static_assert(TileLabels[BlankTileIndex][0] == '?');
+static_assert(TileLabels[EmptyTileIndex][0] == ' ');
+static_assert(TileLabels[ErrorTileIndex][0] == '@');
+
+[[nodiscard]] constexpr int get_tile_index(char tile) noexcept
+{
+    auto index = [](char tile) {
+        if ('A' <= tile && tile <= 'Z') {
+            return tile - 'A';
+        }
+        else if ('a' <= tile && tile <= 'z') {
+            return (tile - 'a') + 'Z';
+        }
+        else if (tile == ' ') {
+            return EmptyTileIndex;
+        }
+        else {
+            return ErrorTileIndex;
+        }
+    }(tile);
+    assert(0 <= index && index < TileLabels.size());
+    return index;
+}
 
 //------------------------------------------------------------------------------
 
@@ -164,6 +190,7 @@ int main(int argc, char** argv)
     }
     auto cb = Callbacks{std::move(*maybe_dict)};
     cicero engine;
+    cicero_init_wwf(&engine, cb.make_callbacks());
 
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
@@ -214,10 +241,15 @@ int main(int argc, char** argv)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
+    // -------------------------------------------------------------------------
     // State
+    // -------------------------------------------------------------------------
     bool show_metrics_window = true;
     bool show_cicero_window = true;
 
+    // -------------------------------------------------------------------------
+    // UI Loop
+    // -------------------------------------------------------------------------
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -234,6 +266,7 @@ int main(int argc, char** argv)
                 ImGui::BeginGroup();
 
                 int id = 0;
+                int sq = 0;
                 // TODO: choose border tile + text colors
                 const auto border_color = DoubleWordSquareColor;
                 const auto border_text_color = TextColor_Black;
@@ -256,10 +289,41 @@ int main(int argc, char** argv)
                     ImGui::NewLine();
                 }
 
-                // int square_index = 0;
-                // for (int row = 0; row < 15; ++row) {
-                //     ImGui::PushID(id++);
-                // }
+                for (auto row_label : RowLabels) {
+                    ImGui::BeginGroup();
+                    { // Row Label
+                        ImGui::SameLine(0., cell_spacing);
+                        ImGui::PushID(id++);
+                        ImGui::PushStyleColor(ImGuiCol_Text, border_text_color);
+                        ImGui::PushStyleColor(ImGuiCol_Button, border_color);
+                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, border_color);
+                        ImGui::PushStyleColor(ImGuiCol_ButtonActive, border_color);
+                        ImGui::Button(row_label, ImVec2(40, 40));
+                        ImGui::PopStyleColor(4);
+                        ImGui::PopID();
+                    }
+
+                    for (int col = 0; col < 15; ++col) {
+                        const auto tile = cicero_tile_on_square(&engine, sq);
+                        const auto tile_index = get_tile_index(tile);
+                        const auto square_text_color = TextColor_Black;
+                        const auto square_color = EmptySquareColor;
+                        const auto tile_label = TileLabels[tile_index];
+                        ImGui::SameLine(0., cell_spacing);
+                        ImGui::PushID(id++);
+                        ImGui::PushStyleColor(ImGuiCol_Text, square_text_color);
+                        ImGui::PushStyleColor(ImGuiCol_Button, square_color);
+                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, square_color);
+                        ImGui::PushStyleColor(ImGuiCol_ButtonActive, square_color);
+                        ImGui::Button(tile_label, ImVec2(40, 40));
+                        ImGui::PopStyleColor(4);
+                        ImGui::PopID();
+                        ++sq;
+                    }
+
+                    ImGui::EndGroup();
+                    ImGui::NewLine();
+                }
 
                 ImGui::EndGroup();
             }
