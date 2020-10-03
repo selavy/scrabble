@@ -52,17 +52,10 @@ enum cicero_multiplier_
 };
 typedef enum cicero_multiplier_ cicero_multiplier;
 
-// TODO: switch to this?
-// struct cicero_move
-// {
-//     cicero_direction direction;
-//     int              square;
-//     const char      *word;
-// };
 struct cicero_move
 {
-    const char      *tiles;      // A-Z=normal tiles, a-z=blank tiles
-    const int       *squares;    // 0 indexed
+    const char      *tiles;    // A-Z=normal tiles, a-z=blank tiles
+    const int       *squares;  // 0 indexed
     int              ntiles;
     cicero_direction direction;
 };
@@ -201,5 +194,7 @@ cicero_api void cicero_load_position_ex(cicero* e, const cicero* position);
 #ifdef __cplusplus
 }
 #endif
+
+#undef cicero_api
 
 #endif // CICERO__H_

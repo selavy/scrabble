@@ -50,4 +50,3 @@ void cicero_init_wwf(cicero *e, cicero_callbacks callbacks)
     defaults.bingo_bonus           = 35;
     cicero_init_ex(e, callbacks, defaults);
 }
-

@@ -418,7 +418,7 @@ void cicero_load_position(cicero* e, char board[225])
     }
 }
 
-cicero_api void cicero_load_position_ex(cicero* e, const cicero* position)
+void cicero_load_position_ex(cicero* e, const cicero* position)
 {
     char board[225];
     for (int sq = 0; sq < 225; ++sq) {

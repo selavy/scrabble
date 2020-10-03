@@ -449,9 +449,13 @@ int main(int argc, char** argv)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::ShowDemoWindow(&show_demo_window);
+        if (show_demo_window) {
+            ImGui::ShowDemoWindow(&show_demo_window);
+        }
 
-        ImGui::ShowMetricsWindow(&show_metrics_window);
+        if (show_metrics_window) {
+            ImGui::ShowMetricsWindow(&show_metrics_window);
+        }
 
         if (ImGui::Begin("Scrabble", &show_scrabble_window, ImGuiWindowFlags_MenuBar)) {
             ImGui::BeginGroup();

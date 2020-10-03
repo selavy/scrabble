@@ -21,6 +21,12 @@
 #include <scrabble.h>
 #include <mafsa++.h>
 
+// light gray =  regular
+// green = triple letter
+// blue = double letter
+// red = double word
+// orange = triple word
+
 #define DEBUG(format, ...) fmt::print(std::cerr, "[DEBUG ({:s})]: " format "\n", __func__, ##__VA_ARGS__)
 #define INFO(format, ...)  fmt::print(std::cerr, "[INFO  ({:s})]: " format "\n", __func__, ##__VA_ARGS__)
 
@@ -98,6 +104,56 @@ static void glfw_error_callback(int error, const char* description)
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
+ImVec4 MakeColor(float r, float g, float b, float a = 255) noexcept
+{
+    float sc = 1.0f/255.0f;
+    float x = r * sc;
+    float y = g * sc;
+    float z = b * sc;
+    float w = a * sc;
+    return { x, y, z, w };
+}
+
+//------------------------------------------------------------------------------
+// Static Data
+//------------------------------------------------------------------------------
+
+// clang-format off
+const ImVec4 TextColor_Black         = MakeColor(  0,   0,   0); // black
+const ImVec4 TextColor_White         = MakeColor(255, 255, 255); // white
+const ImVec4 DoubleWordSquareColor   = MakeColor(250, 145, 145); // salmon
+const ImVec4 TripleWordSquareColor   = MakeColor(215,   0,  75); // red
+const ImVec4 DoubleLetterSquareColor = MakeColor( 50,  50, 233); // dark blue
+const ImVec4 TripleLetterSquareColor = MakeColor(150, 200, 250); // light blue
+const ImVec4 EmptySquareColor        = MakeColor( 66,  66,  66); // gray
+const ImVec4 TileSquareColor         = MakeColor(120,  81,  45); // oak
+const ImVec4 TileHoverSquareColor    = MakeColor(206, 187, 158); // light oak
+const ImVec4 ClearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+// clang-format on
+
+constexpr std::array<const char*, 16> ColumnLabels = {
+    "  ", " 1", " 2", " 3", " 4", " 5", " 6", " 7", " 8", " 9", "10", "11", "12", "13", "14", "15",
+};
+
+constexpr std::array<const char*, 15> RowLabels = {
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
+};
+
+constexpr std::array<const char*, 55> TileLabels = {
+    // regular tiles
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O",
+    "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+    // blanks on board
+    "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o",
+    "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+    // special tiles
+    "?", // blank tile in rack
+    " ",  // empty tile
+    "@"  // <<< signifies an error
+};
+
+//------------------------------------------------------------------------------
+
 int main(int argc, char** argv)
 {
     auto dictfile = "enable1.dict.gz";
@@ -152,14 +208,15 @@ int main(int argc, char** argv)
     io.FontGlobalScale = 1.5;
 
     // Setup Dear ImGui style
-    ImGui::StyleColorsDark();
-    // ImGui::StyleColorsClassic();
+    // ImGui::StyleColorsDark();
+    ImGui::StyleColorsClassic();
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    // State
     bool show_metrics_window = true;
+    bool show_cicero_window = true;
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -168,13 +225,51 @@ int main(int argc, char** argv)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
         {
-            ImGui::ShowMetricsWindow(&show_metrics_window);
+            if (show_metrics_window) {
+                ImGui::ShowMetricsWindow(&show_metrics_window);
+            }
+
+            if (ImGui::Begin("Cicero", &show_cicero_window, ImGuiWindowFlags_MenuBar))
+            {
+                ImGui::BeginGroup();
+
+                int id = 0;
+                // TODO: choose border tile + text colors
+                const auto border_color = DoubleWordSquareColor;
+                const auto border_text_color = TextColor_Black;
+                const auto cell_spacing = 5.;
+
+                { // Column Labels
+                    ImGui::BeginGroup();
+                    for (auto column_label : ColumnLabels) {
+                        ImGui::SameLine(0., cell_spacing);
+                        ImGui::PushID(id++);
+                        ImGui::PushStyleColor(ImGuiCol_Text, border_text_color);
+                        ImGui::PushStyleColor(ImGuiCol_Button, border_color);
+                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, border_color);
+                        ImGui::PushStyleColor(ImGuiCol_ButtonActive, border_color);
+                        ImGui::Button(column_label, ImVec2(40, 40));
+                        ImGui::PopStyleColor(4);
+                        ImGui::PopID();
+                    }
+                    ImGui::EndGroup();
+                    ImGui::NewLine();
+                }
+
+                // int square_index = 0;
+                // for (int row = 0; row < 15; ++row) {
+                //     ImGui::PushID(id++);
+                // }
+
+                ImGui::EndGroup();
+            }
+            ImGui::End();
         }
         ImGui::Render();
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
-        glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+        glClearColor(ClearColor.x, ClearColor.y, ClearColor.z, ClearColor.w);
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);

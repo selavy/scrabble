@@ -199,6 +199,14 @@ internal tile_num tilenum(char tile) {
     }
 }
 
+internal int is_valid_tile_value(char tile) {
+    return 0 <= tile && tile <= EMPTY;
+}
+
+internal int is_valid_non_blank_tile(char tile) {
+    return 0 <= tile && tile < EMPTY;
+}
+
 // precondition: `root` is the left-most square trying to be played
 internal int findbeg(const char* vals, const int start, const int stop,
         const int stride, const int root)
@@ -224,7 +232,6 @@ internal int findend(const char* vals, const int start, const int stop,
     assert(vals[sq] != EMPTY || sq == root);
     return sq;
 }
-
 
 struct scoreresult_
 {
