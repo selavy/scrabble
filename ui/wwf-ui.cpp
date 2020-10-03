@@ -185,6 +185,8 @@ struct CiceroState
     Callbacks cb;
     cicero engine;
     std::array<Rack, 2> racks;
+    bool show_rack2 = false;
+    bool show_bag = true;
 };
 
 void ShowCiceroWindow(CiceroState& state, bool& show_window)
@@ -192,6 +194,8 @@ void ShowCiceroWindow(CiceroState& state, bool& show_window)
     auto& engine = state.engine;
     auto& cb = state.cb;
     auto& racks = state.racks;
+    auto& show_rack2 = state.show_rack2;
+    auto& show_bag = state.show_bag;
 
     if (ImGui::Begin("Cicero", &show_window, ImGuiWindowFlags_MenuBar))
     {
@@ -259,7 +263,7 @@ void ShowCiceroWindow(CiceroState& state, bool& show_window)
             ImGui::NewLine();
         }
 
-        { // Rack
+        { // Rack #1
             ImGui::BeginGroup();
 
             for (auto tile : racks[0]) {
@@ -278,6 +282,39 @@ void ShowCiceroWindow(CiceroState& state, bool& show_window)
 
             ImGui::EndGroup();
             ImGui::NewLine();
+        }
+
+        // Rack #2
+        if (show_rack2) {
+            ImGui::BeginGroup();
+
+            for (auto tile : racks[1]) {
+                const auto tile_index = get_tile_index(tile);
+                const auto tile_label = TileLabels[tile_index];
+                ImGui::SameLine(0., cell_spacing);
+                ImGui::PushID(id++);
+                ImGui::PushStyleColor(ImGuiCol_Text, rack_text_color);
+                ImGui::PushStyleColor(ImGuiCol_Button, rack_tile_color);
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, rack_tile_color);
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, rack_tile_color);
+                ImGui::Button(tile_label, ImVec2(40, 40));
+                ImGui::PopStyleColor(4);
+                ImGui::PopID();
+            }
+            show_rack2 ^= ImGui::Button("Hide Opponent Rack");
+
+            ImGui::EndGroup();
+            ImGui::NewLine();
+        } else {
+            show_rack2 |= ImGui::Button("Show Opponent Rack");
+        }
+
+        // TODO: implement
+        // Bag
+        if (show_bag) {
+            show_bag ^= ImGui::Button("Hide Bag");
+        } else {
+            show_bag |= ImGui::Button("Show Bag");
         }
 
         ImGui::EndGroup();
