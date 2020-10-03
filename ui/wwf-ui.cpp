@@ -178,6 +178,86 @@ static_assert(TileLabels[ErrorTileIndex][0] == '@');
     return index;
 }
 
+struct CiceroState
+{
+    Callbacks cb;
+    cicero engine;
+};
+
+void ShowCiceroWindow(CiceroState& state, bool& show_window)
+{
+    auto& engine = state.engine;
+    auto& cb = state.cb;
+
+    if (ImGui::Begin("Cicero", &show_window, ImGuiWindowFlags_MenuBar))
+    {
+        ImGui::BeginGroup();
+
+        int id = 0;
+        int sq = 0;
+        // TODO: choose border tile + text colors
+        const auto border_color = DoubleWordSquareColor;
+        const auto border_text_color = TextColor_Black;
+        const auto cell_spacing = 5.;
+
+        { // Column Labels
+            ImGui::BeginGroup();
+            for (auto column_label : ColumnLabels) {
+                ImGui::SameLine(0., cell_spacing);
+                ImGui::PushID(id++);
+                ImGui::PushStyleColor(ImGuiCol_Text, border_text_color);
+                ImGui::PushStyleColor(ImGuiCol_Button, border_color);
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, border_color);
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, border_color);
+                ImGui::Button(column_label, ImVec2(40, 40));
+                ImGui::PopStyleColor(4);
+                ImGui::PopID();
+            }
+            ImGui::EndGroup();
+            ImGui::NewLine();
+        }
+
+        for (auto row_label : RowLabels) {
+            ImGui::BeginGroup();
+            { // Row Label
+                ImGui::SameLine(0., cell_spacing);
+                ImGui::PushID(id++);
+                ImGui::PushStyleColor(ImGuiCol_Text, border_text_color);
+                ImGui::PushStyleColor(ImGuiCol_Button, border_color);
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, border_color);
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, border_color);
+                ImGui::Button(row_label, ImVec2(40, 40));
+                ImGui::PopStyleColor(4);
+                ImGui::PopID();
+            }
+
+            for (int col = 0; col < 15; ++col) {
+                const auto tile = cicero_tile_on_square(&engine, sq);
+                const auto tile_index = get_tile_index(tile);
+                const auto square_text_color = TextColor_Black;
+                const auto square_color = EmptySquareColor;
+                const auto tile_label = TileLabels[tile_index];
+                ImGui::SameLine(0., cell_spacing);
+                ImGui::PushID(id++);
+                ImGui::PushStyleColor(ImGuiCol_Text, square_text_color);
+                ImGui::PushStyleColor(ImGuiCol_Button, square_color);
+                ImGui::PushStyleColor(ImGuiCol_ButtonHovered, square_color);
+                ImGui::PushStyleColor(ImGuiCol_ButtonActive, square_color);
+                ImGui::Button(tile_label, ImVec2(40, 40));
+                ImGui::PopStyleColor(4);
+                ImGui::PopID();
+                ++sq;
+            }
+
+            ImGui::EndGroup();
+            ImGui::NewLine();
+        }
+
+        ImGui::EndGroup();
+    }
+    ImGui::End();
+}
+
 //------------------------------------------------------------------------------
 
 int main(int argc, char** argv)
@@ -188,9 +268,11 @@ int main(int argc, char** argv)
         fmt::print(std::cerr, "Unable to load dictionary from file: '{}'\n", dictfile);
         return 1;
     }
-    auto cb = Callbacks{std::move(*maybe_dict)};
-    cicero engine;
-    cicero_init_wwf(&engine, cb.make_callbacks());
+    CiceroState state{
+        .cb = Callbacks{std::move(*maybe_dict)},
+        .engine = {}
+    };
+    cicero_init_wwf(&state.engine, state.cb.make_callbacks());
 
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
@@ -252,82 +334,14 @@ int main(int argc, char** argv)
     // -------------------------------------------------------------------------
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        {
-            if (show_metrics_window) {
-                ImGui::ShowMetricsWindow(&show_metrics_window);
-            }
-
-            if (ImGui::Begin("Cicero", &show_cicero_window, ImGuiWindowFlags_MenuBar))
-            {
-                ImGui::BeginGroup();
-
-                int id = 0;
-                int sq = 0;
-                // TODO: choose border tile + text colors
-                const auto border_color = DoubleWordSquareColor;
-                const auto border_text_color = TextColor_Black;
-                const auto cell_spacing = 5.;
-
-                { // Column Labels
-                    ImGui::BeginGroup();
-                    for (auto column_label : ColumnLabels) {
-                        ImGui::SameLine(0., cell_spacing);
-                        ImGui::PushID(id++);
-                        ImGui::PushStyleColor(ImGuiCol_Text, border_text_color);
-                        ImGui::PushStyleColor(ImGuiCol_Button, border_color);
-                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, border_color);
-                        ImGui::PushStyleColor(ImGuiCol_ButtonActive, border_color);
-                        ImGui::Button(column_label, ImVec2(40, 40));
-                        ImGui::PopStyleColor(4);
-                        ImGui::PopID();
-                    }
-                    ImGui::EndGroup();
-                    ImGui::NewLine();
-                }
-
-                for (auto row_label : RowLabels) {
-                    ImGui::BeginGroup();
-                    { // Row Label
-                        ImGui::SameLine(0., cell_spacing);
-                        ImGui::PushID(id++);
-                        ImGui::PushStyleColor(ImGuiCol_Text, border_text_color);
-                        ImGui::PushStyleColor(ImGuiCol_Button, border_color);
-                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, border_color);
-                        ImGui::PushStyleColor(ImGuiCol_ButtonActive, border_color);
-                        ImGui::Button(row_label, ImVec2(40, 40));
-                        ImGui::PopStyleColor(4);
-                        ImGui::PopID();
-                    }
-
-                    for (int col = 0; col < 15; ++col) {
-                        const auto tile = cicero_tile_on_square(&engine, sq);
-                        const auto tile_index = get_tile_index(tile);
-                        const auto square_text_color = TextColor_Black;
-                        const auto square_color = EmptySquareColor;
-                        const auto tile_label = TileLabels[tile_index];
-                        ImGui::SameLine(0., cell_spacing);
-                        ImGui::PushID(id++);
-                        ImGui::PushStyleColor(ImGuiCol_Text, square_text_color);
-                        ImGui::PushStyleColor(ImGuiCol_Button, square_color);
-                        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, square_color);
-                        ImGui::PushStyleColor(ImGuiCol_ButtonActive, square_color);
-                        ImGui::Button(tile_label, ImVec2(40, 40));
-                        ImGui::PopStyleColor(4);
-                        ImGui::PopID();
-                        ++sq;
-                    }
-
-                    ImGui::EndGroup();
-                    ImGui::NewLine();
-                }
-
-                ImGui::EndGroup();
-            }
-            ImGui::End();
+        if (show_metrics_window) {
+            ImGui::ShowMetricsWindow(&show_metrics_window);
+        }
+        if (show_cicero_window) {
+            ShowCiceroWindow(state, show_cicero_window);
         }
         ImGui::Render();
         int display_w, display_h;
