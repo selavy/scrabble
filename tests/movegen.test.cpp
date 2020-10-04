@@ -264,7 +264,6 @@ TEST_CASE("Convert cicero_move -> cicero_move2", "[cicero_move2]")
         CHECK(move2.square    == move.square.value());
         CHECK(move2.direction == static_cast<int>(move.direction));
         check_word(move2, "QUiZ");
-        std::cout << move << " -> " << move2 << "\n";
     }
 
     SECTION("Vertical Move")
@@ -276,7 +275,6 @@ TEST_CASE("Convert cicero_move -> cicero_move2", "[cicero_move2]")
         CHECK(move2.square    == move.square.value());
         CHECK(move2.direction == static_cast<int>(move.direction));
         check_word(move2, "QUiZ");
-        std::cout << move << " -> " << move2 << "\n";
     }
 
     SECTION("Couple moves")
@@ -319,7 +317,6 @@ TEST_CASE("Convert cicero_move -> cicero_move2", "[cicero_move2]")
             CHECK(move2.square    == move.square.value());
             CHECK(move2.direction == static_cast<int>(move.direction));
             check_word(move2, move.word.c_str());
-            std::cout << move << " -> " << move2 << "\n";
         }
     }
 
@@ -357,7 +354,6 @@ TEST_CASE("Convert cicero_move -> cicero_move2", "[cicero_move2]")
             CHECK(move2.square    == move.square.value());
             CHECK(move2.direction == static_cast<int>(move.direction));
             check_word(move2, move.word.c_str());
-            std::cout << move << " -> " << move2 << "\n";
         }
     }
 }

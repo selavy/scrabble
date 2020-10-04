@@ -55,7 +55,6 @@ cicero_move2 cicero_make_move2(const cicero* e, const cicero_move* m)
 {
     cicero_move2 rv;
     memset(&rv.tiles[0], 0, sizeof(rv.tiles));
-    rv.square = m->squares[0];
     rv.direction = m->direction;
 
     const char* brd   = e->vals;
@@ -74,6 +73,7 @@ cicero_move2 cicero_make_move2(const cicero* e, const cicero_move* m)
     }
     sq += stride;
     assert(brd[sq] != EMPTY || sqs[0] == sq);
+    rv.square = sq;
 
     int wordlen = 0;
     int tilenum = 0;

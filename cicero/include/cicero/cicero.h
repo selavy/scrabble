@@ -236,6 +236,8 @@ cicero_api void cicero_generate_legal_moves(const cicero *e, cicero_rack rack);
 // precondition: `move` was just played
 cicero_api int  cicero_score_move(const cicero *e, const cicero_move *move);
 
+cicero_api int  cicero_score_move2(const cicero *e, const cicero_move2 *move);
+
 cicero_api int  cicero_legal_move_ex(const cicero *e, const cicero_move *move,
         cicero_is_word is_word, const void *udata);
 

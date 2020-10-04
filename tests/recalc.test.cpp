@@ -38,7 +38,7 @@ TEST_CASE("Example game breaking")
         auto emove = scrabble::EngineMove::make(&engine1, smove);
         auto* move = &emove.move;
         cicero_make_move(&engine1, &sp, move);
-        std::cout << engine1 << "\n\n";
+        // std::cout << engine1 << "\n\n";
         copy_position(engine1, board);
         cicero_init(&engine2, cb.make_callbacks());
         cicero_load_position(&engine2, board);
