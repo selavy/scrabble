@@ -178,13 +178,23 @@ static_assert(TileLabels[ErrorTileIndex][0] == '@');
     return index;
 }
 
+template <class T>
+auto get_dnd_payload(const ImGuiPayload* payload) -> const T*
+{
+    IM_ASSERT(payload->DataSize == sizeof(T));
+    return static_cast<const T*>(payload->Data);
+}
+
+
+using GuiBoard = std::array<char, 225>;
+using Rack = std::array<int, 7>;
+
 struct CiceroState
 {
-    using Rack = std::array<int, 7>;
-
     Callbacks cb;
     cicero engine;
     std::array<Rack, 2> racks;
+    GuiBoard board;
     bool show_rack2 = false;
     bool show_bag = true;
 };
@@ -196,6 +206,7 @@ void ShowCiceroWindow(CiceroState& state, bool& show_window)
     auto& racks = state.racks;
     auto& show_rack2 = state.show_rack2;
     auto& show_bag = state.show_bag;
+    auto& board = state.board;
 
     if (ImGui::Begin("Cicero", &show_window, ImGuiWindowFlags_MenuBar))
     {
@@ -254,6 +265,13 @@ void ShowCiceroWindow(CiceroState& state, bool& show_window)
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, square_color);
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive, square_color);
                 ImGui::Button(tile_label, ImVec2(40, 40));
+                if (ImGui::BeginDragDropTarget()) {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_RACK_TILE")) {
+                        DEBUG("Accepting rack tile");
+                        const auto rack_index = *get_dnd_payload<int>(payload);
+                        assert(0 <= rack_index && rack_index < racks[0].size());
+                    }
+                }
                 ImGui::PopStyleColor(4);
                 ImGui::PopID();
                 ++sq;
@@ -265,7 +283,6 @@ void ShowCiceroWindow(CiceroState& state, bool& show_window)
 
         { // Rack #1
             ImGui::BeginGroup();
-
             for (auto tile : racks[0]) {
                 const auto tile_index = get_tile_index(tile);
                 const auto tile_label = TileLabels[tile_index];
@@ -279,7 +296,6 @@ void ShowCiceroWindow(CiceroState& state, bool& show_window)
                 ImGui::PopStyleColor(4);
                 ImGui::PopID();
             }
-
             ImGui::EndGroup();
             ImGui::NewLine();
         }
@@ -287,7 +303,6 @@ void ShowCiceroWindow(CiceroState& state, bool& show_window)
         // Rack #2
         if (show_rack2) {
             ImGui::BeginGroup();
-
             for (auto tile : racks[1]) {
                 const auto tile_index = get_tile_index(tile);
                 const auto tile_label = TileLabels[tile_index];
@@ -302,7 +317,6 @@ void ShowCiceroWindow(CiceroState& state, bool& show_window)
                 ImGui::PopID();
             }
             show_rack2 ^= ImGui::Button("Hide Opponent Rack");
-
             ImGui::EndGroup();
             ImGui::NewLine();
         } else {
@@ -324,6 +338,13 @@ void ShowCiceroWindow(CiceroState& state, bool& show_window)
 
 //------------------------------------------------------------------------------
 
+void CopyBoard(GuiBoard& board, const cicero& engine)
+{
+    for (int sq = 0; sq < 225; ++sq) {
+        board[sq] = cicero_tile_on_square(&engine, sq);
+    }
+}
+
 int main(int argc, char** argv)
 {
     auto dictfile = "enable1.dict.gz";
@@ -336,11 +357,28 @@ int main(int argc, char** argv)
         .cb = Callbacks{std::move(*maybe_dict)},
         .engine = {},
         .racks = {},
+        .board = {},
     };
     cicero_init_wwf(&state.engine, state.cb.make_callbacks());
     for (auto& rack : state.racks) {
         std::fill(std::begin(rack), std::end(rack), CICERO_TILE_EMPTY);
     }
+
+    // TEMP TEMP TEMP
+    {
+        const char tiles[] = { 'A', 'B', 'C' };
+        const int  sqs[]   = {  42,  43,  44 };
+        cicero_move m{
+            .tiles   = tiles,
+                .squares = sqs,
+                .ntiles  = 3,
+                .direction = CICERO_HORZ,
+        };
+        cicero_savepos sp;
+        cicero_make_move(&state.engine,  &sp, &m);
+    }
+
+    CopyBoard(state.board, state.engine);
 
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {

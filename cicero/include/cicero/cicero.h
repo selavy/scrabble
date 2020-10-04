@@ -52,6 +52,15 @@ enum cicero_multiplier_
 };
 typedef enum cicero_multiplier_ cicero_multiplier;
 
+// TODO: switch to:
+struct cicero_move2
+{
+    char tiles[16]; // use '.' to represent tiles that weren't played
+    int  square;
+    int  direction;
+};
+typedef struct cicero_move2 cicero_move2;
+
 struct cicero_move
 {
     const char      *tiles;    // A-Z=normal tiles, a-z=blank tiles
@@ -240,6 +249,8 @@ cicero_api cicero_multiplier cicero_square_multiplier(const cicero* e, int sq);
 cicero_api void cicero_load_position(cicero* e, char board[225]);
 
 cicero_api void cicero_load_position_ex(cicero* e, const cicero* position);
+
+cicero_api cicero_move2 cicero_make_move2(const cicero* e, const cicero_move* m);
 
 // -------------------------------------------------------------------------- //
 

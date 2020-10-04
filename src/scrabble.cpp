@@ -13,6 +13,11 @@ constexpr const char* IscSqName(Direction dir, int sq) noexcept
     return dir == Direction::Horz ? HorizontalSquareNames[sq] : VerticalSquareNames[sq];
 }
 
+constexpr const char* GcgSqName(Direction dir, int sq) noexcept
+{
+    return dir == Direction::Vert ? HorizontalSquareNames[sq] : VerticalSquareNames[sq];
+}
+
 std::string InvertWordCase(std::string word)
 {
     for (size_t i = 0; i < word.size(); ++i) {
@@ -248,7 +253,7 @@ std::optional<BoardAndRack> read_board(std::istream& ifs)
     return std::nullopt;
 }
 
-} // ~scrabble
+} // namespace scrabble
 
 std::ostream& operator<<(std::ostream& os, const cicero_rack& rack)
 {
@@ -271,3 +276,9 @@ std::ostream& operator<<(std::ostream& os, const cicero_rack& rack)
     return os;
 }
 
+std::ostream& operator<<(std::ostream& os, const cicero_move2& move)
+{
+    auto dir = move.direction == CICERO_HORZ ? scrabble::Direction::Horz : scrabble::Direction::Vert;
+    os << "\"" << scrabble::GcgSqName(dir, move.square) << " " << move.tiles << "\"";
+    return os;
+}

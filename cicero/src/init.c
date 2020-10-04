@@ -50,3 +50,41 @@ void cicero_init_wwf(cicero *e, cicero_callbacks callbacks)
     defaults.bingo_bonus           = 35;
     cicero_init_ex(e, callbacks, defaults);
 }
+
+cicero_move2 cicero_make_move2(const cicero* e, const cicero_move* m)
+{
+    cicero_move2 rv;
+    memset(&rv.tiles[0], 0, sizeof(rv.tiles));
+    rv.square = m->squares[0];
+    rv.direction = m->direction;
+
+    const char* brd   = e->vals;
+    const char* tiles = m->tiles;
+    const int*  sqs   = m->squares;
+    const int   dir   = m->direction;
+    const int   ntiles = m->ntiles;
+    const int   stride = dir;
+
+    const int start = dir == HORZ ? colstart(sqs[0]) : rowstart(sqs[0]);
+    const int stop  = start + stride * DIM;
+
+    int sq = sqs[0] - stride;
+    while (sq >= start && brd[sq] != EMPTY) {
+        sq -= stride;
+    }
+    sq += stride;
+    assert(brd[sq] != EMPTY || sqs[0] == sq);
+
+    int wordlen = 0;
+    int tilenum = 0;
+    for (; sq < stop && tilenum != ntiles; sq += stride) {
+        if (sq == sqs[tilenum]) {
+            rv.tiles[wordlen++] = tiles[tilenum++];
+        } else {
+            assert(brd[sq] != EMPTY);
+            rv.tiles[wordlen++] = '.';
+        }
+    }
+
+    return rv;
+}

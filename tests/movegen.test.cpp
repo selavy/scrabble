@@ -235,3 +235,129 @@ TEST_CASE("Undo move should return to old state")
         CHECK(score2 == score);
     }
 }
+
+TEST_CASE("Convert cicero_move -> cicero_move2", "[cicero_move2]")
+{
+    auto cb = make_callbacks({});
+    cicero_savepos sp;
+    cicero engine;
+    cicero_init(&engine, cb.make_callbacks());
+
+    auto check_word = [](const cicero_move2& m, const char* const word)
+    {
+        const char* p = word;
+        int i = 0;
+        for (; *p != '\0'; ++p, ++i) {
+            CHECK(m.tiles[i] == *p);
+        }
+        for (; i < 16; ++i) {
+            CHECK(m.tiles[i] == 0);
+        }
+    };
+
+    SECTION("Horizontal Move")
+    {
+        auto move = scrabble::Move::from_isc_spec("H7 quIz 42");
+        auto emove = scrabble::EngineMove::make(&engine, move);
+        auto& move1 = emove.move;
+        auto move2 = cicero_make_move2(&engine, &move1);
+        CHECK(move2.square    == move.square.value());
+        CHECK(move2.direction == static_cast<int>(move.direction));
+        check_word(move2, "QUiZ");
+        std::cout << move << " -> " << move2 << "\n";
+    }
+
+    SECTION("Vertical Move")
+    {
+        auto move = scrabble::Move::from_isc_spec("7H quIz 42");
+        auto emove = scrabble::EngineMove::make(&engine, move);
+        auto& move1 = emove.move;
+        auto move2 = cicero_make_move2(&engine, &move1);
+        CHECK(move2.square    == move.square.value());
+        CHECK(move2.direction == static_cast<int>(move.direction));
+        check_word(move2, "QUiZ");
+        std::cout << move << " -> " << move2 << "\n";
+    }
+
+    SECTION("Couple moves")
+    {
+        // clang-format off
+        const std::vector<std::string> isc_moves = {
+            "H7  zag     26",
+            "I6  bam     24",
+            "J5  tag     25",
+            "8F  tram     6",
+            "K5  od      16",
+            "L4  arenite 76",
+            "10B pEdants 81",
+            "9C  yo      20",
+            "8K  jib     12",
+            "N6  toeclip 78",
+            "O6  ohs     67",
+            "F6  qat     32",
+            "12K chip    22",
+            "G3  mini    20",
+            "8A  oven    34",
+            "4C  wellie  20",
+            "O12 sire    28",
+            "14J gaffer  34",
+            "15F reQuite 82",
+            "14A kindler 84",
+            "A12 woke    45",
+            "11E xu      38",
+            "3C  oy      25",
+            "2C  vain    24",
+            "1A  oda     22",
+            "5B  us      13",
+        };
+        // clang-format on
+
+        for (const auto& isc_move : isc_moves) {
+            auto move = scrabble::Move::from_isc_spec(isc_move);
+            auto emove = scrabble::EngineMove::make(&engine, move);
+            auto move2 = cicero_make_move2(&engine, &emove.move);
+            CHECK(move2.square    == move.square.value());
+            CHECK(move2.direction == static_cast<int>(move.direction));
+            check_word(move2, move.word.c_str());
+            std::cout << move << " -> " << move2 << "\n";
+        }
+    }
+
+    SECTION("cruella v cf539 02/08/2016")
+    {
+        // clang-format off
+        const std::vector<std::string> isc_moves = {
+            "H8  unify    30",
+            "11E sulfured 98",
+            "12A bazoo    40",
+            "13A yea      43",
+            "12K rant     16",
+            "9C  visioned 68",
+            "N10 futon    32",
+            "E2  Inveighs 78",
+            "14H trippant 64",
+            "15D graVies  87",
+            "O8  cham     42",
+            "7C  wig      11",
+            "6B  jo       30",
+            "5D  semiarid 72",
+            "4H  latened  78",
+            "A12 byte     27",
+            "3K  low      28",
+            "2M  oe       10",
+            "6H  rex      58",
+            "2C  taIlbone 63",
+        };
+        // clang-format on
+
+        for (const auto& isc_move : isc_moves) {
+            auto move = scrabble::Move::from_isc_spec(isc_move);
+            auto emove = scrabble::EngineMove::make(&engine, move);
+            auto move2 = cicero_make_move2(&engine, &emove.move);
+            CHECK(move2.square    == move.square.value());
+            CHECK(move2.direction == static_cast<int>(move.direction));
+            check_word(move2, move.word.c_str());
+            std::cout << move << " -> " << move2 << "\n";
+        }
+    }
+}

@@ -257,3 +257,5 @@ constexpr scrabble::Square IXSQ(const char *const name) noexcept
 {
     return scrabble::Square{IX(name)};
 }
+
+std::ostream& operator<<(std::ostream& os, const cicero_move2& move2);
