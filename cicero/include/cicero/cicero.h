@@ -40,6 +40,7 @@ enum cicero_legal_move_errnum
     CICERO_TOO_MANY_TILES             = -6,
     CICERO_WORD_TOO_SHORT             = -7,
     CICERO_FIRST_MOVE_MUST_OCCUPY_H8  = -8,
+    CICERO_SQUARE_OCCUPIED            = -9,
 };
 
 enum cicero_multiplier_
@@ -219,10 +220,12 @@ cicero_api void cicero_init(cicero *e, cicero_callbacks callbacks);
 // words with friends scoring initialization
 cicero_api void cicero_init_wwf(cicero *e, cicero_callbacks callbacks);
 
+// XXX:
 // precondition: move is legal and valid
 cicero_api int  cicero_make_move(cicero *e, cicero_savepos* sp,
         const cicero_move *move);
 
+// XXX: DONE
 // precondition: `move` was just played via cicero_make_move() and `sp`
 // was passed to corresponding call to cicero_make_move
 cicero_api void cicero_undo_move(cicero *e, const cicero_savepos* sp,
@@ -234,6 +237,7 @@ cicero_api void cicero_undo_move2(cicero *e, const cicero_savepos* sp,
 // will call `onlegal` callback with all legal moves from `rack`
 cicero_api void cicero_generate_legal_moves(const cicero *e, cicero_rack rack);
 
+// XXX: DONE
 // TODO: maybe this function shouldn't be part of the public api since it is
 //       easy to mess up
 // precondition: `move` was just played
@@ -241,7 +245,11 @@ cicero_api int  cicero_score_move(const cicero *e, const cicero_move *move);
 
 cicero_api int  cicero_score_move2(const cicero *e, const cicero_move2 *move);
 
+// XXX:
 cicero_api int  cicero_legal_move_ex(const cicero *e, const cicero_move *move,
+        cicero_is_word is_word, const void *udata);
+
+cicero_api int  cicero_legal_move_ex2(const cicero *e, const cicero_move2 *move,
         cicero_is_word is_word, const void *udata);
 
 cicero_api int  cicero_legal_move(const cicero *e, const cicero_move *move);

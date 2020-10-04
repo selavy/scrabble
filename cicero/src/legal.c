@@ -16,15 +16,37 @@ const char *cicero_legal_move_errnum_to_string(int errnum)
     return "unknown error code";
 }
 
+internal int count_tiles(const cicero_move2* move)
+{
+    int ntiles = 0;
+    for (const char* tile = move->tiles; *tile; ++tile) {
+        ntiles += *tile != '.' ? 1 : 0;
+    }
+    return ntiles;
+}
+
 int cicero_legal_move_ex(const cicero *e, const cicero_move *move,
         cicero_is_word is_word, const void* udata)
 {
+    cicero_move2 m = cicero_make_move2(e, move);
+    return cicero_legal_move_ex2(e, &m, is_word, udata);
+}
+
+int cicero_legal_move_ex2(const cicero *e, const cicero_move2 *move,
+        cicero_is_word is_word, const void* udata)
+{
+    // Tiles need to be contiguous
+    // Tiles must all be on a row or column (same direction)
+    // Valid root word
+    // Cross words valid
+    // Need to have created a word with at least 2 squares
+
     const char *board = e->vals;
     const int hstride = move->direction;
     const int vstride = flip_dir(move->direction);
-    const int ntiles = move->ntiles;
+    const int ntiles = count_tiles(move);
     const char *tiles = move->tiles;
-    const int *squares = move->squares;
+    const int root = move->square;
     const dimstart hstart = move->direction == CICERO_HORZ ? colstart : rowstart;
     const dimstart vstart = move->direction == CICERO_HORZ ? rowstart : colstart;
 
@@ -37,33 +59,50 @@ int cicero_legal_move_ex(const cicero *e, const cicero_move *move,
     int word_long_enough = 0;
     int h8_played = board[SQ_H8] != EMPTY;
 
-    // TODO: why did I size this to 32 instead of 15 or 16?
-    char buffer[32];
-    {
-        int tilenum = 0;
-        const int root   = squares[0];
+    { // Verify that all tiles that != '.' are empty, and the opposite
         const int start  = hstart(root);
         const int stride = hstride;
         const int stop   = start + DIM * stride;
-        const int first  = findbeg(board, start, stop, stride, root);
-        char *p = &buffer[0];
-        for (int sq = first; sq < stop; sq += stride) {
-            char tile;
-            if (board[sq] != EMPTY) {
-                tile = board[sq];
-            } else if (tilenum == ntiles) {
-                break;
-            } else if (sq == squares[tilenum]) {
-                tile = to_eng(tiles[tilenum++]);
-            } else {
-                TRACE("empty square: %d", sq);
-                return CICERO_MOVE_LEAVES_EMPTY_SQUARES;
+        int sq = root;
+        for (const char* tile = tiles; *tile; ++tile, sq += stride) {
+            if (!(sq < stop)) {
+                return CICERO_MOVE_NOT_IN_SAME_DIRECTION;
             }
+            if (*tile != '.') {
+                if (board[sq] != EMPTY) {
+                    return CICERO_SQUARE_OCCUPIED;
+                }
+            } else {
+                if (board[sq] == EMPTY) {
+                    return CICERO_MOVE_LEAVES_EMPTY_SQUARES;
+                }
+            }
+        }
+    }
+
+    char buffer[16];
+    { // Verify root word
+        char* p = &buffer[0];
+        const int start = hstart(root);
+        const int stride = hstride;
+        const int stop = start + DIM * stride;
+        const int first = findbeg(board, start, stop, stride, root);
+        for (int sq = first; sq < root; sq += stride) {
+            assert(board[sq] != EMPTY);
+            *p++ = to_uppercase(to_ext(board[sq]));
+        }
+
+        int sq = root;
+        for (const char *tilep = tiles; *tilep; ++tilep, sq += stride) {
+            assert(sq < stop);
+            const int tile = *tilep != '.' ? to_eng(*tilep) : board[sq];
             *p++ = to_uppercase(to_ext(tile));
         }
-        if (tilenum != ntiles) {
-            return CICERO_MOVE_NOT_IN_SAME_DIRECTION;
+
+        for (; sq < stop && board[sq] != EMPTY; ++sq) {
+            *p++ = to_uppercase(to_ext(board[sq]));
         }
+
         *p++ = '\0';
         word_long_enough |= (p - &buffer[0]) > 2;
         if (is_word(udata, &buffer[0]) == 0) {
@@ -72,19 +111,19 @@ int cicero_legal_move_ex(const cicero *e, const cicero_move *move,
         }
     }
 
-    for (int i = 0; i < ntiles; ++i) {
-        const int root   = squares[i];
-        const int start  = vstart(root);
+    int root_sq = root;
+    for (const char* tilep = tiles; *tilep; ++tilep, root_sq += hstride) {
+        const int start  = vstart(root_sq);
         const int stride = vstride;
         const int stop   = start + DIM * stride;
-        const int first  = findbeg(board, start, stop, stride, root);
+        const int first  = findbeg(board, start, stop, stride, root_sq);
         char *p = &buffer[0];
-        h8_played |= squares[i] == SQ_H8;
-        for (int sq = first; sq != root; sq += stride) {
+        h8_played |= root_sq == SQ_H8;
+        for (int sq = first; sq != root_sq; sq += stride) {
             *p++ = to_uppercase(to_ext(board[sq]));
         }
-        *p++ = tiles[i];
-        for (int sq = root + stride; sq < stop && board[sq] != EMPTY; sq += stride) {
+        *p++ = *tilep;
+        for (int sq = root_sq + stride; sq < stop && board[sq] != EMPTY; sq += stride) {
             *p++ = to_uppercase(to_ext(board[sq]));
         }
         *p++ = '\0';

@@ -22,6 +22,18 @@ int cicero_score_move(const cicero *e, const cicero_move *move)
     return cicero_score_move2(e, &m);
 }
 
+// TODO: I think this won't work correctly if the move tiles don't include
+// tiles to the right.
+//
+// Example:
+//
+// If board state is:
+// | A |  |  | S |
+//
+// And the given move is
+// ".NT"
+//
+// Will I correctly include the value of the 'S'?
 int cicero_score_move2(const cicero *e, const cicero_move2 *move)
 {
     const char *board   = e->vals;
