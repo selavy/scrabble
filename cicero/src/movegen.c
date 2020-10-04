@@ -65,15 +65,25 @@ internal int calc_cached_score(int start, int stop, int stride,
 void cicero_undo_move(cicero *e, const cicero_savepos* sp,
         const cicero_move *move)
 {
+    cicero_move2 m = cicero_make_move2(e, move);
+    cicero_undo_move2(e, sp, &m);
+}
+
+void cicero_undo_move2(cicero *e, const cicero_savepos* sp,
+        const cicero_move2 *m)
+{
+    const int stride = m->direction;
+    const char* tiles = m->tiles;
     char* board = e->vals;
 
     // remove tiles
-    const int   ntiles  = move->ntiles;
-    const int  *squares = move->squares;
-    for (int i = 0; i < ntiles; ++i) {
-        const int square = squares[i];
-        assert(to_ext(board[square]) == move->tiles[i]);
-        board[squares[i]] = EMPTY;
+    int sq = m->square;
+    for (const char* tile = tiles; *tile; ++tile, sq += stride) {
+        if (*tile == '.') {
+            continue;
+        }
+        assert(to_ext(board[sq]) == *tile);
+        board[sq] = EMPTY;
     }
 
     // restore cached state

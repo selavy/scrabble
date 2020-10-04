@@ -228,6 +228,9 @@ cicero_api int  cicero_make_move(cicero *e, cicero_savepos* sp,
 cicero_api void cicero_undo_move(cicero *e, const cicero_savepos* sp,
         const cicero_move *move);
 
+cicero_api void cicero_undo_move2(cicero *e, const cicero_savepos* sp,
+        const cicero_move2 *move);
+
 // will call `onlegal` callback with all legal moves from `rack`
 cicero_api void cicero_generate_legal_moves(const cicero *e, cicero_rack rack);
 
